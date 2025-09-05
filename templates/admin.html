@@ -64,12 +64,12 @@
         <div class="card-body">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
-                    <i class="fas fa-database text-2xl text-purple-500"></i>
+                    <i class="fas fa-file-code text-2xl text-purple-500"></i>
                 </div>
                 <div class="ml-5 w-0 flex-1">
                     <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">データベース</dt>
-                        <dd class="text-lg font-medium text-gray-900">正常</dd>
+                        <dt class="text-sm font-medium text-gray-500 truncate">JSONファイル</dt>
+                        <dd class="text-lg font-medium text-gray-900">{{ data.json_files|length }}個</dd>
                     </dl>
                 </div>
             </div>
@@ -85,22 +85,116 @@
         </h2>
     </div>
     <div class="card-body">
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div class="flex items-start">
-                <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
-                <div>
-                    <h3 class="text-blue-800 font-medium mb-1">サンプル問題について</h3>
-                    <p class="text-blue-700 text-sm">
-                        基本情報技術者試験の各分野（ハードウェア、ソフトウェア、データベース、ネットワーク、セキュリティ）から
-                        実際の試験に近い形式の問題を5問用意しています。初回起動時に自動で作成されますが、
-                        手動で追加することも可能です。
-                    </p>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900 mb-3">基本サンプル問題（5問）</h3>
+                <p class="text-gray-600 mb-4">
+                    各分野（ハードウェア、データベース、ネットワーク、プログラミング、セキュリティ）から1問ずつ
+                </p>
+                <button onclick="createSampleData()" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 基本サンプル問題を作成
+                </button>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium text-gray-900 mb-3">拡張サンプル問題（10問）</h3>
+                <p class="text-gray-600 mb-4">
+                    より多様なジャンルから実践的な問題を10問追加（2進数計算、SQL、OSI参照モデルなど）
+                </p>
+                <button onclick="createExtendedSample()" class="btn btn-success">
+                    <i class="fas fa-plus-circle"></i> 拡張サンプル問題を作成
+                </button>
             </div>
         </div>
-        <button onclick="createSampleData()" class="btn btn-primary">
-            <i class="fas fa-plus"></i> サンプル問題を作成（5問）
-        </button>
+    </div>
+</div>
+
+<!-- JSON ファイル読み込み -->
+<div class="card mb-8">
+    <div class="card-header">
+        <h2 class="text-xl font-semibold text-gray-900">
+            <i class="fas fa-file-code text-primary"></i> JSON問題ファイルの管理
+        </h2>
+    </div>
+    <div class="card-body">
+        <!-- JSON アップロード -->
+        <div class="mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-3">JSONファイルアップロード</h3>
+            <form id="uploadJsonForm" enctype="multipart/form-data" class="space-y-4">
+                <div>
+                    <label for="json_file" class="block text-sm font-medium text-gray-700 mb-2">
+                        JSONファイルを選択
+                    </label>
+                    <div class="flex items-center space-x-4">
+                        <input type="file" id="json_file" name="json_file" accept=".json" required 
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-success file:text-white hover:file:bg-green-600">
+                        <button type="submit" class="btn btn-success" id="uploadJsonBtn">
+                            <i class="fas fa-upload"></i> JSONアップロード
+                        </button>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">
+                        問題データのJSONファイルをアップロードして自動的にデータベースに登録します。
+                    </p>
+                </div>
+                
+                <div id="uploadJsonProgress" class="hidden">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-spinner fa-spin text-green-500 mr-3"></i>
+                            <span class="text-green-700">処理中... JSONファイルを読み込んでいます。</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="uploadJsonResult" class="hidden"></div>
+            </form>
+        </div>
+
+        <!-- 保存済みJSONファイル一覧 -->
+        {% if data.json_files %}
+        <div>
+            <h3 class="text-lg font-medium text-gray-900 mb-3">保存済みJSONファイル</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ファイル名</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">サイズ</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">更新日時</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for json_file in data.json_files %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <i class="fas fa-file-code text-green-500 mr-2"></i>
+                                {{ json_file.filename }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ "%.1f"|format(json_file.size / 1024) }} KB
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ json_file.modified }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="loadJsonFile('{{ json_file.filename }}')" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-download"></i> データベースに読み込み
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <i class="fas fa-file-code text-4xl text-gray-400 mb-4"></i>
+            <p class="text-gray-600">保存されたJSONファイルはありません</p>
+            <p class="text-sm text-gray-500">PDFを処理するかJSONファイルをアップロードするとここに表示されます</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -125,7 +219,7 @@
                     </button>
                 </div>
                 <p class="mt-2 text-sm text-gray-500">
-                    IPA公開の過去問PDFファイルをアップロードしてください。自動で問題、選択肢、解答、解説を抽出します。
+                    IPA公開の過去問PDFファイルをアップロードしてください。自動で問題を抽出してJSONファイルとしても保存されます。
                 </p>
             </div>
             
@@ -180,7 +274,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <h3 class="text-lg font-medium text-gray-900 mb-3">データベース初期化</h3>
-                <p class="text-gray-600 mb-4">全ての問題と解答履歴を削除して初期化します。</p>
+                <p class="text-gray-600 mb-4">全ての問題と学習履歴を削除して初期化します。</p>
                 <button onclick="resetDatabase()" class="btn btn-danger">
                     <i class="fas fa-trash"></i> データベース初期化
                 </button>
@@ -191,7 +285,7 @@
                 <dl class="space-y-2">
                     <div class="flex justify-between">
                         <dt class="text-sm text-gray-600">バージョン:</dt>
-                        <dd class="text-sm font-medium text-gray-900">v1.0.0</dd>
+                        <dd class="text-sm font-medium text-gray-900">v2.0.0</dd>
                     </div>
                     <div class="flex justify-between">
                         <dt class="text-sm text-gray-600">フレームワーク:</dt>
@@ -200,6 +294,10 @@
                     <div class="flex justify-between">
                         <dt class="text-sm text-gray-600">データベース:</dt>
                         <dd class="text-sm font-medium text-gray-900">SQLite</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">JSON対応:</dt>
+                        <dd class="text-sm font-medium text-green-600">有効</dd>
                     </div>
                 </dl>
             </div>
@@ -290,9 +388,89 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     }
 });
 
+// JSON アップロード処理
+document.getElementById('uploadJsonForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('json_file');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('JSONファイルを選択してください。');
+        return;
+    }
+    
+    // UI更新
+    document.getElementById('uploadJsonBtn').disabled = true;
+    document.getElementById('uploadJsonProgress').classList.remove('hidden');
+    document.getElementById('uploadJsonResult').classList.add('hidden');
+    
+    const formData = new FormData();
+    formData.append('json_file', file);
+    
+    try {
+        const response = await fetch('/admin/upload_json', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        // 結果表示
+        const resultDiv = document.getElementById('uploadJsonResult');
+        
+        if (response.ok) {
+            resultDiv.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                        <span class="text-green-700">${result.message}</span>
+                    </div>
+                </div>
+            `;
+            
+            // フォームをリセット
+            fileInput.value = '';
+            
+            // 統計を更新
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            resultDiv.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+                        <span class="text-red-700">${result.error}</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        resultDiv.classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error:', error);
+        
+        const resultDiv = document.getElementById('uploadJsonResult');
+        resultDiv.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+                    <span class="text-red-700">JSONアップロード中にエラーが発生しました。</span>
+                </div>
+            </div>
+        `;
+        resultDiv.classList.remove('hidden');
+    } finally {
+        document.getElementById('uploadJsonBtn').disabled = false;
+        document.getElementById('uploadJsonProgress').classList.add('hidden');
+    }
+});
+
 // サンプルデータ作成
 async function createSampleData() {
-    if (!confirm('サンプル問題（5問）を作成しますか？既存の問題は削除されません。')) {
+    if (!confirm('基本サンプル問題（5問）を作成しますか？既存の問題は削除されません。')) {
         return;
     }
     
@@ -308,6 +486,62 @@ async function createSampleData() {
         
         if (response.ok) {
             alert(`サンプル問題を作成しました: ${result.message}`);
+            location.reload();
+        } else {
+            alert('エラー: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('エラーが発生しました。');
+    }
+}
+
+// 拡張サンプルデータ作成
+async function createExtendedSample() {
+    if (!confirm('拡張サンプル問題（10問）を作成しますか？既存の問題は削除されません。')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/create_extended_sample', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert(`拡張サンプル問題を作成しました: ${result.message}`);
+            location.reload();
+        } else {
+            alert('エラー: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('エラーが発生しました。');
+    }
+}
+
+// JSONファイル読み込み
+async function loadJsonFile(filename) {
+    if (!confirm(`"${filename}" をデータベースに読み込みますか？`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/admin/load_json/${filename}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert(`JSONファイルを読み込みました: ${result.message}`);
             location.reload();
         } else {
             alert('エラー: ' + result.error);
