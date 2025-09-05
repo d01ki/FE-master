@@ -22,7 +22,18 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 
 # データベースの初期化
 if not os.path.exists(app.config['DATABASE']):
+    print("データベースを初期化しています...")
     init_db(app.config['DATABASE'])
+    
+    # サンプル問題を自動作成
+    try:
+        processor = PDFProcessor()
+        sample_questions = processor.create_sample_questions()
+        question_manager = QuestionManager(app.config['DATABASE'])
+        saved_count = question_manager.save_questions(sample_questions)
+        print(f"サンプル問題 {saved_count}問を作成しました。")
+    except Exception as e:
+        print(f"サンプル問題作成中にエラーが発生しました: {e}")
 
 # QuestionManagerの初期化
 question_manager = QuestionManager(app.config['DATABASE'])
@@ -109,12 +120,16 @@ def practice_by_genre(genre):
 @app.route('/mock_exam')
 def mock_exam():
     """模擬試験"""
-    # 午前問題80問をランダムに抽出
-    questions = question_manager.get_random_questions(80)
+    # 問題数をチェック
+    total_questions = question_manager.get_total_questions()
+    exam_questions_count = min(total_questions, 20)  # 最大20問の模擬試験
     
-    if len(questions) < 80:
-        return render_template('error.html', 
-                             message=f'模擬試験に必要な問題数が不足しています。現在: {len(questions)}問')
+    if total_questions == 0:
+        flash('問題が登録されていません。管理画面から問題を追加してください。', 'error')
+        return redirect(url_for('admin'))
+    
+    # 問題をランダムに抽出
+    questions = question_manager.get_random_questions(exam_questions_count)
     
     # セッションに試験開始時刻を保存
     session['exam_start_time'] = datetime.now().isoformat()
