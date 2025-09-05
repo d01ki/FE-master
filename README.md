@@ -16,8 +16,14 @@ python3 app.py
 
 ### 3. ブラウザでアクセス
 - **メインページ**: http://localhost:8000
-- **API ドキュメント**: http://localhost:8000/docs
-- **問題一覧 API**: http://localhost:8000/api/problems
+
+## デモ
+
+<img width="1904" height="887" alt="image" src="https://github.com/user-attachments/assets/567b4589-b9e0-4797-ac02-eb5e7cc50f3f" />
+
+
+<img width="1894" height="821" alt="image" src="https://github.com/user-attachments/assets/535e442a-12e7-4c03-8221-bbe317121c3b" />
+
 
 ## 📱 主要機能
 
@@ -121,10 +127,6 @@ MIT License - 教育目的での使用を推奨します。
 - このアプリケーションは教育・学習目的で作成されています
 - サンプル問題はオリジナルで作成されています
 - 実際の過去問を使用する場合は著作権と利用規約を確認してください
-
-## 🌐 開発者向け情報
-
-より詳細な開発情報や拡張機能については`backend/`ディレクトリ内のドキュメントを参照してください。
 
 ---
 
