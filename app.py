@@ -3,7 +3,7 @@
 Flask + SQLite + Tailwind CSS を使用した学習プラットフォーム
 """
 
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 import sqlite3
 import json
 import os
@@ -73,7 +73,7 @@ def show_question(question_id):
     """個別問題の表示"""
     question = question_manager.get_question(question_id)
     if not question:
-        return jsonify({'error': '問題が見つかりません'}), 404
+        return render_template('error.html', message='問題が見つかりません'), 404
     
     return render_template('question.html', question=question)
 
@@ -99,7 +99,7 @@ def practice_by_genre(genre):
     questions = question_manager.get_questions_by_genre(genre)
     
     if not questions:
-        return jsonify({'error': f'ジャンル "{genre}" の問題が見つかりません'}), 404
+        return render_template('error.html', message=f'ジャンル "{genre}" の問題が見つかりません'), 404
     
     # ランダムに並び替え
     random.shuffle(questions)
@@ -250,6 +250,38 @@ def upload_pdf():
     except Exception as e:
         return jsonify({'error': f'PDF処理中にエラーが発生しました: {str(e)}'}), 500
 
+@app.route('/admin/create_sample', methods=['POST'])
+def create_sample_data():
+    """サンプルデータの作成"""
+    try:
+        processor = PDFProcessor()
+        sample_questions = processor.create_sample_questions()
+        
+        saved_count = question_manager.save_questions(sample_questions)
+        
+        return jsonify({
+            'message': f'{saved_count}問のサンプル問題を作成しました',
+            'count': saved_count
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'サンプルデータ作成中にエラーが発生しました: {str(e)}'}), 500
+
+@app.route('/admin/reset_database', methods=['POST'])
+def reset_database():
+    """データベースの初期化"""
+    try:
+        with get_db_connection(app.config['DATABASE']) as conn:
+            # 全データを削除
+            conn.execute('DELETE FROM user_answers')
+            conn.execute('DELETE FROM questions')
+            conn.commit()
+        
+        return jsonify({'message': 'データベースを初期化しました'})
+        
+    except Exception as e:
+        return jsonify({'error': f'データベース初期化中にエラーが発生しました: {str(e)}'}), 500
+
 @app.route('/api/questions/random')
 def get_random_question():
     """ランダムな問題を1問取得するAPI"""
@@ -289,6 +321,29 @@ def get_stats():
         }
     
     return jsonify(stats)
+
+@app.route('/api/genre_count')
+def get_genre_count():
+    """ジャンル別問題数取得API"""
+    genre = request.args.get('genre')
+    if not genre:
+        return jsonify({'error': 'ジャンルが指定されていません'}), 400
+    
+    with get_db_connection(app.config['DATABASE']) as conn:
+        count = conn.execute('SELECT COUNT(*) FROM questions WHERE genre = ?', (genre,)).fetchone()[0]
+    
+    return jsonify({'count': count})
+
+# ランダム問題への直接アクセス
+@app.route('/random')
+def random_question():
+    """ランダム問題への直接アクセス"""
+    question = question_manager.get_random_question()
+    if not question:
+        flash('問題が見つかりません。まず問題を登録してください。', 'error')
+        return redirect(url_for('admin'))
+    
+    return redirect(url_for('show_question', question_id=question['id']))
 
 @app.errorhandler(404)
 def not_found_error(error):
