@@ -3,32 +3,30 @@
 {% block title %}エラー - {{ super() }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center">
-    <div class="text-center">
-        <div class="mb-8">
-            <i class="fas fa-exclamation-triangle text-6xl text-warning"></i>
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 text-center">
+        <div>
+            <i class="fas fa-exclamation-triangle text-6xl text-warning mb-6"></i>
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">エラーが発生しました</h1>
+            <p class="text-lg text-gray-600 mb-8">{{ message or "申し訳ございませんが、エラーが発生しました。" }}</p>
         </div>
         
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">エラーが発生しました</h1>
-        
-        <div class="max-w-md mx-auto">
-            <p class="text-lg text-gray-600 mb-8">
-                {{ message if message else '予期しないエラーが発生しました。' }}
-            </p>
-            
-            <div class="space-y-4">
-                <a href="{{ url_for('index') }}" class="btn btn-primary block">
-                    <i class="fas fa-home"></i> ダッシュボードに戻る
-                </a>
-                
-                <button onclick="history.back()" class="btn btn-secondary block w-full">
-                    <i class="fas fa-arrow-left"></i> 前のページに戻る
-                </button>
-            </div>
+        <div class="space-y-4">
+            <a href="{{ url_for('index') }}" class="btn btn-primary w-full">
+                <i class="fas fa-home mr-2"></i>ダッシュボードに戻る
+            </a>
+            <button onclick="history.back()" class="btn btn-secondary w-full">
+                <i class="fas fa-arrow-left mr-2"></i>前のページに戻る
+            </button>
         </div>
         
-        <div class="mt-12 text-sm text-gray-500">
-            <p>問題が続く場合は、管理者にお問い合わせください。</p>
+        <div class="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 class="text-blue-800 font-medium mb-2">お困りの場合</h3>
+            <ul class="text-blue-700 text-sm space-y-1">
+                <li>• ブラウザをリフレッシュしてみてください</li>
+                <li>• 管理画面から問題を追加してみてください</li>
+                <li>• しばらく時間をおいて再度お試しください</li>
+            </ul>
         </div>
     </div>
 </div>
