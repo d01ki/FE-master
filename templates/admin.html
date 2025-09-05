@@ -68,7 +68,7 @@
                 </div>
                 <div class="ml-5 w-0 flex-1">
                     <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">データベースサイズ</dt>
+                        <dt class="text-sm font-medium text-gray-500 truncate">データベース</dt>
                         <dd class="text-lg font-medium text-gray-900">正常</dd>
                     </dl>
                 </div>
@@ -77,7 +77,34 @@
     </div>
 </div>
 
-<!-- PDFアップロード -->
+<!-- サンプルデータ作成 -->
+<div class="card mb-8">
+    <div class="card-header">
+        <h2 class="text-xl font-semibold text-gray-900">
+            <i class="fas fa-plus text-primary"></i> サンプル問題の作成
+        </h2>
+    </div>
+    <div class="card-body">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div class="flex items-start">
+                <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                <div>
+                    <h3 class="text-blue-800 font-medium mb-1">サンプル問題について</h3>
+                    <p class="text-blue-700 text-sm">
+                        基本情報技術者試験の各分野（ハードウェア、ソフトウェア、データベース、ネットワーク、セキュリティ）から
+                        実際の試験に近い形式の問題を5問用意しています。初回起動時に自動で作成されますが、
+                        手動で追加することも可能です。
+                    </p>
+                </div>
+            </div>
+        </div>
+        <button onclick="createSampleData()" class="btn btn-primary">
+            <i class="fas fa-plus"></i> サンプル問題を作成（5問）
+        </button>
+    </div>
+</div>
+
+<!-- PDF アップロード -->
 <div class="card mb-8">
     <div class="card-header">
         <h2 class="text-xl font-semibold text-gray-900">
@@ -98,7 +125,7 @@
                     </button>
                 </div>
                 <p class="mt-2 text-sm text-gray-500">
-                    IPA公開の過去問題PDFファイルをアップロードしてください。自動で問題、選択肢、解答、解説を抽出します。
+                    IPA公開の過去問PDFファイルをアップロードしてください。自動で問題、選択肢、解答、解説を抽出します。
                 </p>
             </div>
             
@@ -142,8 +169,8 @@
 </div>
 {% endif %}
 
-<!-- サンプルデータ作成 -->
-<div class="card mb-8">
+<!-- データ管理 -->
+<div class="card">
     <div class="card-header">
         <h2 class="text-xl font-semibold text-gray-900">
             <i class="fas fa-database text-primary"></i> データ管理
@@ -152,35 +179,15 @@
     <div class="card-body">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <h3 class="text-lg font-medium text-gray-900 mb-3">サンプルデータ</h3>
-                <p class="text-gray-600 mb-4">テスト用のサンプル問題を作成します。</p>
-                <button onclick="createSampleData()" class="btn btn-secondary">
-                    <i class="fas fa-plus"></i> サンプルデータ作成
-                </button>
-            </div>
-            
-            <div>
                 <h3 class="text-lg font-medium text-gray-900 mb-3">データベース初期化</h3>
-                <p class="text-gray-600 mb-4">全てのデータを削除して初期化します。</p>
+                <p class="text-gray-600 mb-4">全ての問題と解答履歴を削除して初期化します。</p>
                 <button onclick="resetDatabase()" class="btn btn-danger">
                     <i class="fas fa-trash"></i> データベース初期化
                 </button>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- システム情報 -->
-<div class="card">
-    <div class="card-header">
-        <h2 class="text-xl font-semibold text-gray-900">
-            <i class="fas fa-info-circle text-primary"></i> システム情報
-        </h2>
-    </div>
-    <div class="card-body">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
             <div>
-                <h3 class="text-lg font-medium text-gray-900 mb-3">アプリケーション</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-3">システム情報</h3>
                 <dl class="space-y-2">
                     <div class="flex justify-between">
                         <dt class="text-sm text-gray-600">バージョン:</dt>
@@ -188,25 +195,13 @@
                     </div>
                     <div class="flex justify-between">
                         <dt class="text-sm text-gray-600">フレームワーク:</dt>
-                        <dd class="text-sm font-medium text-gray-900">Flask + Tailwind CSS</dd>
+                        <dd class="text-sm font-medium text-gray-900">Flask + Tailwind</dd>
                     </div>
                     <div class="flex justify-between">
                         <dt class="text-sm text-gray-600">データベース:</dt>
                         <dd class="text-sm font-medium text-gray-900">SQLite</dd>
                     </div>
                 </dl>
-            </div>
-            
-            <div>
-                <h3 class="text-lg font-medium text-gray-900 mb-3">機能</h3>
-                <ul class="space-y-1 text-sm text-gray-600">
-                    <li><i class="fas fa-check text-success mr-2"></i>PDFからの問題抽出</li>
-                    <li><i class="fas fa-check text-success mr-2"></i>ランダム練習</li>
-                    <li><i class="fas fa-check text-success mr-2"></i>ジャンル別練習</li>
-                    <li><i class="fas fa-check text-success mr-2"></i>模擬試験</li>
-                    <li><i class="fas fa-check text-success mr-2"></i>学習履歴追跡</li>
-                    <li><i class="fas fa-check text-success mr-2"></i>統計ダッシュボード</li>
-                </ul>
             </div>
         </div>
     </div>
@@ -215,7 +210,7 @@
 
 {% block scripts %}
 <script>
-// PDFアップロード処理
+// PDF アップロード処理
 document.getElementById('uploadForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -297,7 +292,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
 
 // サンプルデータ作成
 async function createSampleData() {
-    if (!confirm('サンプルデータを作成しますか？')) {
+    if (!confirm('サンプル問題（5問）を作成しますか？既存の問題は削除されません。')) {
         return;
     }
     
@@ -312,7 +307,7 @@ async function createSampleData() {
         const result = await response.json();
         
         if (response.ok) {
-            alert('サンプルデータを作成しました。');
+            alert(`サンプル問題を作成しました: ${result.message}`);
             location.reload();
         } else {
             alert('エラー: ' + result.error);
@@ -325,11 +320,11 @@ async function createSampleData() {
 
 // データベース初期化
 async function resetDatabase() {
-    if (!confirm('本当に全てのデータを削除しますか？この操作は元に戻せません。')) {
+    if (!confirm('本当に全てのデータを削除しますか？この操作は取り消せません。')) {
         return;
     }
     
-    if (!confirm('再度確認します。本当に初期化しますか？')) {
+    if (!confirm('最終確認: 全ての問題と学習履歴が完全に削除されます。続行しますか？')) {
         return;
     }
     
@@ -355,19 +350,17 @@ async function resetDatabase() {
     }
 }
 
-// ページ読み込み時にジャンル別問題数を取得
-window.addEventListener('load', async function() {
+// ジャンル別問題数を取得
+document.addEventListener('DOMContentLoaded', function() {
     {% for genre in data.genres %}
-    try {
-        const response = await fetch(`/api/genre_count?genre={{ genre|urlencode }}`);
-        const result = await response.json();
-        
-        if (response.ok) {
-            document.getElementById('genre-count-{{ loop.index }}').textContent = result.count + '問';
-        }
-    } catch (error) {
-        document.getElementById('genre-count-{{ loop.index }}').textContent = 'エラー';
-    }
+    fetch(`/api/genre_count?genre=${encodeURIComponent('{{ genre }}')}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('genre-count-{{ loop.index }}').textContent = data.count + '問';
+        })
+        .catch(error => {
+            document.getElementById('genre-count-{{ loop.index }}').textContent = 'エラー';
+        });
     {% endfor %}
 });
 </script>
