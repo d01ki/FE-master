@@ -19,6 +19,11 @@ app.secret_key = 'your-secret-key-change-in-production'
 # アプリケーション設定
 app.config['DATABASE'] = 'fe_exam.db'
 app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['JSON_FOLDER'] = 'json_questions'
+
+# アップロードフォルダとJSONフォルダを作成
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['JSON_FOLDER'], exist_ok=True)
 
 # データベースの初期化
 if not os.path.exists(app.config['DATABASE']):
@@ -219,9 +224,23 @@ def admin():
         question_count = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
         genres = conn.execute('SELECT DISTINCT genre FROM questions').fetchall()
         
+        # JSONファイル一覧を取得
+        json_files = []
+        if os.path.exists(app.config['JSON_FOLDER']):
+            for filename in os.listdir(app.config['JSON_FOLDER']):
+                if filename.endswith('.json'):
+                    filepath = os.path.join(app.config['JSON_FOLDER'], filename)
+                    file_size = os.path.getsize(filepath)
+                    json_files.append({
+                        'filename': filename,
+                        'size': file_size,
+                        'modified': datetime.fromtimestamp(os.path.getmtime(filepath)).strftime('%Y-%m-%d %H:%M')
+                    })
+        
         admin_data = {
             'question_count': question_count,
-            'genres': [row[0] for row in genres]
+            'genres': [row[0] for row in genres],
+            'json_files': json_files
         }
     
     return render_template('admin.html', data=admin_data)
@@ -240,9 +259,6 @@ def upload_pdf():
         return jsonify({'error': 'PDFファイルを選択してください'}), 400
     
     try:
-        # アップロードフォルダが存在しない場合は作成
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        
         # ファイル保存
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(filepath)
@@ -251,6 +267,13 @@ def upload_pdf():
         processor = PDFProcessor()
         questions = processor.extract_questions_from_pdf(filepath)
         
+        # JSONファイルとして保存
+        json_filename = file.filename.replace('.pdf', '_questions.json')
+        json_filepath = os.path.join(app.config['JSON_FOLDER'], json_filename)
+        
+        with open(json_filepath, 'w', encoding='utf-8') as json_file:
+            json.dump(questions, json_file, ensure_ascii=False, indent=2)
+        
         # データベースに保存
         saved_count = question_manager.save_questions(questions)
         
@@ -258,12 +281,84 @@ def upload_pdf():
         os.remove(filepath)
         
         return jsonify({
+            'message': f'{saved_count}問の問題を正常に登録しました。JSONファイルも保存されました: {json_filename}',
+            'count': saved_count,
+            'json_file': json_filename
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'PDF処理中にエラーが発生しました: {str(e)}'}), 500
+
+@app.route('/admin/upload_json', methods=['POST'])
+def upload_json():
+    """JSON問題ファイルのアップロードと処理"""
+    if 'json_file' not in request.files:
+        return jsonify({'error': 'JSONファイルが選択されていません'}), 400
+    
+    file = request.files['json_file']
+    if file.filename == '':
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
+    
+    if not file.filename.lower().endswith('.json'):
+        return jsonify({'error': 'JSONファイルを選択してください'}), 400
+    
+    try:
+        # ファイル内容を読み込み
+        content = file.read().decode('utf-8')
+        questions = json.loads(content)
+        
+        # バリデーション
+        if not isinstance(questions, list):
+            return jsonify({'error': 'JSONファイルは問題の配列である必要があります'}), 400
+        
+        # 各問題の形式をチェック
+        for i, question in enumerate(questions):
+            required_fields = ['question_text', 'choices', 'correct_answer']
+            for field in required_fields:
+                if field not in question:
+                    return jsonify({'error': f'問題{i+1}: 必須フィールド "{field}" がありません'}), 400
+        
+        # JSONファイルを保存
+        json_filepath = os.path.join(app.config['JSON_FOLDER'], file.filename)
+        with open(json_filepath, 'w', encoding='utf-8') as json_file:
+            json.dump(questions, json_file, ensure_ascii=False, indent=2)
+        
+        # データベースに保存
+        saved_count = question_manager.save_questions(questions)
+        
+        return jsonify({
+            'message': f'{saved_count}問の問題を正常に登録しました',
+            'count': saved_count,
+            'json_file': file.filename
+        })
+        
+    except json.JSONDecodeError:
+        return jsonify({'error': 'JSONファイルの形式が正しくありません'}), 400
+    except Exception as e:
+        return jsonify({'error': f'JSON処理中にエラーが発生しました: {str(e)}'}), 500
+
+@app.route('/admin/load_json/<filename>', methods=['POST'])
+def load_json_file(filename):
+    """保存されたJSONファイルからデータベースに問題を読み込み"""
+    try:
+        json_filepath = os.path.join(app.config['JSON_FOLDER'], filename)
+        
+        if not os.path.exists(json_filepath):
+            return jsonify({'error': 'JSONファイルが見つかりません'}), 404
+        
+        with open(json_filepath, 'r', encoding='utf-8') as json_file:
+            questions = json.load(json_file)
+        
+        # データベースに保存
+        saved_count = question_manager.save_questions(questions)
+        
+        return jsonify({
             'message': f'{saved_count}問の問題を正常に登録しました',
             'count': saved_count
         })
         
     except Exception as e:
-        return jsonify({'error': f'PDF処理中にエラーが発生しました: {str(e)}'}), 500
+        return jsonify({'error': f'JSON読み込み中にエラーが発生しました: {str(e)}'}), 500
 
 @app.route('/admin/create_sample', methods=['POST'])
 def create_sample_data():
@@ -281,6 +376,23 @@ def create_sample_data():
         
     except Exception as e:
         return jsonify({'error': f'サンプルデータ作成中にエラーが発生しました: {str(e)}'}), 500
+
+@app.route('/admin/create_extended_sample', methods=['POST'])
+def create_extended_sample():
+    """拡張サンプルデータの作成（10問）"""
+    try:
+        processor = PDFProcessor()
+        extended_questions = processor.create_extended_sample_questions()
+        
+        saved_count = question_manager.save_questions(extended_questions)
+        
+        return jsonify({
+            'message': f'{saved_count}問の拡張サンプル問題を作成しました',
+            'count': saved_count
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'拡張サンプルデータ作成中にエラーが発生しました: {str(e)}'}), 500
 
 @app.route('/admin/reset_database', methods=['POST'])
 def reset_database():
