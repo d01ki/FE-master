@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}学習履歴 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <nav class="flex" aria-label="パンくずリスト">
+        <ol class="flex items-center space-x-1">
+            <li>
+                <a href="{{ url_for('index') }}" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-home"></i>
+                </a>
+            </li>
+            <li>
+                <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+            </li>
+            <li class="text-sm font-medium text-gray-900">学習履歴</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        <i class="fas fa-history text-primary"></i> 学習履歴
+    </h1>
+    <p class="text-gray-600">これまでの学習進捗と解答履歴を確認できます。</p>
+</div>
+
+<!-- 日別統計 -->
+{% if history.daily_stats %}
+<div class="card mb-8">
+    <div class="card-header">
+        <h2 class="text-xl font-semibold text-gray-900">
+            <i class="fas fa-calendar-alt text-primary"></i> 日別学習統計（過去30日）
+        </h2>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for daily in history.daily_stats[:15] %}
+            {% set accuracy = (daily.correct / daily.total * 100) | round(1) if daily.total > 0 else 0 %}
+            <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">{{ daily.date }}</span>
+                    <span class="text-sm text-gray-500">{{ daily.total }}問</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div class="h-2 rounded-full {% if accuracy >= 80 %}bg-success{% elif accuracy >= 60 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ accuracy }}%"></div>
+                    </div>
+                    <span class="text-sm font-medium {% if accuracy >= 80 %}text-success{% elif accuracy >= 60 %}text-warning{% else %}text-danger{% endif %}">{{ accuracy }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 詳細履歴 -->
+{% if history.detailed_history %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="text-xl font-semibold text-gray-900">
+            <i class="fas fa-list text-primary"></i> 詳細学習履歴（最新50件）
+        </h2>
+    </div>
+    <div class="card-body">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日時</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">問題</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ジャンル</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">あなたの解答</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">正解</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">結果</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in history.detailed_history %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ item.answered_at[:16] }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            <div class="max-w-xs truncate" title="{{ item.question_text }}">
+                                {{ item.question_text[:50] }}{% if item.question_text|length > 50 %}...{% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if item.genre %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ item.genre }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400">未分類</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <span class="{% if item.is_correct %}text-success{% else %}text-danger{% endif %}">
+                                {{ item.user_answer }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-success">
+                            {{ item.correct_answer }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if item.is_correct %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i> 正解
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times mr-1"></i> 不正解
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if item.explanation and not item.is_correct %}
+                    <tr class="bg-blue-50">
+                        <td colspan="6" class="px-6 py-3">
+                            <div class="text-sm text-gray-700">
+                                <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                                <strong>解説:</strong> {{ item.explanation }}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-12">
+    <i class="fas fa-clipboard-list text-6xl text-gray-400 mb-4"></i>
+    <h3 class="text-xl font-medium text-gray-900 mb-2">学習履歴がありません</h3>
+    <p class="text-gray-600 mb-6">問題を解いて学習を始めましょう。</p>
+    <a href="{{ url_for('random_question') }}" class="btn btn-primary">
+        <i class="fas fa-play"></i> 学習を始める
+    </a>
+</div>
+{% endif %}
+{% endblock %}
