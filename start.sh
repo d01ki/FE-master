@@ -1,53 +1,59 @@
 #!/bin/bash
 
-# FE-Master 簡単起動スクリプト
+# 基本情報技術者試験学習アプリ 起動スクリプト
 
-set -e
+echo "================================================"
+echo "基本情報技術者試験 学習アプリ"
+echo "Flask + SQLite + Tailwind CSS"
+echo "================================================"
+echo ""
 
-echo "🚀 FE-Master を起動しています..."
-echo "=============================="
-
-# Pythonの確認
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python3がインストールされていません"
-    echo "以下のコマンドでPython3をインストールしてください:"
-    echo "Ubuntu/Debian: sudo apt install python3 python3-pip"
-    echo "macOS: brew install python3"
-    exit 1
-fi
-
-echo "✅ Python3が見つかりました"
-
-# pipの確認と更新
-echo "📦 pipを更新中..."
-pip3 install --upgrade pip --quiet
-
-# 依存ライブラリのインストール
-echo "📦 必要なライブラリをインストール中..."
-if [ -f "requirements.txt" ]; then
-    pip3 install -r requirements.txt --quiet
+# Python バージョンチェック
+python_version=$(python3 --version 2>/dev/null || python --version 2>/dev/null)
+if [ $? -eq 0 ]; then
+    echo "✅ Python: $python_version"
 else
-    echo "⚠️  requirements.txtが見つかりません。基本ライブラリをインストールします..."
-    pip3 install fastapi uvicorn pydantic python-multipart requests --quiet
-fi
-
-echo "✅ ライブラリのインストールが完了しました"
-
-# app.pyの確認
-if [ ! -f "app.py" ]; then
-    echo "❌ app.pyが見つかりません"
-    echo "正しいディレクトリでスクリプトを実行しているか確認してください"
+    echo "❌ Python が見つかりません。Python 3.8以上をインストールしてください。"
     exit 1
 fi
 
-echo "🎓 FE-Masterを起動中..."
-echo ""
-echo "🌐 アプリケーションのURL:"
-echo "   メインページ: http://localhost:8000"
-echo "   APIドキュメント: http://localhost:8000/docs"
-echo ""
-echo "停止するには Ctrl+C を押してください"
-echo "=============================="
+# 仮想環境の確認・作成
+if [ ! -d "venv" ]; then
+    echo "📦 仮想環境を作成しています..."
+    python3 -m venv venv 2>/dev/null || python -m venv venv
+fi
 
-# アプリケーションを起動
-python3 app.py
+# 仮想環境の有効化
+echo "🔧 仮想環境を有効化しています..."
+if [ -f "venv/bin/activate" ]; then
+    source venv/bin/activate
+elif [ -f "venv/Scripts/activate" ]; then
+    source venv/Scripts/activate
+else
+    echo "❌ 仮想環境の有効化に失敗しました。"
+    exit 1
+fi
+
+# 依存関係のインストール
+echo "📚 依存関係をインストールしています..."
+pip install -r requirements.txt --quiet
+
+if [ $? -eq 0 ]; then
+    echo "✅ 依存関係のインストールが完了しました"
+else
+    echo "❌ 依存関係のインストールに失敗しました。"
+    exit 1
+fi
+
+echo ""
+echo "✨ アプリケーションを起動しています..."
+echo ""
+
+# アプリケーション起動
+python run.py
+
+# 仮想環境を無効化
+deactivate
+
+echo ""
+echo "👋 アプリケーションを終了しました。お疲れ様でした！"
