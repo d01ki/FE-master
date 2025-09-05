@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}エラー - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center">
+    <div class="text-center">
+        <div class="mb-8">
+            <i class="fas fa-exclamation-triangle text-6xl text-warning"></i>
+        </div>
+        
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">エラーが発生しました</h1>
+        
+        <div class="max-w-md mx-auto">
+            <p class="text-lg text-gray-600 mb-8">
+                {{ message if message else '予期しないエラーが発生しました。' }}
+            </p>
+            
+            <div class="space-y-4">
+                <a href="{{ url_for('index') }}" class="btn btn-primary block">
+                    <i class="fas fa-home"></i> ダッシュボードに戻る
+                </a>
+                
+                <button onclick="history.back()" class="btn btn-secondary block w-full">
+                    <i class="fas fa-arrow-left"></i> 前のページに戻る
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-12 text-sm text-gray-500">
+            <p>問題が続く場合は、管理者にお問い合わせください。</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

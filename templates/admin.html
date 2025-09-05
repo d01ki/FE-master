@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}管理画面 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <nav class="flex" aria-label="パンくずリスト">
+        <ol class="flex items-center space-x-1">
+            <li>
+                <a href="{{ url_for('index') }}" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-home"></i>
+                </a>
+            </li>
+            <li>
+                <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+            </li>
+            <li class="text-sm font-medium text-gray-900">管理画面</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        <i class="fas fa-cog text-primary"></i> 管理画面
+    </h1>
+    <p class="text-gray-600">問題の管理とシステム設定を行います。</p>
+</div>
+
+<!-- システム統計 -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="card">
+        <div class="card-body">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-question-circle text-2xl text-blue-500"></i>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">登録済み問題数</dt>
+                        <dd class="text-lg font-medium text-gray-900">{{ data.question_count }}問</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-tags text-2xl text-green-500"></i>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">ジャンル数</dt>
+                        <dd class="text-lg font-medium text-gray-900">{{ data.genres|length }}種類</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-database text-2xl text-purple-500"></i>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">データベースサイズ</dt>
+                        <dd class="text-lg font-medium text-gray-900">正常</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PDFアップロード -->
+<div class="card mb-8">
+    <div class="card-header">
+        <h2 class="text-xl font-semibold text-gray-900">
+            <i class="fas fa-upload text-primary"></i> PDF問題集のアップロード
+        </h2>
+    </div>
+    <div class="card-body">
+        <form id="uploadForm" enctype="multipart/form-data" class="space-y-6">
+            <div>
+                <label for="pdf_file" class="block text-sm font-medium text-gray-700 mb-2">
+                    PDFファイルを選択
+                </label>
+                <div class="flex items-center space-x-4">
+                    <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required 
+                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-blue-700">
+                    <button type="submit" class="btn btn-primary" id="uploadBtn">
+                        <i class="fas fa-upload"></i> アップロード
+                    </button>
+                </div>
+                <p class="mt-2 text-sm text-gray-500">
+                    IPA公開の過去問題PDFファイルをアップロードしてください。自動で問題、選択肢、解答、解説を抽出します。
+                </p>
+            </div>
+            
+            <div id="uploadProgress" class="hidden">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-spinner fa-spin text-blue-500 mr-3"></i>
+                        <span class="text-blue-700">処理中... PDFから問題を抽出しています。</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="uploadResult" class="hidden"></div>
+        </form>
+    </div>
+</div>
+
+<!-- ジャンル別問題数 -->
+{% if data.genres %}
+<div class="card mb-8">
+    <div class="card-header">
+        <h2 class="text-xl font-semibold text-gray-900">
+            <i class="fas fa-chart-pie text-primary"></i> ジャンル別問題数
+        </h2>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for genre in data.genres %}
+            <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-700">{{ genre }}</span>
+                    <a href="{{ url_for('practice_by_genre', genre=genre) }}" class="text-primary hover:text-blue-700">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>
+                <div id="genre-count-{{ loop.index }}" class="text-lg font-bold text-gray-900 mt-1">読み込み中...</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- サンプルデータ作成 -->
+<div class="card mb-8">
+    <div class="card-header">
+        <h2 class="text-xl font-semibold text-gray-900">
+            <i class="fas fa-database text-primary"></i> データ管理
+        </h2>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900 mb-3">サンプルデータ</h3>
+                <p class="text-gray-600 mb-4">テスト用のサンプル問題を作成します。</p>
+                <button onclick="createSampleData()" class="btn btn-secondary">
+                    <i class="fas fa-plus"></i> サンプルデータ作成
+                </button>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium text-gray-900 mb-3">データベース初期化</h3>
+                <p class="text-gray-600 mb-4">全てのデータを削除して初期化します。</p>
+                <button onclick="resetDatabase()" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> データベース初期化
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- システム情報 -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="text-xl font-semibold text-gray-900">
+            <i class="fas fa-info-circle text-primary"></i> システム情報
+        </h2>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900 mb-3">アプリケーション</h3>
+                <dl class="space-y-2">
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">バージョン:</dt>
+                        <dd class="text-sm font-medium text-gray-900">v1.0.0</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">フレームワーク:</dt>
+                        <dd class="text-sm font-medium text-gray-900">Flask + Tailwind CSS</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">データベース:</dt>
+                        <dd class="text-sm font-medium text-gray-900">SQLite</dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium text-gray-900 mb-3">機能</h3>
+                <ul class="space-y-1 text-sm text-gray-600">
+                    <li><i class="fas fa-check text-success mr-2"></i>PDFからの問題抽出</li>
+                    <li><i class="fas fa-check text-success mr-2"></i>ランダム練習</li>
+                    <li><i class="fas fa-check text-success mr-2"></i>ジャンル別練習</li>
+                    <li><i class="fas fa-check text-success mr-2"></i>模擬試験</li>
+                    <li><i class="fas fa-check text-success mr-2"></i>学習履歴追跡</li>
+                    <li><i class="fas fa-check text-success mr-2"></i>統計ダッシュボード</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// PDFアップロード処理
+document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('pdf_file');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('PDFファイルを選択してください。');
+        return;
+    }
+    
+    // UI更新
+    document.getElementById('uploadBtn').disabled = true;
+    document.getElementById('uploadProgress').classList.remove('hidden');
+    document.getElementById('uploadResult').classList.add('hidden');
+    
+    const formData = new FormData();
+    formData.append('pdf_file', file);
+    
+    try {
+        const response = await fetch('/admin/upload_pdf', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        // 結果表示
+        const resultDiv = document.getElementById('uploadResult');
+        
+        if (response.ok) {
+            resultDiv.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                        <span class="text-green-700">${result.message}</span>
+                    </div>
+                </div>
+            `;
+            
+            // フォームをリセット
+            fileInput.value = '';
+            
+            // 統計を更新
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            resultDiv.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+                        <span class="text-red-700">${result.error}</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        resultDiv.classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error:', error);
+        
+        const resultDiv = document.getElementById('uploadResult');
+        resultDiv.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+                    <span class="text-red-700">アップロード中にエラーが発生しました。</span>
+                </div>
+            </div>
+        `;
+        resultDiv.classList.remove('hidden');
+    } finally {
+        document.getElementById('uploadBtn').disabled = false;
+        document.getElementById('uploadProgress').classList.add('hidden');
+    }
+});
+
+// サンプルデータ作成
+async function createSampleData() {
+    if (!confirm('サンプルデータを作成しますか？')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/create_sample', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('サンプルデータを作成しました。');
+            location.reload();
+        } else {
+            alert('エラー: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('エラーが発生しました。');
+    }
+}
+
+// データベース初期化
+async function resetDatabase() {
+    if (!confirm('本当に全てのデータを削除しますか？この操作は元に戻せません。')) {
+        return;
+    }
+    
+    if (!confirm('再度確認します。本当に初期化しますか？')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/reset_database', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('データベースを初期化しました。');
+            location.reload();
+        } else {
+            alert('エラー: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('エラーが発生しました。');
+    }
+}
+
+// ページ読み込み時にジャンル別問題数を取得
+window.addEventListener('load', async function() {
+    {% for genre in data.genres %}
+    try {
+        const response = await fetch(`/api/genre_count?genre={{ genre|urlencode }}`);
+        const result = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('genre-count-{{ loop.index }}').textContent = result.count + '問';
+        }
+    } catch (error) {
+        document.getElementById('genre-count-{{ loop.index }}').textContent = 'エラー';
+    }
+    {% endfor %}
+});
+</script>
+{% endblock %}
