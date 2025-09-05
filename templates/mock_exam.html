@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}模擬試験 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <nav class="flex" aria-label="パンくずリスト">
+        <ol class="flex items-center space-x-1">
+            <li>
+                <a href="{{ url_for('index') }}" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-home"></i>
+                </a>
+            </li>
+            <li>
+                <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+            </li>
+            <li class="text-sm font-medium text-gray-900">模擬試験</li>
+        </ol>
+    </nav>
+</div>
+
+<div id="examContainer">
+    <!-- 試験ヘッダー -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-6 mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold mb-2">
+                    <i class="fas fa-clock mr-2"></i>基本情報技術者試験 模擬試験
+                </h1>
+                <p class="text-blue-100">全{{ questions|length }}問の問題に解答してください。</p>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl font-bold" id="timer">00:00</div>
+                <div class="text-blue-100 text-sm">経過時間</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 進捗バー -->
+    <div class="card mb-6">
+        <div class="card-body">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-gray-700">進捗状況</span>
+                <span class="text-sm text-gray-500">
+                    <span id="answeredCount">0</span> / {{ questions|length }} 問回答済み
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="progressBar" class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 問題表示エリア -->
+    <div class="space-y-8">
+        {% for question in questions %}
+        <div class="card question-card" data-question-id="{{ question.id }}">
+            <div class="card-header">
+                <h2 class="text-xl font-semibold text-gray-900">
+                    問題{{ loop.index }} / {{ questions|length }}
+                    {% if question.genre %}
+                        <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {{ question.genre }}
+                        </span>
+                    {% endif %}
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="mb-6">
+                    <p class="text-gray-700 leading-relaxed">{{ question.question_text }}</p>
+                </div>
+                
+                <div class="space-y-3">
+                    {% for choice_key, choice_text in question.choices.items() %}
+                    <label class="flex items-start space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                        <input type="radio" name="question_{{ question.id }}" value="{{ choice_key }}" 
+                               class="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                               onchange="updateProgress()">
+                        <div class="flex-1">
+                            <span class="font-medium text-gray-900">{{ choice_key }}.</span>
+                            <span class="ml-2 text-gray-700">{{ choice_text }}</span>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 提出ボタン -->
+    <div class="card mt-8">
+        <div class="card-body text-center">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">試験終了</h3>
+            <p class="text-gray-600 mb-6">
+                すべての問題に解答したら、「解答を提出」ボタンを押して採点を開始してください。
+            </p>
+            <button onclick="submitExam()" class="btn btn-primary px-8" id="submitBtn">
+                <i class="fas fa-paper-plane"></i> 解答を提出
+            </button>
+            <p class="text-sm text-gray-500 mt-3">
+                提出後は解答の変更はできません。すべての問題を確認してから提出してください。
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- 結果表示エリア -->
+<div id="resultContainer" class="hidden">
+    <div class="card">
+        <div class="card-header text-center">
+            <h1 class="text-3xl font-bold text-gray-900">試験結果</h1>
+        </div>
+        <div class="card-body">
+            <div id="resultContent"></div>
+            
+            <div class="flex justify-center space-x-4 mt-8">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> ダッシュボードに戻る
+                </a>
+                <a href="{{ url_for('history') }}" class="btn btn-secondary">
+                    <i class="fas fa-history"></i> 学習履歴を見る
+                </a>
+                <button onclick="location.reload()" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> もう一度受験
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let startTime = new Date();
+let timerInterval;
+
+// ページ読み込み時にタイマー開始
+document.addEventListener('DOMContentLoaded', function() {
+    startTimer();
+});
+
+// タイマー開始
+function startTimer() {
+    timerInterval = setInterval(() => {
+        const now = new Date();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        
+        document.getElementById('timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+// 進捗更新
+function updateProgress() {
+    const totalQuestions = {{ questions|length }};
+    const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked').length;
+    const percentage = (answeredQuestions / totalQuestions) * 100;
+    
+    document.getElementById('answeredCount').textContent = answeredQuestions;
+    document.getElementById('progressBar').style.width = percentage + '%';
+    
+    // すべて回答済みの場合、提出ボタンをハイライト
+    const submitBtn = document.getElementById('submitBtn');
+    if (answeredQuestions === totalQuestions) {
+        submitBtn.classList.remove('btn-primary');
+        submitBtn.classList.add('btn-success');
+        submitBtn.innerHTML = '<i class="fas fa-check"></i> すべて回答完了 - 提出する';
+    } else {
+        submitBtn.classList.remove('btn-success');
+        submitBtn.classList.add('btn-primary');
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 解答を提出';
+    }
+}
+
+// 試験提出
+async function submitExam() {
+    const totalQuestions = {{ questions|length }};
+    const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked').length;
+    
+    if (answeredQuestions < totalQuestions) {
+        if (!confirm(`未回答の問題が${totalQuestions - answeredQuestions}問あります。このまま提出しますか？`)) {
+            return;
+        }
+    } else {
+        if (!confirm('すべての問題に解答しました。試験を提出しますか？')) {
+            return;
+        }
+    }
+    
+    // 解答データを収集
+    const answers = {};
+    {% for question in questions %}
+    const question{{ question.id }} = document.querySelector('input[name="question_{{ question.id }}"]:checked');
+    if (question{{ question.id }}) {
+        answers['{{ question.id }}'] = question{{ question.id }}.value;
+    }
+    {% endfor %}
+    
+    // 提出ボタンを無効化
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 採点中...';
+    
+    // タイマー停止
+    clearInterval(timerInterval);
+    
+    try {
+        const response = await fetch('/mock_exam/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({answers: answers})
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showResult(result);
+        } else {
+            alert('エラー: ' + (result.error || '採点中にエラーが発生しました'));
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 解答を提出';
+            startTimer(); // タイマー再開
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('通信エラーが発生しました。');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 解答を提出';
+        startTimer(); // タイマー再開
+    }
+}
+
+// 結果表示
+function showResult(result) {
+    const score = result.score;
+    const correctCount = result.correct_count;
+    const totalCount = result.total_count;
+    const wrongCount = totalCount - correctCount;
+    
+    // 合否判定（60%以上で合格）
+    const isPassed = score >= 60;
+    
+    let resultHtml = `
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-24 h-24 rounded-full mb-6 ${
+                isPassed ? 'bg-green-100' : 'bg-red-100'
+            }">
+                <i class="fas ${
+                    isPassed ? 'fa-trophy text-yellow-500' : 'fa-times text-red-500'
+                } text-4xl"></i>
+            </div>
+            <h2 class="text-3xl font-bold ${
+                isPassed ? 'text-green-600' : 'text-red-600'
+            } mb-4">
+                ${isPassed ? '合格！' : '不合格'}
+            </h2>
+            <div class="text-6xl font-bold text-gray-900 mb-2">${score}%</div>
+            <p class="text-gray-600">
+                ${correctCount}問正解 / 全${totalCount}問
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="text-center p-6 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600 mb-2">${correctCount}</div>
+                <div class="text-sm text-green-700">正解</div>
+            </div>
+            <div class="text-center p-6 bg-red-50 rounded-lg">
+                <div class="text-2xl font-bold text-red-600 mb-2">${wrongCount}</div>
+                <div class="text-sm text-red-700">不正解</div>
+            </div>
+            <div class="text-center p-6 bg-blue-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600 mb-2">${document.getElementById('timer').textContent}</div>
+                <div class="text-sm text-blue-700">解答時間</div>
+            </div>
+        </div>
+        
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 class="font-medium text-blue-900 mb-2">
+                <i class="fas fa-lightbulb mr-2"></i>学習アドバイス
+            </h3>
+            <p class="text-blue-800 text-sm">
+                ${getAdvice(score, isPassed)}
+            </p>
+        </div>
+    `;
+    
+    document.getElementById('resultContent').innerHTML = resultHtml;
+    document.getElementById('examContainer').classList.add('hidden');
+    document.getElementById('resultContainer').classList.remove('hidden');
+    
+    // 画面トップにスクロール
+    window.scrollTo(0, 0);
+}
+
+// スコアに応じたアドバイス
+function getAdvice(score, isPassed) {
+    if (score >= 80) {
+        return "素晴らしい成績です！基本情報技術者試験の知識が十分身についています。このレベルを維持して本試験に臨んでください。";
+    } else if (score >= 60) {
+        return "合格圏内の成績です！苦手分野を重点的に復習することで、より安定した得点が期待できます。";
+    } else if (score >= 40) {
+        return "もう少しで合格圏内です。間違えた問題を中心に復習し、基礎知識を固めていきましょう。";
+    } else {
+        return "基礎からしっかりと学習を進める必要があります。各分野の基本概念を理解することから始めましょう。";
+    }
+}
+</script>
+{% endblock %}
