@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 aiofiles==24.1.0
 alembic==1.16.5
 annotated-types==0.7.0
@@ -31,3 +32,10 @@ starlette==0.47.3
 typing-inspection==0.4.1
 typing_extensions==4.15.0
 uvicorn==0.35.0
+=======
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+requests==2.31.0
+>>>>>>> 13831b9d85c12a1f72699e869205388054e75030
