@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row gap-8">
+    <!-- Left Column: Problem Content -->
+    <div class="w-full md:w-2/3">
+        <div class="card mb-8">
+            <!-- Problem Header -->
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold mb-2">問題 #{{ problem.id }}</h1>
+                    <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+                        <span>
+                            <i class="fas fa-folder mr-1"></i>
+                            {{ problem.category }}
+                        </span>
+                        <span>
+                            <i class="fas fa-calendar mr-1"></i>
+                            {{ problem.exam_year }}年
+                        </span>
+                        <span>
+                            <i class="fas fa-clock mr-1"></i>
+                            目安時間: {{ problem.estimated_time }}分
+                        </span>
+                    </div>
+                </div>
+                {% if current_user.is_authenticated and problem.has_answered %}
+                    <div class="w-12 h-12 rounded-full bg-{{ 'green' if problem.is_correct else 'red' }}-100 flex items-center justify-center">
+                        <i class="fas fa-{{ 'check' if problem.is_correct else 'times' }} text-2xl text-{{ 'green' if problem.is_correct else 'red' }}-600"></i>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Problem Description -->
+            <div class="prose max-w-none mb-8">
+                {{ problem.description | safe }}
+            </div>
+
+            <!-- Answer Options -->
+            <form id="answer-form" action="{{ url_for('main.submit_answer', id=problem.id) }}" method="POST" class="space-y-4">
+                {% for option in problem.options %}
+                    <label class="block p-4 rounded-lg border {% if user_answer and user_answer == loop.index %}border-primary bg-primary bg-opacity-5{% else %}border-gray-200 hover:border-primary hover:bg-gray-50{% endif %} cursor-pointer transition-colors">
+                        <div class="flex items-center">
+                            <input type="radio" name="answer" value="{{ loop.index }}" class="w-5 h-5 text-primary" 
+                                   {% if user_answer and user_answer == loop.index %}checked{% endif %}
+                                   {% if show_answer %}disabled{% endif %}>
+                            <span class="ml-3">{{ option }}</span>
+                        </div>
+                    </label>
+                {% endfor %}
+
+                {% if not show_answer %}
+                    <button type="submit" class="btn btn-primary w-full justify-center mt-6">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        回答を送信
+                    </button>
+                {% endif %}
+            </form>
+
+            {% if show_answer %}
+                <!-- Answer Explanation -->
+                <div class="mt-8">
+                    <h3 class="text-xl font-bold mb-4">解説</h3>
+                    <div class="prose max-w-none">
+                        {{ problem.explanation | safe }}
+                    </div>
+
+                    <!-- Next Actions -->
+                    <div class="flex flex-col sm:flex-row gap-4 mt-8">
+                        <a href="{{ url_for('main.problem', id=problem.id + 1) }}" class="btn btn-primary flex-1 justify-center">
+                            <i class="fas fa-arrow-right mr-2"></i>
+                            次の問題へ
+                        </a>
+                        <a href="{{ url_for('main.problem_list') }}" class="btn btn-secondary flex-1 justify-center">
+                            <i class="fas fa-list mr-2"></i>
+                            問題一覧へ
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column: Stats and Related Problems -->
+    <div class="w-full md:w-1/3">
+        {% if current_user.is_authenticated %}
+            <!-- Statistics -->
+            <div class="card mb-8">
+                <h3 class="text-lg font-bold mb-4">統計情報</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl font-bold text-primary mb-1">{{ problem.attempt_count }}</div>
+                        <div class="text-sm text-gray-600">回答数</div>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl font-bold text-primary mb-1">{{ problem.success_rate }}%</div>
+                        <div class="text-sm text-gray-600">正答率</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if user_stats %}
+                <!-- User Stats -->
+                <div class="card mb-8">
+                    <h3 class="text-lg font-bold mb-4">あなたの統計</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">このカテゴリーの正答率</span>
+                            <span class="font-semibold">{{ user_stats.category_accuracy }}%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">連続正解数</span>
+                            <span class="font-semibold">{{ user_stats.streak }} 問</span>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+
+        <!-- Related Problems -->
+        <div class="card">
+            <h3 class="text-lg font-bold mb-4">関連問題</h3>
+            {% if related_problems %}
+                <div class="space-y-4">
+                    {% for related in related_problems %}
+                        <a href="{{ url_for('main.problem', id=related.id) }}" class="block">
+                            <div class="p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-medium mb-1">問題 #{{ related.id }}</h4>
+                                        <div class="text-sm text-gray-500">
+                                            <i class="fas fa-folder mr-1"></i>
+                                            {{ related.category }}
+                                        </div>
+                                    </div>
+                                    {% if current_user.is_authenticated and related.has_answered %}
+                                        <div class="w-6 h-6 rounded-full bg-{{ 'green' if related.is_correct else 'red' }}-100 flex items-center justify-center">
+                                            <i class="fas fa-{{ 'check' if related.is_correct else 'times' }} text-{{ 'green' if related.is_correct else 'red' }}-600"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-gray-600">関連問題はありません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // タイマー機能
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!document.getElementById('answer-form')) return;
+
+        const startTime = new Date().getTime();
+        const estimatedTime = {{ problem.estimated_time }} * 60 * 1000; // ミリ秒に変換
+
+        function updateTimer() {
+            const currentTime = new Date().getTime();
+            const elapsedTime = currentTime - startTime;
+            const timeLeft = Math.max(0, estimatedTime - elapsedTime);
+
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+
+            // タイマー表示を更新
+            const timerElement = document.getElementById('timer');
+            if (timerElement) {
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                // 残り時間が少なくなったら警告表示
+                if (timeLeft < 60000) { // 残り1分未満
+                    timerElement.classList.add('text-red-600');
+                }
+            }
+
+            if (timeLeft > 0) {
+                requestAnimationFrame(updateTimer);
+            }
+        }
+
+        updateTimer();
+    });
+</script>
+{% endblock %}

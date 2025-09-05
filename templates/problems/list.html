@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}問題一覧 - FE-Master{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="color: #2c3e50; margin-bottom: 1rem;">
+        <i class="fas fa-book"></i>
+        問題一覧
+    </h1>
+    <p style="color: #7f8c8d; margin-bottom: 2rem;">
+        基本情報技術者試験の過去問題を解いて、実力を向上させましょう。
+    </p>
+
+    <!-- フィルターとソート -->
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label for="category-filter" class="filter-label">カテゴリ</label>
+            <select id="category-filter" class="filter-select">
+                <option value="">全て</option>
+                <option value="テクノロジ">テクノロジ</option>
+                <option value="マネジメント">マネジメント</option>
+                <option value="ストラテジ">ストラテジ</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="difficulty-filter" class="filter-label">難易度</label>
+            <select id="difficulty-filter" class="filter-select">
+                <option value="">全て</option>
+                <option value="1">初級</option>
+                <option value="2">中級</option>
+                <option value="3">上級</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="status-filter" class="filter-label">状態</label>
+            <select id="status-filter" class="filter-select">
+                <option value="">全て</option>
+                <option value="solved">解答済み</option>
+                <option value="unsolved">未解答</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 問題リスト -->
+    <div class="problem-grid">
+        {% for problem in problems %}
+        <a href="{{ url_for('get_problem', problem_id=problem.id) }}" class="problem-card">
+            <div class="problem-header">
+                <span class="badge badge-category">{{ problem.category }}</span>
+                <span class="badge badge-difficulty">レベル {{ problem.difficulty }}</span>
+            </div>
+            <div class="problem-content">
+                <h3 class="problem-title">{{ problem.question_text[:100] }}{% if problem.question_text|length > 100 %}...{% endif %}</h3>
+                <div class="problem-meta">
+                    <span class="problem-status {{ 'solved' if problem.is_solved else '' }}">
+                        <i class="fas fa-{{ 'check-circle' if problem.is_solved else 'circle' }}"></i>
+                        {{ '解答済み' if problem.is_solved else '未解答' }}
+                    </span>
+                    {% if problem.is_solved %}
+                    <span class="problem-result {{ 'correct' if problem.is_correct else 'incorrect' }}">
+                        <i class="fas fa-{{ 'check' if problem.is_correct else 'times' }}"></i>
+                        {{ '正解' if problem.is_correct else '不正解' }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if not problems %}
+    <div class="text-center" style="padding: 3rem;">
+        <i class="fas fa-inbox" style="font-size: 4rem; color: #bdc3c7; margin-bottom: 1rem;"></i>
+        <h3 style="color: #7f8c8d; margin-bottom: 1rem;">問題が見つかりません</h3>
+        <p style="color: #95a5a6; margin-bottom: 2rem;">フィルター条件を変更してみてください</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-label {
+        display: block;
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        margin-bottom: 0.5rem;
+    }
+
+    .filter-select {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #dce4ec;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        color: #2c3e50;
+        background: white;
+        cursor: pointer;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+
+    .problem-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .problem-card {
+        background: linear-gradient(145deg, #ffffff, #f8f9fa);
+        border: 2px solid transparent;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+    }
+
+    .problem-card:hover {
+        border-color: #3498db;
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(52, 152, 219, 0.1);
+    }
+
+    .problem-header {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .problem-title {
+        color: #2c3e50;
+        font-size: 1.1rem;
+        line-height: 1.4;
+        margin-bottom: 1rem;
+    }
+
+    .problem-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .problem-status {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        color: #95a5a6;
+    }
+
+    .problem-status.solved {
+        color: #27ae60;
+    }
+
+    .problem-result {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .problem-result.correct {
+        color: #27ae60;
+    }
+
+    .problem-result.incorrect {
+        color: #e74c3c;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-category {
+        background: linear-gradient(145deg, #3498db, #2980b9);
+        color: white;
+    }
+
+    .badge-difficulty {
+        background: linear-gradient(145deg, #f39c12, #e67e22);
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .filter-group {
+            min-width: 100%;
+        }
+
+        .problem-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filters = {
+        category: document.getElementById('category-filter'),
+        difficulty: document.getElementById('difficulty-filter'),
+        status: document.getElementById('status-filter')
+    };
+
+    // フィルター変更時に問題をフィルタリング
+    Object.values(filters).forEach(filter => {
+        filter.addEventListener('change', filterProblems);
+    });
+
+    function filterProblems() {
+        const problemCards = document.querySelectorAll('.problem-card');
+        let visibleCount = 0;
+
+        problemCards.forEach(card => {
+            const category = card.querySelector('.badge-category').textContent;
+            const difficulty = card.querySelector('.badge-difficulty').textContent.replace('レベル ', '');
+            const status = card.querySelector('.problem-status').classList.contains('solved') ? 'solved' : 'unsolved';
+
+            const isVisible = 
+                (!filters.category.value || category === filters.category.value) &&
+                (!filters.difficulty.value || difficulty === filters.difficulty.value) &&
+                (!filters.status.value || status === filters.status.value);
+
+            card.style.display = isVisible ? 'block' : 'none';
+            if (isVisible) visibleCount++;
+        });
+
+        // フィルター結果が0件の場合
+        const emptyState = document.querySelector('.text-center');
+        if (emptyState) {
+            emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+    }
+});
+</script>
+{% endblock %}

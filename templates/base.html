@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}基本情報技術者試験 学習支援{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="font-noto bg-gray-50 text-gray-900">
+    <!-- ナビゲーションバー -->
+    <nav class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <!-- ロゴ -->
+                <a href="{{ url_for('read_root') }}" class="flex items-center space-x-2 text-xl font-bold">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>FE-Master</span>
+                </a>
+
+                <!-- メインメニュー -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="{{ url_for('problem_list') }}" class="nav-link">
+                        <i class="fas fa-book"></i>
+                        <span>問題一覧</span>
+                    </a>
+                    <a href="{{ url_for('read_root') }}" class="nav-link">
+                        <i class="fas fa-random"></i>
+                        <span>ランダム問題</span>
+                    </a>
+                    <a href="{{ url_for('read_root') }}" class="nav-link">
+                        <i class="fas fa-chart-line"></i>
+                        <span>学習状況</span>
+                    </a>
+                </div>
+
+                <!-- ユーザーメニュー -->
+                <div class="flex items-center space-x-4">
+                    {% if current_user %}
+                    <div class="relative group">
+                        <button class="flex items-center space-x-2 focus:outline-none">
+                            <span>{{ current_user.username }}</span>
+                            <i class="fas fa-chevron-down text-sm"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block">
+                            <a href="/profile" class="dropdown-item">
+                                <i class="fas fa-user"></i>
+                                <span>プロフィール</span>
+                            </a>
+                            <a href="/settings" class="dropdown-item">
+                                <i class="fas fa-cog"></i>
+                                <span>設定</span>
+                            </a>
+                            <hr class="my-2 border-gray-200">
+                            <a href="/logout" class="dropdown-item text-red-600">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>ログアウト</span>
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <a href="/login" class="nav-link">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>ログイン</span>
+                    </a>
+                    <a href="/register" class="nav-link-highlight">
+                        <i class="fas fa-user-plus"></i>
+                        <span>新規登録</span>
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- モバイルメニューボタン -->
+                <button class="md:hidden focus:outline-none" id="mobile-menu-button">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- モバイルメニュー -->
+            <div class="md:hidden hidden" id="mobile-menu">
+                <div class="py-4 space-y-4">
+                    <a href="/problems" class="mobile-nav-link">
+                        <i class="fas fa-book"></i>
+                        <span>問題一覧</span>
+                    </a>
+                    <a href="/random" class="mobile-nav-link">
+                        <i class="fas fa-random"></i>
+                        <span>ランダム問題</span>
+                    </a>
+                    <a href="/stats" class="mobile-nav-link">
+                        <i class="fas fa-chart-line"></i>
+                        <span>学習状況</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- フラッシュメッセージ -->
+    <!-- Flash Messages -->
+    {% set messages = [] %}
+    {% if get_messages %}
+        {% set messages = get_messages(True)(request) %}
+    {% endif %}
+    {% if messages %}
+        <div class="container mx-auto px-4 mt-4">
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }} bg-white rounded-lg shadow p-4 mb-4 flex items-center">
+                    {% if category == 'success' %}
+                        <i class="fas fa-check-circle text-2xl mr-3"></i>
+                    {% elif category == 'error' %}
+                        <i class="fas fa-exclamation-circle text-2xl mr-3"></i>
+                    {% elif category == 'warning' %}
+                        <i class="fas fa-exclamation-triangle text-2xl mr-3"></i>
+                    {% else %}
+                        <i class="fas fa-info-circle text-2xl mr-3"></i>
+                    {% endif %}
+                    <p>{{ message }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-900 text-white py-8 mt-auto">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-4">FE-Master</h3>
+                    <p class="text-gray-400">
+                        基本情報技術者試験の学習をサポートするプラットフォーム
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4">リンク</h3>
+                    <ul class="space-y-2">
+                        <li><a href="/about" class="text-gray-400 hover:text-white">サービスについて</a></li>
+                        <li><a href="/terms" class="text-gray-400 hover:text-white">利用規約</a></li>
+                        <li><a href="/privacy" class="text-gray-400 hover:text-white">プライバシーポリシー</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4">お問い合わせ</h3>
+                    <ul class="space-y-2">
+                        <li><a href="/contact" class="text-gray-400 hover:text-white">お問い合わせフォーム</a></li>
+                        <li><a href="/faq" class="text-gray-400 hover:text-white">よくある質問</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 FE-Master. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // モバイルメニューの制御
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // フラッシュメッセージの自動非表示
+        const flashMessages = document.querySelectorAll('.flash-message');
+        flashMessages.forEach(message => {
+            setTimeout(() => {
+                message.style.opacity = '0';
+                message.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    message.remove();
+                }, 300);
+            }, 5000);
+        });
+
+        // ドロップダウンメニューのホバー制御
+        document.addEventListener('click', function(event) {
+            const dropdowns = document.querySelectorAll('.group');
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.contains(event.target)) {
+                    dropdown.querySelector('.group-hover\\:block').classList.add('hidden');
+                }
+            });
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
