@@ -124,6 +124,17 @@
                         <p class="text-gray-300 leading-relaxed whitespace-pre-line bg-gray-800/50 p-4 rounded-lg">{{ question.explanation }}</p>
                     {% endif %}
                 </div>
+                
+                <!-- Next Button in Result Section -->
+                <div class="mt-4 text-center">
+                    <button onclick="nextQuestionAfterResult()" class="btn btn-primary">
+                        {% if loop.last %}
+                            <i class="fas fa-flag-checkered mr-2"></i>完了画面へ
+                        {% else %}
+                            <i class="fas fa-arrow-right mr-2"></i>次の問題へ
+                        {% endif %}
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -203,6 +214,11 @@ function showQuestion(index) {
 
 // Select choice and automatically submit
 function selectChoice(questionIndex, choiceKey) {
+    // Check if this question is already answered
+    if (answers[questionIndex]) {
+        return; // Already answered, do nothing
+    }
+    
     // Clear previous selections for this question
     const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
     questionCard.querySelectorAll('.choice-option').forEach(option => {
@@ -266,10 +282,6 @@ async function submitAnswer(questionIndex, userAnswer) {
                 option.style.pointerEvents = 'none';
                 option.classList.add('opacity-75');
             });
-            
-            // Show next button
-            const nextBtn = document.getElementById(`next-btn-${questionIndex}`);
-            nextBtn.classList.remove('hidden');
             
         } else {
             statusEl.innerHTML = '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i>エラーが発生しました';
@@ -337,6 +349,14 @@ function nextQuestion() {
     }
 }
 
+function nextQuestionAfterResult() {
+    if (currentQuestionIndex < questions.length - 1) {
+        showQuestion(currentQuestionIndex + 1);
+    } else {
+        showCompletion();
+    }
+}
+
 function updateNavigationButtons() {
     const prevBtns = document.querySelectorAll('button[onclick="previousQuestion()"]');
     prevBtns.forEach(btn => {
@@ -387,7 +407,7 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowLeft') {
         previousQuestion();
     } else if (e.key === 'ArrowRight') {
-        nextQuestion();
+        nextQuestionAfterResult();
     }
 });
 </script>
