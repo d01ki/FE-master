@@ -7,10 +7,10 @@
 <div class="mb-8">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">
-                <i class="fas fa-tags text-primary mr-3"></i>ジャンル別演習
+            <h1 class="text-3xl font-bold text-gray-100 mb-2">
+                <i class="fas fa-tags text-blue-400 mr-3"></i>ジャンル別演習
             </h1>
-            <p class="text-gray-600">苦手分野を集中的に学習して実力アップを図りましょう</p>
+            <p class="text-gray-300">得意・苦手分野を集中的に学習しましょう</p>
         </div>
         <div class="flex items-center space-x-3">
             <a href="{{ url_for('index') }}" class="btn btn-secondary">
@@ -20,201 +20,136 @@
     </div>
 </div>
 
-<!-- Overview Stats -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-layer-group text-white text-2xl"></i>
-            </div>
-            <h3 class="text-2xl font-bold text-gray-900 mb-1">{{ genres|length }}</h3>
-            <p class="text-gray-600 text-sm">利用可能ジャンル</p>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-question-circle text-white text-2xl"></i>
-            </div>
-            <h3 class="text-2xl font-bold text-gray-900 mb-1">{{ genres|sum(attribute='count') }}</h3>
-            <p class="text-gray-600 text-sm">総問題数</p>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-chart-line text-white text-2xl"></i>
-            </div>
-            <h3 class="text-2xl font-bold text-gray-900 mb-1">
-                {% if genres %}
-                    {{ "%.1f"|format(genres|selectattr('answered', '>', 0)|map(attribute='accuracy')|list|sum / (genres|selectattr('answered', '>', 0)|list|length)) }}%
-                {% else %}
-                    0.0%
-                {% endif %}
-            </h3>
-            <p class="text-gray-600 text-sm">平均正答率</p>
-        </div>
-    </div>
-</div>
-
 <!-- Genre Cards -->
-{% if genres %}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for genre in genres %}
-    <div class="card group hover:shadow-xl transition-all duration-300">
+    <div class="card bg-gray-800 border-gray-700 group hover:bg-gray-750 transition-all duration-300">
         <div class="card-body p-6">
-            <!-- Genre Header -->
+            <!-- Genre Icon and Name -->
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors duration-300">
-                    {{ genre.name }}
-                </h3>
-                <div class="w-12 h-12 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-code text-white text-lg"></i>
-                </div>
-            </div>
-
-            <!-- Statistics -->
-            <div class="space-y-3 mb-6">
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">問題数</span>
-                    <span class="font-semibold text-gray-900">{{ genre.count }}問</span>
+                <div class="flex items-center">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center mr-4
+                                {% if genre.name == '基礎理論' %}bg-gradient-to-br from-blue-500 to-blue-600
+                                {% elif genre.name == 'アルゴリズムとプログラミング' %}bg-gradient-to-br from-green-500 to-green-600
+                                {% elif genre.name == 'コンピュータシステム' %}bg-gradient-to-br from-purple-500 to-purple-600
+                                {% elif genre.name == '技術要素' %}bg-gradient-to-br from-orange-500 to-orange-600
+                                {% elif genre.name == 'ネットワーク' %}bg-gradient-to-br from-cyan-500 to-cyan-600
+                                {% elif genre.name == 'データベース' %}bg-gradient-to-br from-red-500 to-red-600
+                                {% elif genre.name == 'セキュリティ' %}bg-gradient-to-br from-yellow-500 to-yellow-600
+                                {% elif genre.name == 'システム開発' %}bg-gradient-to-br from-indigo-500 to-indigo-600
+                                {% elif genre.name == 'マネジメント' %}bg-gradient-to-br from-pink-500 to-pink-600
+                                {% else %}bg-gradient-to-br from-gray-500 to-gray-600{% endif %}
+                                group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas {% if genre.name == '基礎理論' %}fa-calculator
+                                    {% elif genre.name == 'アルゴリズムとプログラミング' %}fa-code
+                                    {% elif genre.name == 'コンピュータシステム' %}fa-microchip
+                                    {% elif genre.name == '技術要素' %}fa-cogs
+                                    {% elif genre.name == 'ネットワーク' %}fa-network-wired
+                                    {% elif genre.name == 'データベース' %}fa-database
+                                    {% elif genre.name == 'セキュリティ' %}fa-shield-alt
+                                    {% elif genre.name == 'システム開発' %}fa-project-diagram
+                                    {% elif genre.name == 'マネジメント' %}fa-users-cog
+                                    {% else %}fa-book{% endif %} text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-100 mb-1">{{ genre.name }}</h3>
+                        <p class="text-sm text-gray-400">{{ genre.count }}問</p>
+                    </div>
                 </div>
                 
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">解答済み</span>
-                    <span class="font-semibold text-gray-900">{{ genre.answered }}問</span>
-                </div>
-
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">正答率</span>
-                    <span class="font-semibold {% if genre.accuracy >= 80 %}text-green-600{% elif genre.accuracy >= 60 %}text-yellow-600{% else %}text-red-600{% endif %}">
-                        {{ genre.accuracy }}%
-                    </span>
-                </div>
+                <!-- Accuracy Badge -->
+                {% if genre.answered > 0 %}
+                    <div class="flex flex-col items-end">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                     {% if genre.accuracy >= 80 %}bg-green-100 text-green-800
+                                     {% elif genre.accuracy >= 60 %}bg-yellow-100 text-yellow-800
+                                     {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ genre.accuracy }}%
+                        </span>
+                        <span class="text-xs text-gray-400 mt-1">{{ genre.answered }}問解答済み</span>
+                    </div>
+                {% else %}
+                    <div class="flex flex-col items-end">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            未着手
+                        </span>
+                    </div>
+                {% endif %}
             </div>
-
+            
             <!-- Progress Bar -->
-            <div class="mb-6">
-                <div class="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>学習進捗</span>
-                    <span>{{ "%.1f"|format((genre.answered / genre.count * 100) if genre.count > 0 else 0) }}%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="h-2 rounded-full transition-all duration-1000 ease-out group-hover:scale-105
-                                {% if genre.answered / genre.count >= 0.8 %}bg-gradient-to-r from-green-400 to-green-600
-                                {% elif genre.answered / genre.count >= 0.5 %}bg-gradient-to-r from-yellow-400 to-orange-500
-                                {% else %}bg-gradient-to-r from-blue-400 to-blue-600{% endif %}" 
-                         style="width: {{ (genre.answered / genre.count * 100) if genre.count > 0 else 0 }}%"></div>
-                </div>
-            </div>
-
-            <!-- Accuracy Indicator -->
-            <div class="mb-6">
-                <div class="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>正答率</span>
-                    <span>{{ genre.accuracy }}%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="h-2 rounded-full transition-all duration-1000 ease-out group-hover:scale-105
-                                {% if genre.accuracy >= 80 %}bg-gradient-to-r from-emerald-400 to-emerald-600
-                                {% elif genre.accuracy >= 60 %}bg-gradient-to-r from-amber-400 to-orange-500
+            {% if genre.answered > 0 %}
+                <div class="w-full bg-gray-700 rounded-full h-2 mb-4">
+                    <div class="h-2 rounded-full transition-all duration-1000 ease-out
+                                {% if genre.accuracy >= 80 %}bg-gradient-to-r from-green-400 to-green-600
+                                {% elif genre.accuracy >= 60 %}bg-gradient-to-r from-yellow-400 to-orange-500
                                 {% else %}bg-gradient-to-r from-red-400 to-red-600{% endif %}" 
                          style="width: {{ genre.accuracy }}%"></div>
                 </div>
-            </div>
-
+            {% else %}
+                <div class="w-full bg-gray-700 rounded-full h-2 mb-4">
+                    <div class="h-2 rounded-full bg-gray-600" style="width: 0%"></div>
+                </div>
+            {% endif %}
+            
             <!-- Action Button -->
             <a href="{{ url_for('practice_by_genre', genre=genre.name) }}" 
-               class="w-full btn btn-primary group-hover:bg-blue-700 transition-all duration-300 transform group-hover:scale-105">
-                <i class="fas fa-play mr-2"></i>
-                {{ genre.name }}を練習する
+               class="w-full btn btn-primary group-hover:bg-blue-600 transition-colors duration-300">
+                <i class="fas fa-play mr-2"></i>演習開始
             </a>
-
-            <!-- Status Badge -->
-            <div class="mt-4 text-center">
-                {% if genre.answered == 0 %}
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        <i class="fas fa-circle text-gray-400 mr-1"></i>未開始
-                    </span>
-                {% elif genre.accuracy >= 80 %}
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <i class="fas fa-check-circle text-green-500 mr-1"></i>マスター済み
-                    </span>
-                {% elif genre.accuracy >= 60 %}
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        <i class="fas fa-star text-yellow-500 mr-1"></i>良好
-                    </span>
-                {% else %}
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        <i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>要復習
-                    </span>
-                {% endif %}
-            </div>
         </div>
     </div>
     {% endfor %}
 </div>
 
-<!-- Study Tips -->
-<div class="mt-12 card">
-    <div class="card-header">
-        <h2 class="text-xl font-bold text-gray-900 flex items-center">
-            <i class="fas fa-lightbulb text-yellow-500 mr-3"></i>
-            効果的な学習のコツ
-        </h2>
-    </div>
-    <div class="card-body">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-target text-blue-600 text-sm"></i>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-gray-900 mb-1">弱点を集中攻略</h3>
-                    <p class="text-sm text-gray-600">正答率の低いジャンルから優先的に取り組みましょう</p>
-                </div>
-            </div>
-            
-            <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-repeat text-green-600 text-sm"></i>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-gray-900 mb-1">反復学習</h3>
-                    <p class="text-sm text-gray-600">同じジャンルを繰り返し学習して定着を図りましょう</p>
-                </div>
-            </div>
-            
-            <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-chart-line text-purple-600 text-sm"></i>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-gray-900 mb-1">進捗を確認</h3>
-                    <p class="text-sm text-gray-600">定期的に正答率をチェックして成長を実感しましょう</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-{% else %}
 <!-- No Genres State -->
+{% if not genres %}
 <div class="text-center py-16">
     <div class="max-w-md mx-auto">
-        <div class="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-8">
-            <i class="fas fa-tags text-6xl text-gray-400"></i>
+        <div class="w-32 h-32 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center mx-auto mb-8">
+            <i class="fas fa-folder-open text-6xl text-gray-400"></i>
         </div>
-        <h3 class="text-2xl font-bold text-gray-900 mb-4">ジャンルが見つかりません</h3>
-        <p class="text-gray-600 mb-8">
-            学習を開始するには、まず問題データをアップロードする必要があります。<br>
-            管理画面からJSONファイルをアップロードしてください。
+        <h3 class="text-2xl font-bold text-gray-100 mb-4">問題が登録されていません</h3>
+        <p class="text-gray-300 mb-8">
+            ジャンル別演習を開始するには、まず問題データをアップロードする必要があります。
         </p>
         <a href="{{ url_for('admin_login') }}" class="btn btn-primary">
-            <i class="fas fa-upload mr-2"></i>問題を追加する
+            <i class="fas fa-upload mr-2"></i>管理画面で問題を追加
         </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Tips Section -->
+{% if genres %}
+<div class="mt-16 bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-2xl p-8 border border-gray-700">
+    <div class="text-center">
+        <h3 class="text-2xl font-bold text-gray-100 mb-4">
+            <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>効果的な学習のコツ
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-target text-white text-2xl"></i>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-100 mb-2">苦手分野を重点的に</h4>
+                <p class="text-gray-300 text-sm">正答率の低いジャンルを優先的に学習しましょう</p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-repeat text-white text-2xl"></i>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-100 mb-2">繰り返し学習</h4>
+                <p class="text-gray-300 text-sm">間違えた問題は何度も復習して確実に理解しましょう</p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-chart-line text-white text-2xl"></i>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-100 mb-2">進捗を記録</h4>
+                <p class="text-gray-300 text-sm">学習履歴を確認して成長を実感しましょう</p>
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -222,9 +157,8 @@
 
 {% block scripts %}
 <script>
-// Progress animation on load
 document.addEventListener('DOMContentLoaded', function() {
-    // Animate progress bars
+    // Progress bars animation
     const progressBars = document.querySelectorAll('[style*="width:"]');
     progressBars.forEach(bar => {
         const width = bar.style.width;
@@ -234,8 +168,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
     });
     
-    // Add hover effects to cards
-    const cards = document.querySelectorAll('.card.group');
+    // Hover effects for cards
+    const cards = document.querySelectorAll('.card');
     cards.forEach(card => {
         card.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-4px)';
