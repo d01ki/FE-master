@@ -170,3 +170,147 @@ class PDFProcessor:
                     return genre
         
         return "その他"
+    
+    def create_sample_questions(self) -> List[Dict]:
+        """サンプル問題を作成（テスト用）"""
+        sample_questions = [
+            {
+                "question_id": "Q001",
+                "question_text": "コンピュータのCPUが1秒間に実行できる命令数を表す指標は何か。",
+                "choices": {
+                    "ア": "クロック周波数",
+                    "イ": "MIPS（Million Instructions Per Second）",
+                    "ウ": "キャッシュサイズ",
+                    "エ": "メモリ容量"
+                },
+                "correct_answer": "イ",
+                "explanation": "MIPS（Million Instructions Per Second）は、CPUが1秒間に実行できる命令数を百万単位で表した性能指標です。クロック周波数は動作速度を表しますが、命令実行数とは異なります。",
+                "genre": "ハードウェア"
+            },
+            {
+                "question_id": "Q002",
+                "question_text": "関係データベースにおいて、テーブル間の関連を表現するために使用されるキーは何か。",
+                "choices": {
+                    "ア": "主キー（Primary Key）",
+                    "イ": "外部キー（Foreign Key）",
+                    "ウ": "候補キー（Candidate Key）",
+                    "エ": "複合キー（Composite Key）"
+                },
+                "correct_answer": "イ",
+                "explanation": "外部キーは、他のテーブルの主キーを参照することで、テーブル間の関連を表現するキーです。主キーは各テーブル内でレコードを一意に識別するためのものです。",
+                "genre": "データベース"
+            },
+            {
+                "question_id": "Q003",
+                "question_text": "TCP/IPプロトコルスイートにおいて、信頼性のあるデータ転送を提供するプロトコルは何か。",
+                "choices": {
+                    "ア": "UDP（User Datagram Protocol）",
+                    "イ": "IP（Internet Protocol）",
+                    "ウ": "TCP（Transmission Control Protocol）",
+                    "エ": "HTTP（HyperText Transfer Protocol）"
+                },
+                "correct_answer": "ウ",
+                "explanation": "TCP（Transmission Control Protocol）は、データの確実な配送を保証する信頼性のあるプロトコルです。UDPは高速ですが信頼性がなく、IPは経路制御、HTTPはWebアプリケーション層のプロトコルです。",
+                "genre": "ネットワーク"
+            },
+            {
+                "question_id": "Q004",
+                "question_text": "プログラムにおいて、同じ処理を繰り返し実行するための制御構造は何か。",
+                "choices": {
+                    "ア": "順次処理",
+                    "イ": "条件分岐",
+                    "ウ": "反復処理（ループ処理）",
+                    "エ": "関数呼び出し"
+                },
+                "correct_answer": "ウ",
+                "explanation": "反復処理（ループ処理）は、同じ処理を条件が満たされる間繰り返し実行する制御構造です。for文やwhile文などがこれに該当します。",
+                "genre": "プログラミング"
+            },
+            {
+                "question_id": "Q005",
+                "question_text": "情報セキュリティの三大要素として正しい組み合わせはどれか。",
+                "choices": {
+                    "ア": "機密性、完全性、可用性",
+                    "イ": "機密性、安全性、利便性",
+                    "ウ": "秘匿性、正確性、効率性",
+                    "エ": "プライバシー、セキュリティ、ユーザビリティ"
+                },
+                "correct_answer": "ア",
+                "explanation": "情報セキュリティの三大要素は、機密性（Confidentiality）、完全性（Integrity）、可用性（Availability）です。これらの頭文字を取ってCIAとも呼ばれます。",
+                "genre": "セキュリティ"
+            }
+        ]
+        
+        return sample_questions
+    
+    def create_extended_sample_questions(self) -> List[Dict]:
+        """拡張サンプル問題を作成（10問）"""
+        extended_questions = [
+            {
+                "question_id": "Q006",
+                "question_text": "2進数の11010101を10進数に変換した値はどれか。",
+                "choices": {
+                    "ア": "213",
+                    "イ": "214", 
+                    "ウ": "215",
+                    "エ": "216"
+                },
+                "correct_answer": "ア",
+                "explanation": "2進数11010101は、1×128 + 1×64 + 0×32 + 1×16 + 0×8 + 1×4 + 0×2 + 1×1 = 128+64+16+4+1 = 213となります。",
+                "genre": "ハードウェア"
+            },
+            {
+                "question_id": "Q007",
+                "question_text": "SQLのSELECT文において、重複する行を除いて結果を表示するために使用するキーワードはどれか。",
+                "choices": {
+                    "ア": "UNIQUE",
+                    "イ": "DISTINCT",
+                    "ウ": "DIFFERENT",
+                    "エ": "SINGLE"
+                },
+                "correct_answer": "イ",
+                "explanation": "DISTINCTキーワードは、SELECT文の結果から重複する行を除いて表示するために使用されます。例：SELECT DISTINCT column_name FROM table_name;",
+                "genre": "データベース"
+            },
+            {
+                "question_id": "Q008",
+                "question_text": "OSI参照モデルの第4層（トランスポート層）の主な機能は何か。",
+                "choices": {
+                    "ア": "データの暗号化",
+                    "イ": "エラー検出と訂正",
+                    "ウ": "エンドツーエンドの信頼性のある通信",
+                    "エ": "物理的な信号の変換"
+                },
+                "correct_answer": "ウ",
+                "explanation": "トランスポート層（第4層）は、エンドツーエンドの信頼性のある通信を提供します。TCPやUDPなどのプロトコルがこの層で動作し、データの分割・組立や順序制御を行います。",
+                "genre": "ネットワーク"
+            },
+            {
+                "question_id": "Q009",
+                "question_text": "配列の要素を順番に検索して目的の値を見つけるアルゴリズムは何か。",
+                "choices": {
+                    "ア": "線形探索（リニアサーチ）",
+                    "イ": "二分探索（バイナリサーチ）",
+                    "ウ": "ハッシュ探索",
+                    "エ": "木探索"
+                },
+                "correct_answer": "ア",
+                "explanation": "線形探索（リニアサーチ）は、配列の先頭から順番に要素を調べて目的の値を見つけるアルゴリズムです。時間計算量はO(n)です。",
+                "genre": "プログラミング"
+            },
+            {
+                "question_id": "Q010",
+                "question_text": "公開鍵暗号方式の特徴として正しいものはどれか。",
+                "choices": {
+                    "ア": "暗号化と復号化に同じ鍵を使用する",
+                    "イ": "暗号化に公開鍵、復号化に秘密鍵を使用する",
+                    "ウ": "鍵の配布が困難である",
+                    "エ": "対称鍵暗号より処理速度が速い"
+                },
+                "correct_answer": "イ",
+                "explanation": "公開鍵暗号方式では、暗号化に公開鍵、復号化に秘密鍵（私有鍵）を使用します。これにより、鍵配布問題を解決できますが、処理速度は対称鍵暗号より遅いです。",
+                "genre": "セキュリティ"
+            }
+        ]
+        
+        return extended_questions
