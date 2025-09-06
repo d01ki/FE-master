@@ -413,14 +413,14 @@ def upload_json():
     """JSON問題ファイルのアップロードと処理（年度別対応）"""
     try:
         if 'json_file' not in request.files:
-            return jsonify({'error': 'JSONファイルが選択されていません'}), 400
+            return jsonify({'success': False, 'error': 'JSONファイルが選択されていません'}), 400
         
         file = request.files['json_file']
         if file.filename == '':
-            return jsonify({'error': 'ファイルが選択されていません'}), 400
+            return jsonify({'success': False, 'error': 'ファイルが選択されていません'}), 400
         
         if not file.filename.lower().endswith('.json'):
-            return jsonify({'error': 'JSONファイルを選択してください'}), 400
+            return jsonify({'success': False, 'error': 'JSONファイルを選択してください'}), 400
         
         # ファイル内容を読み込み
         content = file.read().decode('utf-8')
@@ -428,17 +428,17 @@ def upload_json():
         
         # バリデーション
         if not isinstance(questions, list):
-            return jsonify({'error': 'JSONファイルは問題の配列である必要があります'}), 400
+            return jsonify({'success': False, 'error': 'JSONファイルは問題の配列である必要があります'}), 400
         
         if len(questions) == 0:
-            return jsonify({'error': 'JSONファイルに問題が含まれていません'}), 400
+            return jsonify({'success': False, 'error': 'JSONファイルに問題が含まれていません'}), 400
         
         # 各問題の形式をチェック
         for i, question in enumerate(questions):
             required_fields = ['question_text', 'choices', 'correct_answer']
             for field in required_fields:
                 if field not in question:
-                    return jsonify({'error': f'問題{i+1}: 必須フィールド "{field}" がありません'}), 400
+                    return jsonify({'success': False, 'error': f'問題{i+1}: 必須フィールド "{field}" がありません'}), 400
             
             # question_idがない場合は自動生成
             if 'question_id' not in question:
@@ -452,22 +452,27 @@ def upload_json():
         with open(json_filepath, 'w', encoding='utf-8') as json_file:
             json.dump(questions, json_file, ensure_ascii=False, indent=2)
         
-        message = f'{len(questions)}問の問題を正常に保存しました'
+        # 直接データベースにも保存
+        saved_count = question_manager.save_questions(questions)
+        
+        message = f'{len(questions)}問の問題をJSONファイルとデータベースに正常に保存しました'
         if file_info:
             message += f' ({file_info["display_name"]})'
         
         return jsonify({
+            'success': True,
             'message': message,
             'count': len(questions),
+            'saved_to_db': saved_count,
             'json_file': file.filename,
             'file_info': file_info
         })
         
     except json.JSONDecodeError as e:
-        return jsonify({'error': f'JSONファイルの形式が正しくありません: {str(e)}'}), 400
+        return jsonify({'success': False, 'error': f'JSONファイルの形式が正しくありません: {str(e)}'}), 400
     except Exception as e:
         app.logger.error(f"Upload JSON error: {e}")
-        return jsonify({'error': f'JSON処理中にエラーが発生しました: {str(e)}'}), 500
+        return jsonify({'success': False, 'error': f'JSON処理中にエラーが発生しました: {str(e)}'}), 500
 
 @app.route('/admin/load_json/<filename>', methods=['POST'])
 @admin_required
