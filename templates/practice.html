@@ -73,17 +73,22 @@
             
             <div class="choices-container space-y-3">
                 {% for choice_key, choice_text in question.choices.items() %}
-                <label class="choice-option flex items-start p-4 bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-600/50 transition-colors duration-200 border-2 border-transparent hover:border-blue-500/30" onclick="selectChoice({{ loop.index0 }}, '{{ choice_key }}')">
-                    <div class="flex items-center mr-4 mt-1">
-                        <div class="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio">
-                            <div class="w-3 h-3 rounded-full bg-blue-500 hidden choice-dot"></div>
+                <div class="choice-option cursor-pointer p-4 bg-gray-700/50 rounded-lg hover:bg-gray-600/50 transition-colors duration-200 border-2 border-transparent hover:border-blue-500/30" 
+                     data-choice="{{ choice_key }}" 
+                     data-question-index="{{ loop.index0 }}"
+                     onclick="selectChoice({{ loop.index0 }}, '{{ choice_key }}')">
+                    <div class="flex items-start">
+                        <div class="flex items-center mr-4 mt-1">
+                            <div class="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio">
+                                <div class="w-3 h-3 rounded-full bg-blue-500 hidden choice-dot"></div>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <span class="font-medium text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
+                            <span class="text-white text-base">{{ choice_text }}</span>
                         </div>
                     </div>
-                    <div class="flex-1">
-                        <span class="font-medium text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
-                        <span class="text-white text-base">{{ choice_text }}</span>
-                    </div>
-                </label>
+                </div>
                 {% endfor %}
             </div>
             
@@ -98,9 +103,8 @@
                     <span id="selection-status-{{ loop.index0 }}" class="text-gray-400 text-sm">選択肢をクリックして解答してください</span>
                 </div>
                 
-                <button onclick="nextQuestion()" 
-                        class="btn btn-secondary {% if loop.index0 == questions|length - 1 %}opacity-50 cursor-not-allowed{% endif %}"
-                        {% if loop.index0 == questions|length - 1 %}disabled{% endif %}>
+                <button id="next-btn-{{ loop.index0 }}" onclick="nextQuestion()" 
+                        class="btn btn-primary hidden">
                     次の問題<i class="fas fa-chevron-right ml-2"></i>
                 </button>
             </div>
@@ -199,7 +203,7 @@ function showQuestion(index) {
 
 // Select choice and automatically submit
 function selectChoice(questionIndex, choiceKey) {
-    // Clear previous selections
+    // Clear previous selections for this question
     const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
     questionCard.querySelectorAll('.choice-option').forEach(option => {
         option.classList.remove('border-blue-500', 'bg-blue-500/20');
@@ -208,7 +212,7 @@ function selectChoice(questionIndex, choiceKey) {
     });
     
     // Mark selected choice
-    const selectedOption = event.currentTarget;
+    const selectedOption = questionCard.querySelector(`[data-choice="${choiceKey}"]`);
     selectedOption.classList.add('border-blue-500', 'bg-blue-500/20');
     selectedOption.querySelector('.choice-dot').classList.remove('hidden');
     selectedOption.querySelector('.choice-radio').classList.add('border-blue-500');
@@ -263,14 +267,9 @@ async function submitAnswer(questionIndex, userAnswer) {
                 option.classList.add('opacity-75');
             });
             
-            // Auto advance after 2 seconds
-            setTimeout(() => {
-                if (questionIndex < questions.length - 1) {
-                    nextQuestion();
-                } else {
-                    showCompletion();
-                }
-            }, 2000);
+            // Show next button
+            const nextBtn = document.getElementById(`next-btn-${questionIndex}`);
+            nextBtn.classList.remove('hidden');
             
         } else {
             statusEl.innerHTML = '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i>エラーが発生しました';
@@ -313,7 +312,7 @@ function showResult(questionIndex, result) {
     // Highlight choices
     const choices = questionCard.querySelectorAll('.choice-option');
     choices.forEach(choice => {
-        const choiceKey = choice.querySelector('.font-medium').textContent.replace('.', '');
+        const choiceKey = choice.getAttribute('data-choice');
         if (choiceKey === userAnswer) {
             choice.classList.add(isCorrect ? 'border-green-500' : 'border-red-500');
             choice.classList.add(isCorrect ? 'bg-green-500/20' : 'bg-red-500/20');
@@ -333,6 +332,8 @@ function previousQuestion() {
 function nextQuestion() {
     if (currentQuestionIndex < questions.length - 1) {
         showQuestion(currentQuestionIndex + 1);
+    } else {
+        showCompletion();
     }
 }
 
@@ -340,17 +341,6 @@ function updateNavigationButtons() {
     const prevBtns = document.querySelectorAll('button[onclick="previousQuestion()"]');
     prevBtns.forEach(btn => {
         if (currentQuestionIndex === 0) {
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-            btn.disabled = true;
-        } else {
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            btn.disabled = false;
-        }
-    });
-    
-    const nextBtns = document.querySelectorAll('button[onclick="nextQuestion()"]');
-    nextBtns.forEach(btn => {
-        if (currentQuestionIndex === questions.length - 1) {
             btn.classList.add('opacity-50', 'cursor-not-allowed');
             btn.disabled = true;
         } else {
