@@ -137,19 +137,43 @@ class QuestionManager:
                         # question_idがない場合は自動生成
                         question_id = question.get('question_id', f"Q{saved_count+1:03d}")
                         
-                        conn.execute(
-                            '''INSERT OR REPLACE INTO questions 
-                               (question_id, question_text, choices, correct_answer, explanation, genre) 
-                               VALUES (?, ?, ?, ?, ?, ?)''',
-                            (
-                                question_id,
-                                question['question_text'],
-                                choices_json,
-                                question['correct_answer'],
-                                question.get('explanation', ''),
-                                question.get('genre', 'その他')
+                        # 重複チェック（question_idで）
+                        existing = conn.execute(
+                            'SELECT id FROM questions WHERE question_id = ?',
+                            (question_id,)
+                        ).fetchone()
+                        
+                        if existing:
+                            # 既存の問題を更新
+                            conn.execute(
+                                '''UPDATE questions 
+                                   SET question_text = ?, choices = ?, correct_answer = ?, 
+                                       explanation = ?, genre = ?
+                                   WHERE question_id = ?''',
+                                (
+                                    question['question_text'],
+                                    choices_json,
+                                    question['correct_answer'],
+                                    question.get('explanation', ''),
+                                    question.get('genre', 'その他'),
+                                    question_id
+                                )
                             )
-                        )
+                        else:
+                            # 新しい問題を挿入
+                            conn.execute(
+                                '''INSERT INTO questions 
+                                   (question_id, question_text, choices, correct_answer, explanation, genre) 
+                                   VALUES (?, ?, ?, ?, ?, ?)''',
+                                (
+                                    question_id,
+                                    question['question_text'],
+                                    choices_json,
+                                    question['correct_answer'],
+                                    question.get('explanation', ''),
+                                    question.get('genre', 'その他')
+                                )
+                            )
                         saved_count += 1
                     except Exception as e:
                         print(f"問題保存エラー {question.get('question_id', '不明')}: {e}")
@@ -310,3 +334,101 @@ class QuestionManager:
                 'total_answers': 0,
                 'correct_answers': 0
             }
+    
+    def get_genre_performance(self, genre: str) -> Dict:
+        """特定ジャンルの成績を取得"""
+        try:
+            with get_db_connection(self.db_path) as conn:
+                # そのジャンルの総問題数
+                total_questions = conn.execute(
+                    'SELECT COUNT(*) FROM questions WHERE genre = ?',
+                    (genre,)
+                ).fetchone()[0]
+                
+                # そのジャンルの解答統計
+                stats = conn.execute(
+                    '''SELECT 
+                           COUNT(*) as total_answered,
+                           SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct_count,
+                           COUNT(DISTINCT ua.question_id) as unique_questions_answered
+                       FROM user_answers ua 
+                       JOIN questions q ON ua.question_id = q.id 
+                       WHERE q.genre = ?''',
+                    (genre,)
+                ).fetchone()
+                
+                total_answered = stats[0] if stats[0] else 0
+                correct_count = stats[1] if stats[1] else 0
+                unique_answered = stats[2] if stats[2] else 0
+                
+                accuracy_rate = round((correct_count / total_answered * 100), 1) if total_answered > 0 else 0
+                completion_rate = round((unique_answered / total_questions * 100), 1) if total_questions > 0 else 0
+                
+                return {
+                    'genre': genre,
+                    'total_questions': total_questions,
+                    'total_answered': total_answered,
+                    'correct_count': correct_count,
+                    'unique_answered': unique_answered,
+                    'accuracy_rate': accuracy_rate,
+                    'completion_rate': completion_rate
+                }
+        except Exception as e:
+            print(f"Error getting genre performance for {genre}: {e}")
+            return {
+                'genre': genre,
+                'total_questions': 0,
+                'total_answered': 0,
+                'correct_count': 0,
+                'unique_answered': 0,
+                'accuracy_rate': 0,
+                'completion_rate': 0
+            }
+    
+    def get_weak_genres(self, limit: int = 3) -> List[Dict]:
+        """苦手なジャンルを取得（正答率が低い順）"""
+        try:
+            with get_db_connection(self.db_path) as conn:
+                genre_stats = conn.execute(
+                    '''SELECT q.genre, 
+                              COUNT(*) as total,
+                              SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct,
+                              ROUND(CAST(SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100, 1) as accuracy
+                       FROM user_answers ua 
+                       JOIN questions q ON ua.question_id = q.id 
+                       GROUP BY q.genre
+                       HAVING COUNT(*) >= 3
+                       ORDER BY accuracy ASC, total DESC
+                       LIMIT ?''',
+                    (limit,)
+                ).fetchall()
+                
+                return [dict(row) for row in genre_stats]
+        except Exception as e:
+            print(f"Error getting weak genres: {e}")
+            return []
+    
+    def get_recent_errors(self, limit: int = 10) -> List[Dict]:
+        """最近の間違えた問題を取得"""
+        try:
+            with get_db_connection(self.db_path) as conn:
+                rows = conn.execute(
+                    '''SELECT q.*, ua.answered_at, ua.user_answer
+                       FROM user_answers ua 
+                       JOIN questions q ON ua.question_id = q.id 
+                       WHERE ua.is_correct = 0
+                       ORDER BY ua.answered_at DESC 
+                       LIMIT ?''',
+                    (limit,)
+                ).fetchall()
+                
+                questions = []
+                for row in rows:
+                    question = dict(row)
+                    question['choices'] = json.loads(question['choices'])
+                    questions.append(question)
+                
+                return questions
+        except Exception as e:
+            print(f"Error getting recent errors: {e}")
+            return []
