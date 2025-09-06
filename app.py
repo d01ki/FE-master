@@ -222,18 +222,21 @@ def mock_exam():
         # JSONファイルがない場合はデータベースから模擬試験を生成
         if not json_files:
             # データベースに問題があるかチェック
-            with get_db_connection(app.config['DATABASE']) as conn:
-                total_questions = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
-                if total_questions > 0:
-                    # データベースから20問をランダム選択して模擬試験を実施
-                    exam_questions_count = min(total_questions, 20)
-                    questions = question_manager.get_random_questions(exam_questions_count)
-                    
-                    # セッションに試験開始時刻を保存
-                    session['exam_start_time'] = datetime.now().isoformat()
-                    session['exam_questions'] = [q['id'] for q in questions]
-                    
-                    return render_template('mock_exam.html', questions=questions)
+            total_questions = question_manager.get_total_questions()
+            if total_questions > 0:
+                # データベースから20問をランダム選択して模擬試験を実施
+                exam_questions_count = min(total_questions, 20)
+                questions = question_manager.get_random_questions(exam_questions_count)
+                
+                # セッションに試験開始時刻を保存
+                session['exam_start_time'] = datetime.now().isoformat()
+                session['exam_questions'] = [q['id'] for q in questions]
+                
+                return render_template('mock_exam_practice.html', 
+                                     questions=questions, 
+                                     exam_info={'display_name': 'データベース問題'})
+            else:
+                return render_template('error.html', message='問題が登録されていません。まず問題をアップロードしてください。'), 404
         
         return render_template('mock_exam_select.html', exam_files=json_files)
     except Exception as e:
@@ -264,8 +267,9 @@ def mock_exam_start(filename):
         
         # セッションに試験情報を保存
         session['exam_start_time'] = datetime.now().isoformat()
-        session['exam_questions'] = [q['question_id'] for q in questions]
+        session['exam_questions'] = [q.get('question_id', f"Q{i+1:03d}") for i, q in enumerate(questions)]
         session['exam_year_info'] = file_info
+        session['exam_file_questions'] = questions  # JSONの問題データを保存
         
         return render_template('mock_exam_practice.html', 
                              questions=questions, 
@@ -290,29 +294,51 @@ def submit_mock_exam():
         results = []
         correct_count = 0
         
-        # データベースから問題を取得（フォールバック）
-        for question_id in question_ids:
-            # question_idが数値の場合（データベースのID）
-            if isinstance(question_id, int):
-                question = question_manager.get_question(question_id)
-                if question:
-                    user_answer = answers.get(str(question_id), '')
-                    is_correct = user_answer == question['correct_answer']
-                    
-                    # 解答履歴を保存
-                    question_manager.save_answer_history(question_id, user_answer, is_correct)
+        # JSONファイルから問題を取得（セッションに保存されている場合）
+        if 'exam_file_questions' in session:
+            file_questions = session['exam_file_questions']
+            question_dict = {q.get('question_id', f"Q{i+1:03d}"): q for i, q in enumerate(file_questions)}
+            
+            for question_id in question_ids:
+                question_data = question_dict.get(question_id)
+                if question_data:
+                    user_answer = answers.get(question_id, '')
+                    is_correct = user_answer == question_data['correct_answer']
                     
                     results.append({
                         'question_id': question_id,
-                        'question_text': question['question_text'],
+                        'question_text': question_data['question_text'],
                         'user_answer': user_answer,
-                        'correct_answer': question['correct_answer'],
+                        'correct_answer': question_data['correct_answer'],
                         'is_correct': is_correct,
-                        'explanation': question.get('explanation', '')
+                        'explanation': question_data.get('explanation', '')
                     })
                     
                     if is_correct:
                         correct_count += 1
+        else:
+            # データベースから問題を取得（フォールバック）
+            for question_id in question_ids:
+                if isinstance(question_id, int):
+                    question = question_manager.get_question(question_id)
+                    if question:
+                        user_answer = answers.get(str(question_id), '')
+                        is_correct = user_answer == question['correct_answer']
+                        
+                        # 解答履歴を保存
+                        question_manager.save_answer_history(question_id, user_answer, is_correct)
+                        
+                        results.append({
+                            'question_id': question_id,
+                            'question_text': question['question_text'],
+                            'user_answer': user_answer,
+                            'correct_answer': question['correct_answer'],
+                            'is_correct': is_correct,
+                            'explanation': question.get('explanation', '')
+                        })
+                        
+                        if is_correct:
+                            correct_count += 1
         
         score = round((correct_count / len(question_ids)) * 100, 1) if question_ids else 0
         
@@ -320,6 +346,7 @@ def submit_mock_exam():
         session.pop('exam_start_time', None)
         session.pop('exam_questions', None)
         session.pop('exam_year_info', None)
+        session.pop('exam_file_questions', None)
         
         return jsonify({
             'score': score,
@@ -383,15 +410,16 @@ def admin():
                 for filename in os.listdir(app.config['JSON_FOLDER']):
                     if filename.endswith('.json'):
                         filepath = os.path.join(app.config['JSON_FOLDER'], filename)
-                        file_size = os.path.getsize(filepath)
-                        file_info = parse_filename_info(filename)
-                        
-                        json_files.append({
-                            'filename': filename,
-                            'size': file_size,
-                            'modified': datetime.fromtimestamp(os.path.getmtime(filepath)).strftime('%Y-%m-%d %H:%M'),
-                            'info': file_info
-                        })
+                        if os.path.exists(filepath):  # ファイルが存在することを確認
+                            file_size = os.path.getsize(filepath)
+                            file_info = parse_filename_info(filename)
+                            
+                            json_files.append({
+                                'filename': filename,
+                                'size': file_size,
+                                'modified': datetime.fromtimestamp(os.path.getmtime(filepath)).strftime('%Y-%m-%d %H:%M'),
+                                'info': file_info
+                            })
             
             # 年度順でソート
             json_files.sort(key=lambda x: (x['info']['year'], x['info']['season']) if x['info'] else (0, ''), reverse=True)
@@ -433,7 +461,7 @@ def upload_json():
         if len(questions) == 0:
             return jsonify({'success': False, 'error': 'JSONファイルに問題が含まれていません'}), 400
         
-        # 各問題の形式をチェック
+        # 各問題の形式をチェックと修正
         for i, question in enumerate(questions):
             required_fields = ['question_text', 'choices', 'correct_answer']
             for field in required_fields:
@@ -443,6 +471,14 @@ def upload_json():
             # question_idがない場合は自動生成
             if 'question_id' not in question:
                 question['question_id'] = f"Q{str(i+1).zfill(3)}"
+                
+            # ジャンルがない場合はデフォルト設定
+            if 'genre' not in question:
+                question['genre'] = 'その他'
+                
+            # 解説がない場合は空文字列設定
+            if 'explanation' not in question:
+                question['explanation'] = ''
         
         # ファイル名から年度情報を解析
         file_info = parse_filename_info(file.filename)
