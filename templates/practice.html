@@ -7,7 +7,7 @@
 <div class="mb-8">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-3xl font-bold text-gray-100 mb-2">
+            <h1 class="text-3xl font-bold text-white mb-2">
                 <i class="fas fa-dumbbell text-blue-400 mr-3"></i>{{ genre }} - 練習問題
             </h1>
             <p class="text-gray-300">{{ questions|length }}問の練習問題に挑戦しましょう</p>
@@ -25,7 +25,7 @@
     <div class="card bg-gray-800 border-gray-700">
         <div class="card-body p-6">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-gray-100">学習進捗</h3>
+                <h3 class="text-lg font-bold text-white">学習進捗</h3>
                 <span id="progress-text" class="text-sm text-gray-300">0 / {{ questions|length }}</span>
             </div>
             <div class="w-full bg-gray-700 rounded-full h-3">
@@ -54,13 +54,13 @@
 <div id="question-container" class="mb-8">
     {% for question in questions %}
     <div class="question-card {% if loop.index0 != 0 %}hidden{% endif %} card bg-gray-800 border-gray-700" data-question-index="{{ loop.index0 }}">
-        <div class="card-header bg-gray-750 border-gray-600">
+        <div class="card-header bg-gray-700 border-gray-600">
             <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-gray-100">
+                <h3 class="text-lg font-bold text-white">
                     問題 {{ loop.index }} / {{ questions|length }}
                 </h3>
                 <div class="flex items-center space-x-2">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
                         {{ genre }}
                     </span>
                 </div>
@@ -68,19 +68,20 @@
         </div>
         <div class="card-body p-6">
             <div class="question-text mb-6">
-                <p class="text-gray-100 leading-relaxed whitespace-pre-line">{{ question.question_text }}</p>
+                <p class="text-white text-lg leading-relaxed whitespace-pre-line">{{ question.question_text }}</p>
             </div>
             
             <div class="choices-container space-y-3">
                 {% for choice_key, choice_text in question.choices.items() %}
-                <label class="choice-option flex items-start p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors duration-200">
-                    <input type="radio" 
-                           name="question_{{ loop.index0 }}" 
-                           value="{{ choice_key }}" 
-                           class="mt-1 mr-4 text-blue-600 bg-gray-600 border-gray-500 focus:ring-blue-500">
+                <label class="choice-option flex items-start p-4 bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-600/50 transition-colors duration-200 border-2 border-transparent hover:border-blue-500/30" onclick="selectChoice({{ loop.index0 }}, '{{ choice_key }}')">
+                    <div class="flex items-center mr-4 mt-1">
+                        <div class="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio">
+                            <div class="w-3 h-3 rounded-full bg-blue-500 hidden choice-dot"></div>
+                        </div>
+                    </div>
                     <div class="flex-1">
-                        <span class="font-medium text-blue-400 mr-2">{{ choice_key }}.</span>
-                        <span class="text-gray-100">{{ choice_text }}</span>
+                        <span class="font-medium text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
+                        <span class="text-white text-base">{{ choice_text }}</span>
                     </div>
                 </label>
                 {% endfor %}
@@ -93,11 +94,9 @@
                     <i class="fas fa-chevron-left mr-2"></i>前の問題
                 </button>
                 
-                <button onclick="submitAnswer({{ loop.index0 }})" 
-                        class="submit-btn btn btn-primary"
-                        data-question-index="{{ loop.index0 }}">
-                    解答する
-                </button>
+                <div class="text-center">
+                    <span id="selection-status-{{ loop.index0 }}" class="text-gray-400 text-sm">選択肢をクリックして解答してください</span>
+                </div>
                 
                 <button onclick="nextQuestion()" 
                         class="btn btn-secondary {% if loop.index0 == questions|length - 1 %}opacity-50 cursor-not-allowed{% endif %}"
@@ -115,10 +114,10 @@
                 </div>
                 <div class="explanation-content">
                     {% if question.explanation %}
-                        <h4 class="font-bold text-gray-100 mb-2">
+                        <h4 class="font-bold text-white mb-2">
                             <i class="fas fa-info-circle text-blue-400 mr-2"></i>解説
                         </h4>
-                        <p class="text-gray-300 leading-relaxed whitespace-pre-line">{{ question.explanation }}</p>
+                        <p class="text-gray-300 leading-relaxed whitespace-pre-line bg-gray-800/50 p-4 rounded-lg">{{ question.explanation }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -166,14 +165,6 @@
         </div>
     </div>
 </div>
-
-<!-- Navigation Buttons (Fixed) -->
-<div class="fixed bottom-6 right-6 flex flex-col space-y-3 z-50">
-    <button id="scroll-to-top" onclick="scrollToTop()" 
-            class="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-300 opacity-0 pointer-events-none">
-        <i class="fas fa-chevron-up"></i>
-    </button>
-</div>
 {% endblock %}
 
 {% block scripts %}
@@ -188,7 +179,6 @@ let totalAnswered = 0;
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     updateProgress();
-    setupScrollToTop();
     showQuestion(currentQuestionIndex);
 });
 
@@ -202,31 +192,38 @@ function showQuestion(index) {
     if (targetCard) {
         targetCard.classList.remove('hidden');
         currentQuestionIndex = index;
-        
-        // Update navigation buttons
         updateNavigationButtons();
-        
-        // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
 
+// Select choice and automatically submit
+function selectChoice(questionIndex, choiceKey) {
+    // Clear previous selections
+    const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+    questionCard.querySelectorAll('.choice-option').forEach(option => {
+        option.classList.remove('border-blue-500', 'bg-blue-500/20');
+        option.querySelector('.choice-dot').classList.add('hidden');
+        option.querySelector('.choice-radio').classList.remove('border-blue-500');
+    });
+    
+    // Mark selected choice
+    const selectedOption = event.currentTarget;
+    selectedOption.classList.add('border-blue-500', 'bg-blue-500/20');
+    selectedOption.querySelector('.choice-dot').classList.remove('hidden');
+    selectedOption.querySelector('.choice-radio').classList.add('border-blue-500');
+    
+    // Auto-submit answer
+    submitAnswer(questionIndex, choiceKey);
+}
+
 // Submit answer
-async function submitAnswer(questionIndex) {
+async function submitAnswer(questionIndex, userAnswer) {
     const questionId = questions[questionIndex].id;
-    const selectedChoice = document.querySelector(`input[name="question_${questionIndex}"]:checked`);
+    const statusEl = document.getElementById(`selection-status-${questionIndex}`);
     
-    if (!selectedChoice) {
-        alert('選択肢を選んでください。');
-        return;
-    }
-    
-    const userAnswer = selectedChoice.value;
-    const submitBtn = document.querySelector(`[data-question-index="${questionIndex}"]`);
-    
-    // Disable submit button and show loading
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>判定中...';
+    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>判定中...';
+    statusEl.className = 'text-blue-400 text-sm';
     
     try {
         const response = await fetch(`/questions/${questionId}/answer`, {
@@ -240,46 +237,49 @@ async function submitAnswer(questionIndex) {
         const result = await response.json();
         
         if (response.ok) {
-            // Store answer
             answers[questionIndex] = {
                 userAnswer: userAnswer,
                 isCorrect: result.is_correct,
                 correctAnswer: result.correct_answer
             };
             
-            // Update counters
             if (result.is_correct) {
                 correctCount++;
+                statusEl.innerHTML = '<i class="fas fa-check-circle text-green-400 mr-2"></i>正解！';
+                statusEl.className = 'text-green-400 text-sm font-semibold';
+            } else {
+                statusEl.innerHTML = '<i class="fas fa-times-circle text-red-400 mr-2"></i>不正解';
+                statusEl.className = 'text-red-400 text-sm font-semibold';
             }
             totalAnswered++;
             
-            // Show result
             showResult(questionIndex, result);
-            
-            // Update progress
             updateProgress();
             
-            // Auto advance after 3 seconds
+            // Disable all choices for this question
+            const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+            questionCard.querySelectorAll('.choice-option').forEach(option => {
+                option.style.pointerEvents = 'none';
+                option.classList.add('opacity-75');
+            });
+            
+            // Auto advance after 2 seconds
             setTimeout(() => {
                 if (questionIndex < questions.length - 1) {
                     nextQuestion();
                 } else {
                     showCompletion();
                 }
-            }, 3000);
+            }, 2000);
             
         } else {
-            alert('エラーが発生しました: ' + (result.error || '不明なエラー'));
+            statusEl.innerHTML = '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i>エラーが発生しました';
+            statusEl.className = 'text-red-400 text-sm';
         }
     } catch (error) {
         console.error('Submit error:', error);
-        alert('通信エラーが発生しました。');
-    } finally {
-        // Re-enable button
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '解答済み';
-        submitBtn.classList.remove('btn-primary');
-        submitBtn.classList.add('btn-success');
+        statusEl.innerHTML = '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i>通信エラー';
+        statusEl.className = 'text-red-400 text-sm';
     }
 }
 
@@ -310,16 +310,16 @@ function showResult(questionIndex, result) {
     
     resultSection.classList.remove('hidden');
     
-    // Highlight selected choice
+    // Highlight choices
     const choices = questionCard.querySelectorAll('.choice-option');
     choices.forEach(choice => {
-        const input = choice.querySelector('input');
-        if (input.value === userAnswer) {
-            choice.classList.add(isCorrect ? 'bg-green-600' : 'bg-red-600');
-        } else if (input.value === correctAnswer && !isCorrect) {
-            choice.classList.add('bg-green-600');
+        const choiceKey = choice.querySelector('.font-medium').textContent.replace('.', '');
+        if (choiceKey === userAnswer) {
+            choice.classList.add(isCorrect ? 'border-green-500' : 'border-red-500');
+            choice.classList.add(isCorrect ? 'bg-green-500/20' : 'bg-red-500/20');
+        } else if (choiceKey === correctAnswer && !isCorrect) {
+            choice.classList.add('border-green-500', 'bg-green-500/20');
         }
-        input.disabled = true;
     });
 }
 
@@ -337,7 +337,6 @@ function nextQuestion() {
 }
 
 function updateNavigationButtons() {
-    // Update previous button
     const prevBtns = document.querySelectorAll('button[onclick="previousQuestion()"]');
     prevBtns.forEach(btn => {
         if (currentQuestionIndex === 0) {
@@ -349,7 +348,6 @@ function updateNavigationButtons() {
         }
     });
     
-    // Update next button
     const nextBtns = document.querySelectorAll('button[onclick="nextQuestion()"]');
     nextBtns.forEach(btn => {
         if (currentQuestionIndex === questions.length - 1) {
@@ -386,31 +384,12 @@ function showCompletion() {
     document.getElementById('question-container').classList.add('hidden');
     document.getElementById('completion-section').classList.remove('hidden');
     
-    // Update final stats
     const accuracyRate = Math.round((correctCount / questions.length) * 100);
     document.getElementById('final-correct').textContent = correctCount;
     document.getElementById('final-total').textContent = questions.length;
     document.getElementById('final-accuracy').textContent = accuracyRate + '%';
     
-    // Scroll to completion section
     document.getElementById('completion-section').scrollIntoView({ behavior: 'smooth' });
-}
-
-// Scroll to top functionality
-function setupScrollToTop() {
-    const scrollBtn = document.getElementById('scroll-to-top');
-    
-    window.addEventListener('scroll', () => {
-        if (window.pageYOffset > 300) {
-            scrollBtn.classList.remove('opacity-0', 'pointer-events-none');
-        } else {
-            scrollBtn.classList.add('opacity-0', 'pointer-events-none');
-        }
-    });
-}
-
-function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Keyboard navigation
