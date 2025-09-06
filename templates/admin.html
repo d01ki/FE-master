@@ -244,54 +244,6 @@
     </div>
 </div>
 
-<!-- System Information -->
-<div class="card">
-    <div class="card-header">
-        <h2 class="text-xl font-bold text-gray-900 flex items-center">
-            <i class="fas fa-info-circle text-primary mr-3"></i>
-            システム情報
-        </h2>
-    </div>
-    <div class="card-body">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">アプリケーション</h3>
-                <dl class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <dt class="text-gray-600">フレームワーク:</dt>
-                        <dd class="font-medium">Flask + SQLite</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-600">UI フレームワーク:</dt>
-                        <dd class="font-medium">Tailwind CSS</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-600">データベース:</dt>
-                        <dd class="font-medium">SQLite</dd>
-                    </div>
-                </dl>
-            </div>
-            <div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">設定</h3>
-                <dl class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <dt class="text-gray-600">管理者パスワード:</dt>
-                        <dd class="font-medium font-mono bg-gray-100 px-2 py-1 rounded">fe2025admin</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-600">JSONフォルダ:</dt>
-                        <dd class="font-medium">json_questions/</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-600">アップロードフォルダ:</dt>
-                        <dd class="font-medium">uploads/</dd>
-                    </div>
-                </dl>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Reset Confirmation Modal -->
 <div id="reset-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen px-4">
@@ -345,14 +297,15 @@ document.getElementById('json-upload-form').addEventListener('submit', async fun
         
         const result = await response.json();
         
-        if (response.ok) {
+        if (result.success) {
             showResult('success', result.message);
             setTimeout(() => location.reload(), 2000);
         } else {
-            showResult('error', result.error);
+            showResult('error', result.error || 'アップロードに失敗しました。');
         }
     } catch (error) {
         showResult('error', 'アップロード中にエラーが発生しました。');
+        console.error('Upload error:', error);
     }
 });
 
