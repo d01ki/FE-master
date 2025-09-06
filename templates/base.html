@@ -157,11 +157,22 @@
             background-image: radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
                               radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
         }
+
+        /* Navigation bar should NOT be sticky on practice pages */
+        .nav-normal {
+            position: relative;
+        }
+        
+        .nav-sticky {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
     </style>
 </head>
 <body class="bg-gray-900 min-h-screen text-gray-100 hero-pattern">
     <!-- Navigation -->
-    <nav class="bg-gray-800/80 backdrop-blur-xl shadow-xl border-b border-gray-700/50 sticky top-0 z-40">
+    <nav class="bg-gray-800/80 backdrop-blur-xl shadow-xl border-b border-gray-700/50 {% if request.endpoint in ['practice_by_genre', 'show_question'] %}nav-normal{% else %}nav-sticky{% endif %}">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <!-- Logo and Brand -->
