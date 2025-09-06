@@ -293,7 +293,6 @@ function showResults(data) {
 
 // キーボードショートカット
 document.addEventListener('keydown', function(e) {
-    // 数字キーで選択肢を選択
     if (e.key >= '1' && e.key <= '4') {
         const choices = ['ア', 'イ', 'ウ', 'エ'];
         const choiceIndex = parseInt(e.key) - 1;
@@ -307,7 +306,6 @@ document.addEventListener('keydown', function(e) {
         }
     }
     
-    // 矢印キーでナビゲーション
     if (e.key === 'ArrowLeft') {
         e.preventDefault();
         previousQuestion();
