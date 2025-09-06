@@ -31,7 +31,7 @@
             <!-- 選択肢 -->
             <div class="space-y-3 mb-6">
                 {% for choice_key, choice_text in question.choices.items() %}
-                    <label class="choice-option flex items-start p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200">
+                    <label class="choice-option flex items-start p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-all duration-200 hover:shadow-md">
                         <input type="radio" name="answer" value="{{ choice_key }}" class="mt-1 mr-3 text-primary focus:ring-primary">
                         <div class="flex-1">
                             <span class="font-medium text-gray-700 mr-2">{{ choice_key }}.</span>
@@ -41,11 +41,16 @@
                 {% endfor %}
             </div>
             
-            <!-- ナビゲーションボタン -->
+            <!-- スマートなナビゲーションボタン -->
             <div class="flex justify-center">
-                <a href="{{ url_for('random_question') }}" class="btn btn-primary">
-                    <i class="fas fa-arrow-right mr-2"></i>次の問題
-                </a>
+                <div class="relative group">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur opacity-30 group-hover:opacity-70 transition duration-1000 group-hover:duration-200"></div>
+                    <a href="{{ url_for('random_question') }}" class="relative flex items-center px-8 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        <span class="mr-3 text-lg">🎯</span>
+                        <span>次の問題</span>
+                        <i class="fas fa-arrow-right ml-3 text-primary"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -68,13 +73,18 @@
             </h3>
         </div>
         <div class="card-body">
-            <p id="explanation-text" class="text-gray-700 leading-relaxed text-base"></p>
+            <p id="explanation-text" class="text-gray-700 leading-relaxed text-base mb-6"></p>
             
-            <!-- アクションボタン -->
-            <div class="flex justify-center mt-6">
-                <a href="{{ url_for('random_question') }}" class="btn btn-primary">
-                    <i class="fas fa-arrow-right mr-2"></i>次の問題へ
-                </a>
+            <!-- スマートなアクションボタン -->
+            <div class="flex justify-center">
+                <div class="relative group">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-green-500 to-blue-600 rounded-xl blur opacity-30 group-hover:opacity-70 transition duration-1000 group-hover:duration-200"></div>
+                    <a href="{{ url_for('random_question') }}" class="relative flex items-center px-8 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        <span class="mr-3 text-lg">🚀</span>
+                        <span>次の問題へ</span>
+                        <i class="fas fa-chevron-right ml-3 text-primary"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -169,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 選択肢の色分け
         answerInputs.forEach(input => {
             const option = input.closest('.choice-option');
-            option.classList.remove('hover:bg-gray-50', 'cursor-pointer');
+            option.classList.remove('hover:bg-gray-50', 'cursor-pointer', 'hover:shadow-md');
             
             if (input.value === data.correct_answer) {
                 option.classList.add('bg-green-50', 'border-green-300', 'border-2');
@@ -220,12 +230,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.choice-option').forEach(option => {
         option.addEventListener('mouseenter', function() {
             if (!this.querySelector('input').disabled && !answered) {
-                this.classList.add('shadow-md', 'scale-105');
+                this.classList.add('scale-105');
             }
         });
         
         option.addEventListener('mouseleave', function() {
-            this.classList.remove('shadow-md', 'scale-105');
+            this.classList.remove('scale-105');
         });
     });
 });
