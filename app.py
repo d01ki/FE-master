@@ -1,535 +1,486 @@
-<<<<<<< HEAD
-from fastapi import FastAPI, Request, Form, HTTPException, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-import os
-from datetime import datetime
-from starlette.middleware.sessions import SessionMiddleware
-from starlette.responses import Response
-from starlette.requests import Request
-
-def flash(request: Request, message: str, category: str = "info"):
-    if "_messages" not in request.session:
-        request.session["_messages"] = []
-    request.session["_messages"].append({"message": message, "category": category})
-
-def get_flashed_messages(request: Request = None, with_categories: bool = False):
-    if request is None:
-        return []
-    messages = request.session.pop("_messages") if "_messages" in request.session else []
-    if with_categories:
-        return [(msg["category"], msg["message"]) for msg in messages]
-    return [msg["message"] for msg in messages]
-
-app = FastAPI(title="基本情報技術者試験 学習アプリ", debug=True)
-
-# Jinja2テンプレートの設定
-templates = Jinja2Templates(directory="templates")
-
-async def flash_messages(with_categories=False):
-    def inner(request):
-        return get_flashed_messages(request, with_categories)
-    return inner
-
-# テンプレートグローバル変数の設定
-templates.env.globals.update({
-    'get_messages': flash_messages,
-})
-@app.middleware("http")
-async def add_template_context(request: Request, call_next):
-    response = await call_next(request)
-    if isinstance(response, Response):
-        response.context = {
-            "request": request
-        }
-    return response
-
-# セッション管理の設定
-app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
-
-# 静的ファイルとテンプレートの設定
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# テンプレートの設定
-templates = Jinja2Templates(directory="templates")
-templates.env.globals.update({
-    'get_flashed_messages': get_flashed_messages
-})
-
-# サンプル問題データ
-sample_problems = [
-    {
-        "id": 1,
-        "category": "基礎理論",
-        "exam_year": 2024,
-        "description": "次の論理式で、真となるものはどれか。",
-        "options": [
-            "A AND (NOT A)",
-            "A OR (NOT A)",
-            "A AND A",
-            "NOT (A OR B) AND (A AND B)"
-        ],
-        "correct_answer": 2,
-        "explanation": "A OR (NOT A) は常に真となります（排中律）。",
-        "estimated_time": 2
-    },
-    {
-        "id": 2,
-        "category": "データベース",
-        "exam_year": 2024,
-        "description": "RDBMSにおけるトランザクションの特性として、不適切なものはどれか。",
-        "options": [
-            "Atomicity（原子性）",
-            "Consistency（一貫性）",
-            "Parallelism（並列性）",
-            "Durability（永続性）"
-        ],
-        "correct_answer": 3,
-        "explanation": "トランザクションのACID特性は、Atomicity（原子性）、Consistency（一貫性）、Isolation（独立性）、Durability（永続性）です。",
-        "estimated_time": 3
-    }
-]
-
-@app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    # テスト用のフラッシュメッセージ
-    flash(request, "ようこそ！FE学習アプリへ", "info")
-    
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "current_user": None,
-            "total_questions": len(sample_problems),
-            "solved_questions": 0,
-            "overall_progress": 0,
-            "accuracy_rate": 0,
-            "recent_activities": [],
-            "categories": [
-                {"name": "basic", "display_name": "基礎理論", "icon": "fa-microchip", "progress": 0},
-                {"name": "db", "display_name": "データベース", "icon": "fa-database", "progress": 0},
-                {"name": "network", "display_name": "ネットワーク", "icon": "fa-network-wired", "progress": 0},
-                {"name": "security", "display_name": "セキュリティ", "icon": "fa-shield-alt", "progress": 0}
-            ]
-        }
-    )
-
-@app.get("/problems", response_class=HTMLResponse)
-async def problem_list(request: Request):
-    return templates.TemplateResponse(
-        "problem_list.html",
-        {
-            "request": request,
-            "current_user": None,
-            "problems": sample_problems,
-            "categories": [
-                {"name": "basic", "display_name": "基礎理論"},
-                {"name": "db", "display_name": "データベース"},
-                {"name": "network", "display_name": "ネットワーク"},
-                {"name": "security", "display_name": "セキュリティ"}
-            ]
-        }
-    )
-
-@app.get("/problem/{problem_id}", response_class=HTMLResponse)
-async def problem_detail(request: Request, problem_id: int):
-    problem = next((p for p in sample_problems if p["id"] == problem_id), None)
-    if problem is None:
-        return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
-    
-    # セッションから解答履歴を取得
-    user_answers = request.session.get("user_answers", {})
-    show_answer = str(problem_id) in user_answers
-    user_answer = user_answers.get(str(problem_id))
-    
-    return templates.TemplateResponse(
-        "problem.html",
-        {
-            "request": request,
-            "current_user": None,
-            "problem": problem,
-            "show_answer": show_answer,
-            "user_answer": user_answer,
-            "related_problems": [p for p in sample_problems if p["id"] != problem_id]
-        }
-    )
-
-@app.post("/problem/{problem_id}/answer")
-async def submit_answer(request: Request, problem_id: int, answer: int = Form(...)):
-    problem = next((p for p in sample_problems if p["id"] == problem_id), None)
-    if problem is None:
-        raise HTTPException(status_code=404, detail="Problem not found")
-    
-    # 解答を保存
-    user_answers = request.session.get("user_answers", {})
-    user_answers[str(problem_id)] = answer
-    request.session["user_answers"] = user_answers
-    
-    # 正誤判定
-    is_correct = answer == problem["correct_answer"]
-    
-    # 解答履歴を保存
-    history = request.session.get("history", [])
-    history.append({
-        "problem_id": problem_id,
-        "answer": answer,
-        "is_correct": is_correct,
-        "timestamp": str(datetime.now())
-    })
-    request.session["history"] = history
-    
-    return RedirectResponse(
-        url=f"/problem/{problem_id}",
-        status_code=303
-    )
-=======
-#!/usr/bin/env python3
 """
-FE-Master - 基本情報技術者試験 過去問学習アプリ
-シンプル版: SQLite + FastAPI
+基本情報技術者試験 学習アプリ
+Flask + SQLite + Tailwind CSS を使用した学習プラットフォーム
 """
 
-import os
-import sys
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 import sqlite3
 import json
+import os
 from datetime import datetime
-from typing import Optional, Dict, List
+import random
+from utils.pdf_processor import PDFProcessor
+from utils.database import init_db, get_db_connection
+from utils.question_manager import QuestionManager
 
-try:
-    from fastapi import FastAPI, HTTPException, Form
-    from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import HTMLResponse
-    import uvicorn
-except ImportError as e:
-    print(f"❌ 必要なライブラリがインストールされていません: {e}")
-    print("以下のコマンドを実行してください:")
-    print("pip install fastapi uvicorn pydantic python-multipart")
-    sys.exit(1)
+app = Flask(__name__)
+app.secret_key = 'your-secret-key-change-in-production'
 
 # アプリケーション設定
-APP_NAME = "FE-Master"
-APP_VERSION = "1.0.0"
-DATABASE_FILE = "fe_master.db"
-PORT = 8000
-HOST = "0.0.0.0"
+app.config['DATABASE'] = 'fe_exam.db'
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['JSON_FOLDER'] = 'json_questions'
 
-# FastAPIアプリケーション
-app = FastAPI(
-    title=APP_NAME,
-    description="基本情報技術者試験 過去問学習アプリ",
-    version=APP_VERSION
-)
+# アップロードフォルダとJSONフォルダを作成
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['JSON_FOLDER'], exist_ok=True)
 
-# CORS設定
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# データベースの初期化
+if not os.path.exists(app.config['DATABASE']):
+    print("データベースを初期化しています...")
+    init_db(app.config['DATABASE'])
+    
+    # サンプル問題を自動作成
+    try:
+        processor = PDFProcessor()
+        sample_questions = processor.create_sample_questions()
+        question_manager = QuestionManager(app.config['DATABASE'])
+        saved_count = question_manager.save_questions(sample_questions)
+        print(f"サンプル問題 {saved_count}問を作成しました。")
+    except Exception as e:
+        print(f"サンプル問題作成中にエラーが発生しました: {e}")
 
-# データベース初期化
-def init_database():
-    """データベースとサンプルデータを初期化"""
-    conn = sqlite3.connect(DATABASE_FILE)
-    cursor = conn.cursor()
-    
-    # problemsテーブル作成
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS problems (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            source TEXT NOT NULL,
-            year INTEGER NOT NULL,
-            exam_session TEXT NOT NULL,
-            question_no TEXT NOT NULL,
-            text_md TEXT NOT NULL,
-            choices_json TEXT NOT NULL,
-            answer_index INTEGER NOT NULL,
-            explanation_md TEXT,
-            category TEXT,
-            difficulty REAL DEFAULT 0.5,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(source, year, exam_session, question_no)
-        )
-    """)
-    
-    # user_answersテーブル作成
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS user_answers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            problem_id INTEGER NOT NULL,
-            selected_index INTEGER NOT NULL,
-            is_correct BOOLEAN NOT NULL,
-            answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (problem_id) REFERENCES problems (id)
-        )
-    """)
-    
-    # サンプルデータの挿入
-    cursor.execute("SELECT COUNT(*) FROM problems")
-    if cursor.fetchone()[0] == 0:
-        sample_problems = [
-            {
-                "source": "FE",
-                "year": 2023,
-                "exam_session": "autumn",
-                "question_no": "Q1",
-                "text_md": "# システム性能\n\nスループットに関する説明として、最も適切なものはどれか。",
-                "choices_json": '{"a": "単位時間当たりに処理できるジョブ数", "b": "処理完了までの平均時間", "c": "単位時間当たりのデータ量", "d": "システムの稼働時間の割合"}',
-                "answer_index": 0,
-                "explanation_md": "**正解：a**\n\nスループットは単位時間当たりに処理できるジョブ数を表す性能指標です。",
-                "category": "システム構成要素",
-                "difficulty": 0.3
-            },
-            {
-                "source": "FE",
-                "year": 2023,
-                "exam_session": "spring",
-                "question_no": "Q10",
-                "text_md": "# データベース\n\n関係データベースの正規化の目的として、適切なものはどれか。",
-                "choices_json": '{"a": "処理速度の向上", "b": "記憶容量の削減", "c": "データの一貫性保持", "d": "検索効率の向上"}',
-                "answer_index": 2,
-                "explanation_md": "**正解：c**\n\n正規化の主な目的は、データの一貫性を保ち、更新異常を防ぐことです。",
-                "category": "データベース",
-                "difficulty": 0.4
-            },
-            {
-                "source": "FE",
-                "year": 2023,
-                "exam_session": "autumn",
-                "question_no": "Q25",
-                "text_md": "# ネットワーク\n\nTCP/IPモデルのトランスポート層で動作するプロトコルはどれか。",
-                "choices_json": '{"a": "HTTP", "b": "IP", "c": "TCP", "d": "Ethernet"}',
-                "answer_index": 2,
-                "explanation_md": "**正解：c**\n\nTCPはトランスポート層で動作するプロトコルです。",
-                "category": "ネットワーク",
-                "difficulty": 0.3
-            },
-            {
-                "source": "FE",
-                "year": 2023,
-                "exam_session": "spring",
-                "question_no": "Q35",
-                "text_md": "# アルゴリズム\n\n最悪計算量O(n log n)を持つソートアルゴリズムはどれか。",
-                "choices_json": '{"a": "バブルソート", "b": "選択ソート", "c": "マージソート", "d": "挿入ソート"}',
-                "answer_index": 2,
-                "explanation_md": "**正解：c**\n\nマージソートは常にO(n log n)の時間計算量を保証します。",
-                "category": "アルゴリズム",
-                "difficulty": 0.6
-            },
-            {
-                "source": "FE",
-                "year": 2023,
-                "exam_session": "autumn",
-                "question_no": "Q50",
-                "text_md": "# セキュリティ\n\nファイアウォールの機能として、最も適切なものはどれか。",
-                "choices_json": '{"a": "パケットの監視", "b": "データの暗号化", "c": "パケットの通過制御", "d": "ウイルスの検知"}',
-                "answer_index": 2,
-                "explanation_md": "**正解：c**\n\nファイアウォールの主な機能はパケットの通過を制御することです。",
-                "category": "セキュリティ",
-                "difficulty": 0.4
-            }
-        ]
+# QuestionManagerの初期化
+question_manager = QuestionManager(app.config['DATABASE'])
+
+@app.route('/')
+def index():
+    """メインページ - ダッシュボード表示"""
+    with get_db_connection(app.config['DATABASE']) as conn:
+        # 学習統計の取得
+        total_questions = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
+        total_answers = conn.execute('SELECT COUNT(*) FROM user_answers').fetchone()[0]
+        correct_answers = conn.execute('SELECT COUNT(*) FROM user_answers WHERE is_correct = 1').fetchone()[0]
         
-        for problem in sample_problems:
-            cursor.execute("""
-                INSERT INTO problems 
-                (source, year, exam_session, question_no, text_md, choices_json, 
-                 answer_index, explanation_md, category, difficulty)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                problem["source"], problem["year"], problem["exam_session"],
-                problem["question_no"], problem["text_md"], problem["choices_json"],
-                problem["answer_index"], problem["explanation_md"],
-                problem["category"], problem["difficulty"]
-            ))
+        accuracy_rate = round((correct_answers / total_answers * 100), 1) if total_answers > 0 else 0
         
-        print(f"✅ {len(sample_problems)}問のサンプルデータを挿入しました")
+        # 最近の学習履歴
+        recent_history = conn.execute('''
+            SELECT q.question_text, ua.is_correct, ua.answered_at 
+            FROM user_answers ua 
+            JOIN questions q ON ua.question_id = q.id 
+            ORDER BY ua.answered_at DESC 
+            LIMIT 10
+        ''').fetchall()
+        
+        # ジャンル別正答率
+        genre_stats = conn.execute('''
+            SELECT q.genre, 
+                   COUNT(*) as total,
+                   SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct
+            FROM user_answers ua 
+            JOIN questions q ON ua.question_id = q.id 
+            GROUP BY q.genre
+        ''').fetchall()
+        
+        stats = {
+            'total_questions': total_questions,
+            'total_answers': total_answers,
+            'correct_answers': correct_answers,
+            'accuracy_rate': accuracy_rate,
+            'recent_history': [dict(row) for row in recent_history],
+            'genre_stats': [dict(row) for row in genre_stats]
+        }
     
-    conn.commit()
-    conn.close()
+    return render_template('dashboard.html', stats=stats)
 
-# APIエンドポイント
-@app.get("/", response_class=HTMLResponse)
-def root():
-    """メインページ"""
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>FE-Master - 基本情報技術者試験 学習アプリ</title>
-        <meta charset="UTF-8">
-        <style>
-            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
-            .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            h1 { color: #333; text-align: center; }
-            .feature { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; }
-            .links { text-align: center; margin: 20px 0; }
-            .links a { display: inline-block; margin: 5px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
-            .links a:hover { background: #0056b3; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>🎓 FE-Master</h1>
-            <p style="text-align: center; color: #666;">基本情報技術者試験 過去問学習アプリ</p>
-            
-            <div class="feature">
-                <h3>📚 サンプル問題</h3>
-                <p>5問のサンプル問題が利用可能です：システム性能、データベース、ネットワーク、アルゴリズム、セキュリティ</p>
-            </div>
-            
-            <div class="feature">
-                <h3>📊 学習記録</h3>
-                <p>解答履歴と正答率を自動で記録・分析します</p>
-            </div>
-            
-            <div class="links">
-                <a href="/docs">📖 API仕様書</a>
-                <a href="/api/problems">📝 問題一覧</a>
-                <a href="/api/stats">📊 統計</a>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+@app.route('/questions/<int:question_id>')
+def show_question(question_id):
+    """個別問題の表示"""
+    question = question_manager.get_question(question_id)
+    if not question:
+        return render_template('error.html', message='問題が見つかりません'), 404
+    
+    return render_template('question.html', question=question)
 
-@app.get("/api/problems")
-def get_problems(category: Optional[str] = None):
-    """問題一覧を取得"""
-    conn = sqlite3.connect(DATABASE_FILE)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+@app.route('/questions/<int:question_id>/answer', methods=['POST'])
+def submit_answer(question_id):
+    """解答の提出と判定"""
+    data = request.get_json()
+    user_answer = data.get('answer')
     
-    if category:
-        cursor.execute("SELECT * FROM problems WHERE category = ?", (category,))
-    else:
-        cursor.execute("SELECT * FROM problems")
+    if not user_answer:
+        return jsonify({'error': '解答が選択されていません'}), 400
     
-    problems = []
-    for row in cursor.fetchall():
-        problem = dict(row)
-        problem['choices_json'] = json.loads(problem['choices_json'])
-        problems.append(problem)
+    result = question_manager.check_answer(question_id, user_answer)
     
-    conn.close()
-    return {"problems": problems, "count": len(problems)}
+    # 解答履歴を保存
+    question_manager.save_answer_history(question_id, user_answer, result['is_correct'])
+    
+    return jsonify(result)
 
-@app.get("/api/problems/{problem_id}")
-def get_problem(problem_id: int):
-    """特定の問題を取得"""
-    conn = sqlite3.connect(DATABASE_FILE)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+@app.route('/practice/<genre>')
+def practice_by_genre(genre):
+    """ジャンル別練習"""
+    questions = question_manager.get_questions_by_genre(genre)
     
-    cursor.execute("SELECT * FROM problems WHERE id = ?", (problem_id,))
-    row = cursor.fetchone()
+    if not questions:
+        return render_template('error.html', message=f'ジャンル "{genre}" の問題が見つかりません'), 404
     
-    if not row:
-        conn.close()
-        raise HTTPException(status_code=404, detail="問題が見つかりません")
+    # ランダムに並び替え
+    random.shuffle(questions)
     
-    problem = dict(row)
-    problem['choices_json'] = json.loads(problem['choices_json'])
-    
-    conn.close()
-    return problem
+    return render_template('practice.html', questions=questions, genre=genre)
 
-@app.post("/api/problems/{problem_id}/answer")
-def submit_answer(problem_id: int, selected_index: int = Form(...)):
-    """解答を送信"""
-    conn = sqlite3.connect(DATABASE_FILE)
-    cursor = conn.cursor()
+@app.route('/mock_exam')
+def mock_exam():
+    """模擬試験"""
+    # 問題数をチェック
+    total_questions = question_manager.get_total_questions()
+    exam_questions_count = min(total_questions, 20)  # 最大20問の模擬試験
     
-    # 問題を取得
-    cursor.execute("SELECT * FROM problems WHERE id = ?", (problem_id,))
-    problem_row = cursor.fetchone()
+    if total_questions == 0:
+        flash('問題が登録されていません。管理画面から問題を追加してください。', 'error')
+        return redirect(url_for('admin'))
     
-    if not problem_row:
-        conn.close()
-        raise HTTPException(status_code=404, detail="問題が見つかりません")
+    # 問題をランダムに抽出
+    questions = question_manager.get_random_questions(exam_questions_count)
     
-    is_correct = selected_index == problem_row[6]  # answer_index
+    # セッションに試験開始時刻を保存
+    session['exam_start_time'] = datetime.now().isoformat()
+    session['exam_questions'] = [q['id'] for q in questions]
     
-    # 解答を記録
-    cursor.execute(
-        "INSERT INTO user_answers (problem_id, selected_index, is_correct) VALUES (?, ?, ?)",
-        (problem_id, selected_index, is_correct)
-    )
-    
-    conn.commit()
-    answer_id = cursor.lastrowid
-    conn.close()
-    
-    return {
-        "answer_id": answer_id,
-        "is_correct": is_correct,
-        "correct_answer_index": problem_row[6],
-        "explanation": problem_row[8] if len(problem_row) > 8 else ""
-    }
+    return render_template('mock_exam.html', questions=questions)
 
-@app.get("/api/stats")
-def get_stats():
-    """統計情報を取得"""
-    conn = sqlite3.connect(DATABASE_FILE)
-    cursor = conn.cursor()
+@app.route('/mock_exam/submit', methods=['POST'])
+def submit_mock_exam():
+    """模擬試験の採点"""
+    data = request.get_json()
+    answers = data.get('answers', {})
     
-    # 基本統計
-    cursor.execute("SELECT COUNT(*) FROM problems")
-    total_problems = cursor.fetchone()[0]
+    if 'exam_questions' not in session:
+        return jsonify({'error': '試験セッションが見つかりません'}), 400
     
-    cursor.execute("SELECT COUNT(*) FROM user_answers")
-    total_answers = cursor.fetchone()[0]
+    question_ids = session['exam_questions']
+    results = []
+    correct_count = 0
     
-    cursor.execute("SELECT COUNT(*) FROM user_answers WHERE is_correct = 1")
-    correct_answers = cursor.fetchone()[0]
+    for question_id in question_ids:
+        question_id_str = str(question_id)
+        user_answer = answers.get(question_id_str, '')
+        
+        result = question_manager.check_answer(question_id, user_answer)
+        question_manager.save_answer_history(question_id, user_answer, result['is_correct'])
+        
+        results.append({
+            'question_id': question_id,
+            'user_answer': user_answer,
+            'correct_answer': result['correct_answer'],
+            'is_correct': result['is_correct']
+        })
+        
+        if result['is_correct']:
+            correct_count += 1
     
-    accuracy_rate = (correct_answers / total_answers * 100) if total_answers > 0 else 0
+    score = round((correct_count / len(question_ids)) * 100, 1)
     
-    conn.close()
+    # セッションクリア
+    session.pop('exam_start_time', None)
+    session.pop('exam_questions', None)
     
-    return {
-        "total_problems": total_problems,
-        "total_answers": total_answers,
-        "correct_answers": correct_answers,
-        "accuracy_rate": round(accuracy_rate, 1)
-    }
+    return jsonify({
+        'score': score,
+        'correct_count': correct_count,
+        'total_count': len(question_ids),
+        'results': results
+    })
 
-@app.get("/api/categories")
-def get_categories():
-    """カテゴリ一覧を取得"""
-    conn = sqlite3.connect(DATABASE_FILE)
-    cursor = conn.cursor()
+@app.route('/history')
+def history():
+    """学習履歴の表示"""
+    with get_db_connection(app.config['DATABASE']) as conn:
+        # 詳細な学習履歴
+        detailed_history = conn.execute('''
+            SELECT q.question_text, q.genre, ua.user_answer, ua.is_correct, ua.answered_at,
+                   q.correct_answer, q.explanation
+            FROM user_answers ua 
+            JOIN questions q ON ua.question_id = q.id 
+            ORDER BY ua.answered_at DESC 
+            LIMIT 50
+        ''').fetchall()
+        
+        # 日別統計
+        daily_stats = conn.execute('''
+            SELECT DATE(answered_at) as date, 
+                   COUNT(*) as total,
+                   SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct
+            FROM user_answers 
+            GROUP BY DATE(answered_at) 
+            ORDER BY date DESC 
+            LIMIT 30
+        ''').fetchall()
+        
+        history_data = {
+            'detailed_history': [dict(row) for row in detailed_history],
+            'daily_stats': [dict(row) for row in daily_stats]
+        }
     
-    cursor.execute("SELECT DISTINCT category FROM problems WHERE category IS NOT NULL")
-    categories = [row[0] for row in cursor.fetchall()]
-    
-    conn.close()
-    return {"categories": categories}
+    return render_template('history.html', history=history_data)
 
-def main():
-    """メイン関数"""
-    print(f"🚀 {APP_NAME} v{APP_VERSION} を起動中...")
+@app.route('/admin')
+def admin():
+    """管理画面"""
+    with get_db_connection(app.config['DATABASE']) as conn:
+        question_count = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
+        genres = conn.execute('SELECT DISTINCT genre FROM questions').fetchall()
+        
+        # JSONファイル一覧を取得
+        json_files = []
+        if os.path.exists(app.config['JSON_FOLDER']):
+            for filename in os.listdir(app.config['JSON_FOLDER']):
+                if filename.endswith('.json'):
+                    filepath = os.path.join(app.config['JSON_FOLDER'], filename)
+                    file_size = os.path.getsize(filepath)
+                    json_files.append({
+                        'filename': filename,
+                        'size': file_size,
+                        'modified': datetime.fromtimestamp(os.path.getmtime(filepath)).strftime('%Y-%m-%d %H:%M')
+                    })
+        
+        admin_data = {
+            'question_count': question_count,
+            'genres': [row[0] for row in genres],
+            'json_files': json_files
+        }
     
-    # データベース初期化
-    init_database()
+    return render_template('admin.html', data=admin_data)
+
+@app.route('/admin/upload_pdf', methods=['POST'])
+def upload_pdf():
+    """PDF問題集のアップロードと処理"""
+    if 'pdf_file' not in request.files:
+        return jsonify({'error': 'PDFファイルが選択されていません'}), 400
     
-    print(f"🌐 サーバー: http://{HOST}:{PORT}")
-    print(f"📖 API仕様書: http://{HOST}:{PORT}/docs")
-    print("\n停止するには Ctrl+C を押してください")
-    print("=" * 50)
+    file = request.files['pdf_file']
+    if file.filename == '':
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
+    
+    if not file.filename.lower().endswith('.pdf'):
+        return jsonify({'error': 'PDFファイルを選択してください'}), 400
     
     try:
-        uvicorn.run(app, host=HOST, port=PORT, log_level="info")
-    except KeyboardInterrupt:
-        print("\n👋 アプリケーションを停止しました")
+        # ファイル保存
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(filepath)
+        
+        # PDF処理
+        processor = PDFProcessor()
+        questions = processor.extract_questions_from_pdf(filepath)
+        
+        # JSONファイルとして保存
+        json_filename = file.filename.replace('.pdf', '_questions.json')
+        json_filepath = os.path.join(app.config['JSON_FOLDER'], json_filename)
+        
+        with open(json_filepath, 'w', encoding='utf-8') as json_file:
+            json.dump(questions, json_file, ensure_ascii=False, indent=2)
+        
+        # データベースに保存
+        saved_count = question_manager.save_questions(questions)
+        
+        # 一時ファイル削除
+        os.remove(filepath)
+        
+        return jsonify({
+            'message': f'{saved_count}問の問題を正常に登録しました。JSONファイルも保存されました: {json_filename}',
+            'count': saved_count,
+            'json_file': json_filename
+        })
+        
     except Exception as e:
-        print(f"❌ エラーが発生しました: {e}")
-        sys.exit(1)
+        return jsonify({'error': f'PDF処理中にエラーが発生しました: {str(e)}'}), 500
 
-if __name__ == "__main__":
-    main()
->>>>>>> 13831b9d85c12a1f72699e869205388054e75030
+@app.route('/admin/upload_json', methods=['POST'])
+def upload_json():
+    """JSON問題ファイルのアップロードと処理"""
+    if 'json_file' not in request.files:
+        return jsonify({'error': 'JSONファイルが選択されていません'}), 400
+    
+    file = request.files['json_file']
+    if file.filename == '':
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
+    
+    if not file.filename.lower().endswith('.json'):
+        return jsonify({'error': 'JSONファイルを選択してください'}), 400
+    
+    try:
+        # ファイル内容を読み込み
+        content = file.read().decode('utf-8')
+        questions = json.loads(content)
+        
+        # バリデーション
+        if not isinstance(questions, list):
+            return jsonify({'error': 'JSONファイルは問題の配列である必要があります'}), 400
+        
+        # 各問題の形式をチェック
+        for i, question in enumerate(questions):
+            required_fields = ['question_text', 'choices', 'correct_answer']
+            for field in required_fields:
+                if field not in question:
+                    return jsonify({'error': f'問題{i+1}: 必須フィールド "{field}" がありません'}), 400
+        
+        # JSONファイルを保存
+        json_filepath = os.path.join(app.config['JSON_FOLDER'], file.filename)
+        with open(json_filepath, 'w', encoding='utf-8') as json_file:
+            json.dump(questions, json_file, ensure_ascii=False, indent=2)
+        
+        # データベースに保存
+        saved_count = question_manager.save_questions(questions)
+        
+        return jsonify({
+            'message': f'{saved_count}問の問題を正常に登録しました',
+            'count': saved_count,
+            'json_file': file.filename
+        })
+        
+    except json.JSONDecodeError:
+        return jsonify({'error': 'JSONファイルの形式が正しくありません'}), 400
+    except Exception as e:
+        return jsonify({'error': f'JSON処理中にエラーが発生しました: {str(e)}'}), 500
+
+@app.route('/admin/load_json/<filename>', methods=['POST'])
+def load_json_file(filename):
+    """保存されたJSONファイルからデータベースに問題を読み込み"""
+    try:
+        json_filepath = os.path.join(app.config['JSON_FOLDER'], filename)
+        
+        if not os.path.exists(json_filepath):
+            return jsonify({'error': 'JSONファイルが見つかりません'}), 404
+        
+        with open(json_filepath, 'r', encoding='utf-8') as json_file:
+            questions = json.load(json_file)
+        
+        # データベースに保存
+        saved_count = question_manager.save_questions(questions)
+        
+        return jsonify({
+            'message': f'{saved_count}問の問題を正常に登録しました',
+            'count': saved_count
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'JSON読み込み中にエラーが発生しました: {str(e)}'}), 500
+
+@app.route('/admin/create_sample', methods=['POST'])
+def create_sample_data():
+    """サンプルデータの作成"""
+    try:
+        processor = PDFProcessor()
+        sample_questions = processor.create_sample_questions()
+        
+        saved_count = question_manager.save_questions(sample_questions)
+        
+        return jsonify({
+            'message': f'{saved_count}問のサンプル問題を作成しました',
+            'count': saved_count
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'サンプルデータ作成中にエラーが発生しました: {str(e)}'}), 500
+
+@app.route('/admin/create_extended_sample', methods=['POST'])
+def create_extended_sample():
+    """拡張サンプルデータの作成（10問）"""
+    try:
+        processor = PDFProcessor()
+        extended_questions = processor.create_extended_sample_questions()
+        
+        saved_count = question_manager.save_questions(extended_questions)
+        
+        return jsonify({
+            'message': f'{saved_count}問の拡張サンプル問題を作成しました',
+            'count': saved_count
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'拡張サンプルデータ作成中にエラーが発生しました: {str(e)}'}), 500
+
+@app.route('/admin/reset_database', methods=['POST'])
+def reset_database():
+    """データベースの初期化"""
+    try:
+        with get_db_connection(app.config['DATABASE']) as conn:
+            # 全データを削除
+            conn.execute('DELETE FROM user_answers')
+            conn.execute('DELETE FROM questions')
+            conn.commit()
+        
+        return jsonify({'message': 'データベースを初期化しました'})
+        
+    except Exception as e:
+        return jsonify({'error': f'データベース初期化中にエラーが発生しました: {str(e)}'}), 500
+
+@app.route('/api/questions/random')
+def get_random_question():
+    """ランダムな問題を1問取得するAPI"""
+    question = question_manager.get_random_question()
+    if not question:
+        return jsonify({'error': '問題が見つかりません'}), 404
+    
+    return jsonify(question)
+
+@app.route('/api/stats')
+def get_stats():
+    """統計データ取得API"""
+    with get_db_connection(app.config['DATABASE']) as conn:
+        # 基本統計
+        total_questions = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
+        total_answers = conn.execute('SELECT COUNT(*) FROM user_answers').fetchone()[0]
+        correct_answers = conn.execute('SELECT COUNT(*) FROM user_answers WHERE is_correct = 1').fetchone()[0]
+        
+        # ジャンル別統計
+        genre_stats = conn.execute('''
+            SELECT q.genre, 
+                   COUNT(*) as total,
+                   SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct,
+                   ROUND(AVG(CASE WHEN ua.is_correct = 1 THEN 100.0 ELSE 0.0 END), 1) as accuracy
+            FROM user_answers ua 
+            JOIN questions q ON ua.question_id = q.id 
+            GROUP BY q.genre
+            ORDER BY accuracy DESC
+        ''').fetchall()
+        
+        stats = {
+            'total_questions': total_questions,
+            'total_answers': total_answers,
+            'correct_answers': correct_answers,
+            'accuracy_rate': round((correct_answers / total_answers * 100), 1) if total_answers > 0 else 0,
+            'genre_stats': [dict(row) for row in genre_stats]
+        }
+    
+    return jsonify(stats)
+
+@app.route('/api/genre_count')
+def get_genre_count():
+    """ジャンル別問題数取得API"""
+    genre = request.args.get('genre')
+    if not genre:
+        return jsonify({'error': 'ジャンルが指定されていません'}), 400
+    
+    with get_db_connection(app.config['DATABASE']) as conn:
+        count = conn.execute('SELECT COUNT(*) FROM questions WHERE genre = ?', (genre,)).fetchone()[0]
+    
+    return jsonify({'count': count})
+
+# ランダム問題への直接アクセス
+@app.route('/random')
+def random_question():
+    """ランダム問題への直接アクセス"""
+    question = question_manager.get_random_question()
+    if not question:
+        flash('問題が見つかりません。まず問題を登録してください。', 'error')
+        return redirect(url_for('admin'))
+    
+    return redirect(url_for('show_question', question_id=question['id']))
+
+@app.errorhandler(404)
+def not_found_error(error):
+    """404エラーハンドラ"""
+    return render_template('error.html', message='ページが見つかりません'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """500エラーハンドラ"""
+    return render_template('error.html', message='内部サーバーエラーが発生しました'), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
