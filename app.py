@@ -71,7 +71,7 @@ def parse_filename_info(filename):
             'era_year': era_year,
             'season': season,
             'season_jp': season_jp,
-            'display_name': f'{year}年 {season_jp}'
+            'display_name': f'{year}年{season_jp}'
         }
     return None
 
@@ -199,6 +199,45 @@ def practice_by_genre(genre):
     except Exception as e:
         app.logger.error(f"Practice error: {e}")
         return render_template('error.html', message='練習問題の表示中にエラーが発生しました'), 500
+
+@app.route('/genre_practice')
+def genre_practice():
+    """ジャンル別演習メニュー"""
+    try:
+        # 利用可能なジャンルを取得
+        genres = question_manager.get_available_genres()
+        genre_counts = question_manager.get_question_count_by_genre()
+        
+        # ジャンル別統計を取得
+        with get_db_connection(app.config['DATABASE']) as conn:
+            genre_stats = conn.execute('''
+                SELECT q.genre, 
+                       COUNT(*) as total,
+                       SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct
+                FROM user_answers ua 
+                JOIN questions q ON ua.question_id = q.id 
+                GROUP BY q.genre
+            ''').fetchall()
+        
+        stats_dict = {stat[0]: {'total': stat[1], 'correct': stat[2]} for stat in genre_stats}
+        
+        genre_info = []
+        for genre in genres:
+            count = genre_counts.get(genre, 0)
+            stat = stats_dict.get(genre, {'total': 0, 'correct': 0})
+            accuracy = round((stat['correct'] / stat['total'] * 100), 1) if stat['total'] > 0 else 0
+            
+            genre_info.append({
+                'name': genre,
+                'count': count,
+                'answered': stat['total'],
+                'accuracy': accuracy
+            })
+        
+        return render_template('genre_practice.html', genres=genre_info)
+    except Exception as e:
+        app.logger.error(f"Genre practice error: {e}")
+        return render_template('error.html', message='ジャンル別演習の準備中にエラーが発生しました'), 500
 
 @app.route('/mock_exam')
 def mock_exam():
@@ -451,8 +490,13 @@ def upload_json():
             return jsonify({'success': False, 'error': 'JSONファイルを選択してください'}), 400
         
         # ファイル内容を読み込み
-        content = file.read().decode('utf-8')
-        questions = json.loads(content)
+        try:
+            content = file.read().decode('utf-8')
+            questions = json.loads(content)
+        except UnicodeDecodeError:
+            return jsonify({'success': False, 'error': 'ファイルの文字エンコーディングが正しくありません。UTF-8形式のファイルを使用してください。'}), 400
+        except json.JSONDecodeError as e:
+            return jsonify({'success': False, 'error': f'JSONファイルの形式が正しくありません: {str(e)}'}), 400
         
         # バリデーション
         if not isinstance(questions, list):
@@ -470,7 +514,7 @@ def upload_json():
             
             # question_idがない場合は自動生成
             if 'question_id' not in question:
-                question['question_id'] = f"Q{str(i+1).zfill(3)}"
+                question['question_id'] = f"問{i+1}"
                 
             # ジャンルがない場合はデフォルト設定
             if 'genre' not in question:
@@ -504,8 +548,6 @@ def upload_json():
             'file_info': file_info
         })
         
-    except json.JSONDecodeError as e:
-        return jsonify({'success': False, 'error': f'JSONファイルの形式が正しくありません: {str(e)}'}), 400
     except Exception as e:
         app.logger.error(f"Upload JSON error: {e}")
         return jsonify({'success': False, 'error': f'JSON処理中にエラーが発生しました: {str(e)}'}), 500
