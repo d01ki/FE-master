@@ -3,121 +3,132 @@
 {% block title %}模擬試験 - {{ exam_info.display_name if exam_info else 'データベース問題' }} - {{ super() }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-bold text-white mb-2">
-                    <i class="fas fa-clipboard-list text-blue-400 mr-3"></i>模擬試験
-                </h1>
-                <p class="text-gray-300">{{ exam_info.display_name if exam_info else 'データベース問題' }} - {{ questions|length }}問</p>
-            </div>
-            
-            <!-- Timer -->
-            <div class="text-center">
-                <div id="timer" class="text-2xl font-bold text-blue-400 mb-1">60:00</div>
-                <p class="text-sm text-gray-400">残り時間</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Progress Bar -->
-    <div class="mb-8">
-        <div class="bg-gray-700 rounded-full h-2">
-            <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-        </div>
-        <p class="text-sm text-gray-400 mt-2">
-            <span id="current-question">0</span> / {{ questions|length }} 問完了
-        </p>
-    </div>
-
-    <!-- Questions -->
-    <div id="questions-container">
-        {% for question in questions %}
-        <div class="question-card card bg-gray-800 border-gray-600 mb-6 {% if not loop.first %}hidden{% endif %}" data-question-index="{{ loop.index0 }}">
-            <div class="card-header bg-gray-700 border-gray-600">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-semibold text-white">
-                        問題 {{ loop.index }} / {{ questions|length }}
-                    </h2>
-                    {% if question.genre %}
-                        <span class="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm font-medium border border-blue-500/30">
-                            {{ question.genre }}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2 flex items-center">
+                        <span class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-clipboard-list text-white text-xl"></i>
                         </span>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="card-body p-6">
-                <!-- 問題文 -->
-                <div class="mb-6">
-                    <p class="text-lg leading-relaxed text-white whitespace-pre-line">{{ question.question_text }}</p>
+                        模擬試験
+                    </h1>
+                    <p class="text-gray-300">{{ exam_info.display_name if exam_info else 'データベース問題' }} - {{ questions|length }}問</p>
                 </div>
                 
-                <!-- 選択肢 -->
-                <div class="space-y-3 mb-6">
-                    {% for choice_key, choice_text in question.choices.items() %}
-                        <label class="choice-option flex items-start p-4 border-2 border-gray-600 bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-600/50 hover:border-blue-500/50 transition-all duration-200">
-                            <input type="radio" 
-                                   name="question_{{ question.question_id or loop.index0 }}" 
-                                   value="{{ choice_key }}" 
-                                   data-question-id="{{ question.question_id or loop.index0 }}"
-                                   class="mt-1 mr-3 text-blue-500 focus:ring-blue-500 w-4 h-4">
-                            <div class="flex-1">
-                                <span class="font-medium text-blue-400 mr-2">{{ choice_key }}.</span>
-                                <span class="text-white">{{ choice_text }}</span>
-                            </div>
-                        </label>
-                    {% endfor %}
-                </div>
-                
-                <!-- Navigation -->
-                <div class="flex justify-between">
-                    {% if not loop.first %}
-                        <button onclick="previousQuestion()" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left mr-2"></i>前の問題
-                        </button>
-                    {% else %}
-                        <div></div>
-                    {% endif %}
-                    
-                    {% if not loop.last %}
-                        <button onclick="nextQuestion()" class="btn btn-primary">
-                            次の問題<i class="fas fa-arrow-right ml-2"></i>
-                        </button>
-                    {% else %}
-                        <button onclick="submitExam()" class="btn btn-success bg-green-600 hover:bg-green-700 text-white">
-                            <i class="fas fa-check mr-2"></i>試験を提出
-                        </button>
-                    {% endif %}
+                <!-- Timer -->
+                <div class="text-center bg-white/10 rounded-xl p-4 border border-white/20">
+                    <div id="timer" class="text-3xl font-bold text-blue-400 mb-1">60:00</div>
+                    <p class="text-sm text-gray-400">残り時間</p>
                 </div>
             </div>
         </div>
-        {% endfor %}
-    </div>
 
-    <!-- Submit Confirmation Modal -->
-    <div id="submit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-w-md w-full p-6">
-                <h3 class="text-lg font-semibold text-blue-400 mb-4">
-                    <i class="fas fa-question-circle mr-2"></i>試験を提出しますか？
+        <!-- Progress Bar -->
+        <div class="mb-8">
+            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-white">進捗状況</h3>
+                    <span class="text-sm text-gray-300 bg-white/10 px-3 py-1 rounded-full">
+                        <span id="current-question">0</span> / {{ questions|length }} 問完了
+                    </span>
+                </div>
+                <div class="w-full bg-gray-700/50 rounded-full h-3 overflow-hidden">
+                    <div id="progress-bar" class="bg-gradient-to-r from-orange-500 to-red-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions -->
+        <div id="questions-container">
+            {% for question in questions %}
+            <div class="question-card bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 mb-6 {% if not loop.first %}hidden{% endif %}" data-question-index="{{ loop.index0 }}">
+                <div class="bg-gradient-to-r from-orange-600/20 to-red-600/20 p-6 border-b border-white/10">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-semibold text-white">
+                            問題 {{ loop.index }} / {{ questions|length }}
+                        </h2>
+                        {% if question.genre %}
+                            <span class="px-4 py-2 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium border border-orange-500/30">
+                                {{ question.genre }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="p-8">
+                    <!-- 問題文 -->
+                    <div class="mb-8">
+                        <p class="text-white text-xl leading-relaxed whitespace-pre-line font-medium">{{ question.question_text }}</p>
+                    </div>
+                    
+                    <!-- 選択肢 -->
+                    <div class="space-y-4 mb-8">
+                        {% for choice_key, choice_text in question.choices.items() %}
+                            <label class="choice-option flex items-start p-6 border-2 border-white/20 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 hover:border-orange-500/50 transition-all duration-200 group">
+                                <input type="radio" 
+                                       name="question_{{ question.question_id or loop.index0 }}" 
+                                       value="{{ choice_key }}" 
+                                       data-question-id="{{ question.question_id or loop.index0 }}"
+                                       class="mt-2 mr-4 text-orange-500 focus:ring-orange-500 w-5 h-5 bg-white/10 border-white/30">
+                                <div class="flex-1">
+                                    <span class="font-bold text-orange-400 mr-3 text-xl">{{ choice_key }}.</span>
+                                    <span class="text-white text-lg leading-relaxed">{{ choice_text }}</span>
+                                </div>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Navigation -->
+                    <div class="flex justify-between items-center">
+                        {% if not loop.first %}
+                            <button onclick="previousQuestion()" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
+                                <i class="fas fa-arrow-left mr-2"></i>前の問題
+                            </button>
+                        {% else %}
+                            <div></div>
+                        {% endif %}
+                        
+                        {% if not loop.last %}
+                            <button onclick="nextQuestion()" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center">
+                                次の問題<i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                        {% else %}
+                            <button onclick="submitExam()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 rounded-lg transition-all duration-200 font-bold text-lg flex items-center shadow-xl">
+                                <i class="fas fa-check mr-3"></i>試験を提出する
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Submit Confirmation Modal -->
+        <div id="submit-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl max-w-md w-full p-8">
+                <h3 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <span class="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-question-circle text-orange-400"></i>
+                    </span>
+                    試験を提出しますか？
                 </h3>
-                <p class="text-gray-300 mb-4">
-                    提出後は解答を変更できません。
+                <p class="text-gray-300 mb-6 leading-relaxed">
+                    提出後は解答を変更できません。よろしいですか？
                 </p>
-                <div id="unanswered-warning" class="hidden mb-4 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-                    <p class="text-yellow-300 text-sm">
-                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                <div id="unanswered-warning" class="hidden mb-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                    <p class="text-yellow-300 text-sm flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
                         <span id="unanswered-count">0</span>問が未回答です。
                     </p>
                 </div>
-                <div class="flex justify-end space-x-3">
-                    <button onclick="closeSubmitModal()" class="btn btn-secondary">
+                <div class="flex justify-end space-x-4">
+                    <button onclick="closeSubmitModal()" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white/20">
                         戻る
                     </button>
-                    <button onclick="confirmSubmit()" class="btn btn-success bg-green-600 hover:bg-green-700 text-white">
+                    <button onclick="confirmSubmit()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold">
                         提出する
                     </button>
                 </div>
@@ -150,9 +161,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const allOptions = document.querySelectorAll(`input[name="${this.name}"]`);
             allOptions.forEach(option => {
                 const optionChoice = option.closest('.choice-option');
-                optionChoice.classList.remove('border-blue-500', 'bg-blue-500/20');
+                optionChoice.classList.remove('border-orange-500', 'bg-orange-500/20');
             });
-            choiceOption.classList.add('border-blue-500', 'bg-blue-500/20');
+            choiceOption.classList.add('border-orange-500', 'bg-orange-500/20');
+            
+            console.log(`Question ${questionId}: Selected ${this.value}`);
         });
     });
 });
@@ -178,9 +191,9 @@ function updateTimerDisplay() {
     // 残り時間が少なくなったら色を変更
     const timerElement = document.getElementById('timer');
     if (timeRemaining < 300) { // 5分未満
-        timerElement.className = 'text-2xl font-bold text-red-400 mb-1';
+        timerElement.className = 'text-3xl font-bold text-red-400 mb-1';
     } else if (timeRemaining < 600) { // 10分未満
-        timerElement.className = 'text-2xl font-bold text-yellow-400 mb-1';
+        timerElement.className = 'text-3xl font-bold text-yellow-400 mb-1';
     }
 }
 
@@ -265,33 +278,36 @@ function confirmSubmit() {
 function showResults(data) {
     // 結果画面を動的に作成
     const resultsHTML = `
-        <div class="max-w-4xl mx-auto">
-            <div class="card bg-gray-800 border-gray-600 mb-8">
-                <div class="card-header bg-gray-700 border-gray-600">
-                    <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-chart-bar text-blue-400 mr-3"></i>試験結果
+        <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-8">
+            <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden max-w-2xl w-full">
+                <div class="bg-gradient-to-r from-green-600/20 to-blue-600/20 p-8 border-b border-white/10">
+                    <h2 class="text-3xl font-bold text-white flex items-center justify-center">
+                        <span class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-chart-bar text-green-400 text-xl"></i>
+                        </span>
+                        試験結果
                     </h2>
                 </div>
-                <div class="card-body text-center p-8">
-                    <div class="mb-6">
-                        <div class="text-6xl font-bold ${data.score >= 60 ? 'text-green-400' : 'text-red-400'} mb-4">
+                <div class="text-center p-12">
+                    <div class="mb-8">
+                        <div class="text-7xl font-bold ${data.score >= 60 ? 'text-green-400' : 'text-red-400'} mb-4">
                             ${data.score}%
                         </div>
-                        <p class="text-xl text-gray-300">
+                        <p class="text-2xl text-gray-300 mb-6">
                             ${data.correct_count} / ${data.total_count} 問正解
                         </p>
-                        <div class="mt-4">
+                        <div>
                             ${data.score >= 60 ? 
-                                '<span class="inline-flex items-center px-4 py-2 bg-green-500/20 text-green-300 rounded-full font-medium border border-green-500/30"><i class="fas fa-check mr-2"></i>合格</span>' :
-                                '<span class="inline-flex items-center px-4 py-2 bg-red-500/20 text-red-300 rounded-full font-medium border border-red-500/30"><i class="fas fa-times mr-2"></i>不合格</span>'
+                                '<span class="inline-flex items-center px-6 py-3 bg-green-500/20 text-green-300 rounded-full font-bold text-lg border border-green-500/30"><i class="fas fa-check mr-3"></i>合格</span>' :
+                                '<span class="inline-flex items-center px-6 py-3 bg-red-500/20 text-red-300 rounded-full font-bold text-lg border border-red-500/30"><i class="fas fa-times mr-3"></i>不合格</span>'
                             }
                         </div>
                     </div>
                     <div class="flex justify-center space-x-4">
-                        <a href="/mock_exam" class="btn btn-primary">
+                        <a href="/mock_exam" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center">
                             <i class="fas fa-redo mr-2"></i>再挑戦
                         </a>
-                        <a href="/" class="btn btn-secondary">
+                        <a href="/" class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
                             <i class="fas fa-home mr-2"></i>ダッシュボード
                         </a>
                     </div>
@@ -300,23 +316,7 @@ function showResults(data) {
         </div>
     `;
     
-    document.body.innerHTML = `
-        <!DOCTYPE html>
-        <html lang="ja">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>試験結果</title>
-            <script src="https://cdn.tailwindcss.com"></script>
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-        </head>
-        <body class="bg-gray-900 text-white min-h-screen">
-            <div class="container mx-auto px-4 py-8">
-                ${resultsHTML}
-            </div>
-        </body>
-        </html>
-    `;
+    document.body.innerHTML = resultsHTML;
 }
 
 // キーボードショートカット
