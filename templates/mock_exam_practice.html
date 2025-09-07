@@ -8,26 +8,26 @@
     <div class="mb-8">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">
-                    <i class="fas fa-clipboard-list text-primary mr-3"></i>模擬試験
+                <h1 class="text-3xl font-bold text-white mb-2">
+                    <i class="fas fa-clipboard-list text-blue-400 mr-3"></i>模擬試験
                 </h1>
-                <p class="text-gray-600">{{ exam_info.display_name if exam_info else 'データベース問題' }} - {{ questions|length }}問</p>
+                <p class="text-gray-300">{{ exam_info.display_name if exam_info else 'データベース問題' }} - {{ questions|length }}問</p>
             </div>
             
             <!-- Timer -->
             <div class="text-center">
-                <div id="timer" class="text-2xl font-bold text-primary mb-1">60:00</div>
-                <p class="text-sm text-gray-500">残り時間</p>
+                <div id="timer" class="text-2xl font-bold text-blue-400 mb-1">60:00</div>
+                <p class="text-sm text-gray-400">残り時間</p>
             </div>
         </div>
     </div>
 
     <!-- Progress Bar -->
     <div class="mb-8">
-        <div class="bg-gray-200 rounded-full h-2">
+        <div class="bg-gray-700 rounded-full h-2">
             <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
         </div>
-        <p class="text-sm text-gray-500 mt-2">
+        <p class="text-sm text-gray-400 mt-2">
             <span id="current-question">0</span> / {{ questions|length }} 問完了
         </p>
     </div>
@@ -35,38 +35,38 @@
     <!-- Questions -->
     <div id="questions-container">
         {% for question in questions %}
-        <div class="question-card card mb-6 {% if not loop.first %}hidden{% endif %}" data-question-index="{{ loop.index0 }}">
-            <div class="card-header">
+        <div class="question-card card bg-gray-800 border-gray-600 mb-6 {% if not loop.first %}hidden{% endif %}" data-question-index="{{ loop.index0 }}">
+            <div class="card-header bg-gray-700 border-gray-600">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-semibold text-gray-900">
+                    <h2 class="text-xl font-semibold text-white">
                         問題 {{ loop.index }} / {{ questions|length }}
                     </h2>
                     {% if question.genre %}
-                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                        <span class="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm font-medium border border-blue-500/30">
                             {{ question.genre }}
                         </span>
                     {% endif %}
                 </div>
             </div>
             
-            <div class="card-body">
+            <div class="card-body p-6">
                 <!-- 問題文 -->
                 <div class="mb-6">
-                    <p class="text-lg leading-relaxed text-gray-800">{{ question.question_text }}</p>
+                    <p class="text-lg leading-relaxed text-white whitespace-pre-line">{{ question.question_text }}</p>
                 </div>
                 
                 <!-- 選択肢 -->
                 <div class="space-y-3 mb-6">
                     {% for choice_key, choice_text in question.choices.items() %}
-                        <label class="choice-option flex items-start p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200">
+                        <label class="choice-option flex items-start p-4 border-2 border-gray-600 bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-600/50 hover:border-blue-500/50 transition-all duration-200">
                             <input type="radio" 
                                    name="question_{{ question.question_id or loop.index0 }}" 
                                    value="{{ choice_key }}" 
                                    data-question-id="{{ question.question_id or loop.index0 }}"
-                                   class="mt-1 mr-3 text-primary focus:ring-primary">
+                                   class="mt-1 mr-3 text-blue-500 focus:ring-blue-500 w-4 h-4">
                             <div class="flex-1">
-                                <span class="font-medium text-gray-700 mr-2">{{ choice_key }}.</span>
-                                <span class="text-gray-800">{{ choice_text }}</span>
+                                <span class="font-medium text-blue-400 mr-2">{{ choice_key }}.</span>
+                                <span class="text-white">{{ choice_text }}</span>
                             </div>
                         </label>
                     {% endfor %}
@@ -87,7 +87,7 @@
                             次の問題<i class="fas fa-arrow-right ml-2"></i>
                         </button>
                     {% else %}
-                        <button onclick="submitExam()" class="btn btn-success">
+                        <button onclick="submitExam()" class="btn btn-success bg-green-600 hover:bg-green-700 text-white">
                             <i class="fas fa-check mr-2"></i>試験を提出
                         </button>
                     {% endif %}
@@ -100,15 +100,15 @@
     <!-- Submit Confirmation Modal -->
     <div id="submit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                <h3 class="text-lg font-semibold text-primary mb-4">
+            <div class="bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 class="text-lg font-semibold text-blue-400 mb-4">
                     <i class="fas fa-question-circle mr-2"></i>試験を提出しますか？
                 </h3>
-                <p class="text-gray-700 mb-4">
+                <p class="text-gray-300 mb-4">
                     提出後は解答を変更できません。
                 </p>
-                <div id="unanswered-warning" class="hidden mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p class="text-yellow-800 text-sm">
+                <div id="unanswered-warning" class="hidden mb-4 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                    <p class="text-yellow-300 text-sm">
                         <i class="fas fa-exclamation-triangle mr-1"></i>
                         <span id="unanswered-count">0</span>問が未回答です。
                     </p>
@@ -117,7 +117,7 @@
                     <button onclick="closeSubmitModal()" class="btn btn-secondary">
                         戻る
                     </button>
-                    <button onclick="confirmSubmit()" class="btn btn-success">
+                    <button onclick="confirmSubmit()" class="btn btn-success bg-green-600 hover:bg-green-700 text-white">
                         提出する
                     </button>
                 </div>
@@ -144,6 +144,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const questionId = this.dataset.questionId;
             answers[questionId] = this.value;
             updateProgress();
+            
+            // 選択されたオプションのスタイルを更新
+            const choiceOption = this.closest('.choice-option');
+            const allOptions = document.querySelectorAll(`input[name="${this.name}"]`);
+            allOptions.forEach(option => {
+                const optionChoice = option.closest('.choice-option');
+                optionChoice.classList.remove('border-blue-500', 'bg-blue-500/20');
+            });
+            choiceOption.classList.add('border-blue-500', 'bg-blue-500/20');
         });
     });
 });
@@ -169,9 +178,9 @@ function updateTimerDisplay() {
     // 残り時間が少なくなったら色を変更
     const timerElement = document.getElementById('timer');
     if (timeRemaining < 300) { // 5分未満
-        timerElement.className = 'text-2xl font-bold text-red-600 mb-1';
+        timerElement.className = 'text-2xl font-bold text-red-400 mb-1';
     } else if (timeRemaining < 600) { // 10分未満
-        timerElement.className = 'text-2xl font-bold text-yellow-600 mb-1';
+        timerElement.className = 'text-2xl font-bold text-yellow-400 mb-1';
     }
 }
 
@@ -192,6 +201,9 @@ function showQuestion(index) {
         }
     });
     currentQuestionIndex = index;
+    
+    // ページトップにスクロール
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function nextQuestion() {
@@ -254,24 +266,24 @@ function showResults(data) {
     // 結果画面を動的に作成
     const resultsHTML = `
         <div class="max-w-4xl mx-auto">
-            <div class="card mb-8">
-                <div class="card-header">
-                    <h2 class="text-2xl font-bold text-gray-900">
-                        <i class="fas fa-chart-bar text-primary mr-3"></i>試験結果
+            <div class="card bg-gray-800 border-gray-600 mb-8">
+                <div class="card-header bg-gray-700 border-gray-600">
+                    <h2 class="text-2xl font-bold text-white">
+                        <i class="fas fa-chart-bar text-blue-400 mr-3"></i>試験結果
                     </h2>
                 </div>
-                <div class="card-body text-center">
+                <div class="card-body text-center p-8">
                     <div class="mb-6">
-                        <div class="text-6xl font-bold ${data.score >= 60 ? 'text-green-600' : 'text-red-600'} mb-4">
+                        <div class="text-6xl font-bold ${data.score >= 60 ? 'text-green-400' : 'text-red-400'} mb-4">
                             ${data.score}%
                         </div>
-                        <p class="text-xl text-gray-600">
+                        <p class="text-xl text-gray-300">
                             ${data.correct_count} / ${data.total_count} 問正解
                         </p>
                         <div class="mt-4">
                             ${data.score >= 60 ? 
-                                '<span class="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium"><i class="fas fa-check mr-2"></i>合格</span>' :
-                                '<span class="inline-flex items-center px-4 py-2 bg-red-100 text-red-800 rounded-full font-medium"><i class="fas fa-times mr-2"></i>不合格</span>'
+                                '<span class="inline-flex items-center px-4 py-2 bg-green-500/20 text-green-300 rounded-full font-medium border border-green-500/30"><i class="fas fa-check mr-2"></i>合格</span>' :
+                                '<span class="inline-flex items-center px-4 py-2 bg-red-500/20 text-red-300 rounded-full font-medium border border-red-500/30"><i class="fas fa-times mr-2"></i>不合格</span>'
                             }
                         </div>
                     </div>
@@ -288,7 +300,23 @@ function showResults(data) {
         </div>
     `;
     
-    document.body.innerHTML = resultsHTML;
+    document.body.innerHTML = `
+        <!DOCTYPE html>
+        <html lang="ja">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>試験結果</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        </head>
+        <body class="bg-gray-900 text-white min-h-screen">
+            <div class="container mx-auto px-4 py-8">
+                ${resultsHTML}
+            </div>
+        </body>
+        </html>
+    `;
 }
 
 // キーボードショートカット
