@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-    <div class="container mx-auto px-4 py-8">
+    <div class="container mx-auto px-6 py-8">
         <!-- Header -->
         <div class="mb-8">
             <div class="flex items-center justify-between bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
@@ -212,10 +212,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add click event listeners to all choice options
     document.querySelectorAll('.choice-option').forEach(option => {
-        option.addEventListener('click', function() {
+        option.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
             const questionIndex = parseInt(this.getAttribute('data-question-index'));
             const choiceKey = this.getAttribute('data-choice');
-            console.log('Choice clicked:', questionIndex, choiceKey);
+            
+            console.log('Choice clicked:', questionIndex, choiceKey, this);
             selectChoice(questionIndex, choiceKey);
         });
     });

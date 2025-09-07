@@ -105,7 +105,7 @@
 <body class="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
     <!-- Navigation -->
     <nav class="sticky top-0 z-50 backdrop-blur-md bg-white/5 border-b border-white/10">
-        <div class="container mx-auto px-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <!-- Logo -->
                 <a href="{{ url_for('index') }}" class="flex items-center space-x-3 group">
@@ -176,7 +176,7 @@
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="container mx-auto px-4 py-4">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }} mb-4 p-4 rounded-lg border backdrop-blur-sm fade-in-up
                         {% if category == 'error' %}bg-red-500/20 border-red-500/30 text-red-300
@@ -204,7 +204,7 @@
 
     <!-- Footer -->
     <footer class="bg-white/5 backdrop-blur-sm border-t border-white/10 mt-auto">
-        <div class="container mx-auto px-4 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="text-center">
                 <p class="text-gray-400 mb-4">基本情報技術者試験 学習アプリ</p>
                 <div class="flex justify-center space-x-6 text-sm text-gray-500">

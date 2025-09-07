@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-    <div class="container mx-auto px-4 py-8">
+    <div class="container mx-auto px-6 py-8">
         <!-- Header -->
         <div class="mb-8">
             <div class="flex items-center justify-between bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
@@ -69,9 +69,9 @@
                         {% for choice_key, choice_text in question.choices.items() %}
                             <label class="choice-option flex items-start p-6 border-2 border-white/20 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 hover:border-orange-500/50 transition-all duration-200 group">
                                 <input type="radio" 
-                                       name="question_{{ question.question_id or loop.index0 }}" 
+                                       name="question_{{ loop.index0 }}" 
                                        value="{{ choice_key }}" 
-                                       data-question-id="{{ question.question_id or loop.index0 }}"
+                                       data-question-index="{{ loop.index0 }}"
                                        class="mt-2 mr-4 text-orange-500 focus:ring-orange-500 w-5 h-5 bg-white/10 border-white/30">
                                 <div class="flex-1">
                                     <span class="font-bold text-orange-400 mr-3 text-xl">{{ choice_key }}.</span>
@@ -96,7 +96,7 @@
                                 次の問題<i class="fas fa-arrow-right ml-2"></i>
                             </button>
                         {% else %}
-                            <button onclick="submitExam()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 rounded-lg transition-all duration-200 font-bold text-lg flex items-center shadow-xl">
+                            <button onclick="submitExam()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 rounded-lg transition-all duration-200 font-bold text-lg flex items-center shadow-xl transform hover:scale-105">
                                 <i class="fas fa-check mr-3"></i>試験を提出する
                             </button>
                         {% endif %}
@@ -145,6 +145,8 @@ let timeRemaining = timeLimit;
 let timerInterval;
 let answers = {};
 
+console.log('Mock exam initialized with', totalQuestions, 'questions');
+
 document.addEventListener('DOMContentLoaded', function() {
     startTimer();
     updateProgress();
@@ -152,8 +154,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 解答の保存
     document.querySelectorAll('input[type="radio"]').forEach(input => {
         input.addEventListener('change', function() {
-            const questionId = this.dataset.questionId;
-            answers[questionId] = this.value;
+            const questionIndex = this.dataset.questionIndex;
+            answers[questionIndex] = this.value;
             updateProgress();
             
             // 選択されたオプションのスタイルを更新
@@ -165,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             choiceOption.classList.add('border-orange-500', 'bg-orange-500/20');
             
-            console.log(`Question ${questionId}: Selected ${this.value}`);
+            console.log(`Question ${questionIndex}: Selected ${this.value}`);
         });
     });
 });
@@ -259,19 +261,29 @@ function confirmSubmit() {
         },
         body: JSON.stringify({ answers: answers })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert('エラー: ' + data.error);
-            return;
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || 'サーバーエラーが発生しました');
+            });
         }
-        
-        // 結果を表示
+        return response.json();
+    })
+    .then(data => {
+        console.log('Exam result:', data);
         showResults(data);
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('提出中にエラーが発生しました。');
+        alert('提出中にエラーが発生しました: ' + error.message);
+        
+        // タイマーを再開
+        if (timeRemaining > 0) {
+            startTimer();
+        }
+        
+        // モーダルを閉じる
+        closeSubmitModal();
     });
 }
 
