@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,257 +7,168 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Custom animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        /* Glassmorphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Button hover effects */
+        .btn-hover {
+            transition: all 0.3s ease;
+            transform: translateY(0);
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        primary: '#3b82f6',
-                        secondary: '#64748b',
-                        success: '#10b981',
-                        warning: '#f59e0b',
-                        danger: '#ef4444',
-                        dark: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9',
-                            200: '#e2e8f0',
-                            300: '#cbd5e1',
-                            400: '#94a3b8',
-                            500: '#64748b',
-                            600: '#475569',
-                            700: '#334155',
-                            800: '#1e293b',
-                            850: '#172033',
-                            900: '#0f172a',
-                            950: '#020617'
-                        }
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
                     },
                     animation: {
-                        'gradient': 'gradient 15s ease infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'float': 'float 3s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s infinite',
                     },
                     keyframes: {
-                        gradient: {
-                            '0%, 100%': {
-                                'background-size': '200% 200%',
-                                'background-position': 'left center'
-                            },
-                            '50%': {
-                                'background-size': '200% 200%',
-                                'background-position': 'right center'
-                            },
-                        },
                         float: {
                             '0%, 100%': { transform: 'translateY(0px)' },
-                            '50%': { transform: 'translateY(-20px)' },
-                        },
-                        glow: {
-                            '0%': { 'box-shadow': '0 0 20px rgba(59, 130, 246, 0.5)' },
-                            '100%': { 'box-shadow': '0 0 40px rgba(59, 130, 246, 0.8)' },
+                            '50%': { transform: 'translateY(-10px)' }
                         }
                     }
                 }
             }
         }
     </script>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
-    <style>
-        /* Dark theme base */
-        body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            min-height: 100vh;
-        }
-        
-        .card {
-            @apply bg-gray-800 rounded-xl shadow-2xl border border-gray-700 transition-all duration-300 hover:shadow-blue-500/10 hover:shadow-2xl hover:border-gray-600;
-        }
-        .card-header {
-            @apply px-6 py-4 border-b border-gray-600 bg-gray-750 rounded-t-xl;
-        }
-        .card-body {
-            @apply px-6 py-4;
-        }
-        .btn {
-            @apply inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 transform hover:scale-105;
-        }
-        .btn-primary {
-            @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white focus:ring-blue-500 shadow-lg hover:shadow-blue-500/25;
-        }
-        .btn-secondary {
-            @apply bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white focus:ring-gray-500 shadow-lg;
-        }
-        .btn-success {
-            @apply bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white focus:ring-green-500 shadow-lg hover:shadow-green-500/25;
-        }
-        .btn-warning {
-            @apply bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white focus:ring-yellow-500 shadow-lg hover:shadow-yellow-500/25;
-        }
-        .btn-danger {
-            @apply bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white focus:ring-red-500 shadow-lg hover:shadow-red-500/25;
-        }
-        .gradient-bg {
-            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-        }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .nav-link {
-            @apply relative px-4 py-2 text-gray-300 hover:text-blue-400 transition-all duration-200 rounded-lg hover:bg-gray-800/50;
-        }
-        .nav-link.active {
-            @apply text-blue-400 bg-gray-800/50;
-        }
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 2px;
-            bottom: 0;
-            left: 50%;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-            transition: all 0.3s ease;
-        }
-        .nav-link:hover::after,
-        .nav-link.active::after {
-            width: 80%;
-            left: 10%;
-        }
-        
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(45deg, #2563eb, #7c3aed);
-        }
-        
-        /* Enhanced effects */
-        .bg-gray-750 {
-            background-color: #293548;
-        }
-        
-        .hero-pattern {
-            background-image: radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-                              radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
-        }
-
-        /* Navigation bar should NOT be sticky on practice pages */
-        .nav-normal {
-            position: relative;
-        }
-        
-        .nav-sticky {
-            position: sticky;
-            top: 0;
-            z-index: 40;
-        }
-    </style>
 </head>
-<body class="bg-gray-900 min-h-screen text-gray-100 hero-pattern">
+<body class="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
     <!-- Navigation -->
-    <nav class="bg-gray-800/80 backdrop-blur-xl shadow-xl border-b border-gray-700/50 {% if request.endpoint in ['practice_by_genre', 'show_question'] %}nav-normal{% else %}nav-sticky{% endif %}">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <!-- Logo and Brand -->
-                <div class="flex items-center">
-                    <a href="{{ url_for('index') }}" class="flex items-center space-x-3 hover:scale-105 transition-transform duration-200">
-                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg animate-glow">
-                            <i class="fas fa-graduation-cap text-white text-lg"></i>
-                        </div>
-                        <div class="hidden sm:block">
-                            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">FE Master</h1>
-                            <p class="text-xs text-gray-400">基本情報技術者試験</p>
-                        </div>
-                    </a>
-                </div>
-
-                <!-- Main Navigation -->
-                <div class="hidden md:flex items-center space-x-2">
-                    <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+    <nav class="sticky top-0 z-50 backdrop-blur-md bg-white/5 border-b border-white/10">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="{{ url_for('index') }}" class="flex items-center space-x-3 group">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <i class="fas fa-graduation-cap text-white text-lg"></i>
+                    </div>
+                    <span class="text-xl font-bold text-white hidden sm:block">FE学習アプリ</span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-1">
+                    <a href="{{ url_for('index') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'index' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-home mr-2"></i>ダッシュボード
                     </a>
-                    <a href="{{ url_for('random_question') }}" class="nav-link">
-                        <i class="fas fa-random mr-2"></i>ランダム練習
+                    <a href="{{ url_for('genre_practice') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'genre_practice' or request.endpoint == 'practice_by_genre' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-dumbbell mr-2"></i>ジャンル別演習
                     </a>
-                    <a href="{{ url_for('genre_practice') }}" class="nav-link {% if request.endpoint == 'genre_practice' %}active{% endif %}">
-                        <i class="fas fa-tags mr-2"></i>ジャンル別演習
-                    </a>
-                    <a href="{{ url_for('mock_exam') }}" class="nav-link {% if request.endpoint == 'mock_exam' %}active{% endif %}">
+                    <a href="{{ url_for('mock_exam') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'mock_exam' or request.endpoint == 'mock_exam_start' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-clipboard-list mr-2"></i>模擬試験
                     </a>
-                    <a href="{{ url_for('history') }}" class="nav-link {% if request.endpoint == 'history' %}active{% endif %}">
-                        <i class="fas fa-history mr-2"></i>学習履歴
+                    <a href="{{ url_for('history') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-chart-line mr-2"></i>学習履歴
                     </a>
                 </div>
-
-                <!-- Admin and Mobile Menu -->
+                
+                <!-- Admin Link -->
                 <div class="flex items-center space-x-3">
-                    <!-- Admin Button -->
                     {% if session.admin_authenticated %}
-                        <div class="hidden md:flex items-center space-x-2">
-                            <a href="{{ url_for('admin') }}" class="btn btn-secondary text-xs py-2 px-4">
-                                <i class="fas fa-cog mr-1"></i>管理画面
-                            </a>
-                            <a href="{{ url_for('admin_logout') }}" class="btn btn-danger text-xs py-2 px-4">
-                                <i class="fas fa-sign-out-alt mr-1"></i>ログアウト
-                            </a>
-                        </div>
+                        <a href="{{ url_for('admin') }}" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium flex items-center">
+                            <i class="fas fa-cog mr-2"></i>管理
+                        </a>
+                        <a href="{{ url_for('admin_logout') }}" class="text-gray-400 hover:text-white transition-colors duration-200">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('admin_login') }}" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
+                            <i class="fas fa-user-shield mr-2"></i>管理者
+                        </a>
                     {% endif %}
-
+                    
                     <!-- Mobile menu button -->
-                    <div class="md:hidden">
-                        <button id="mobile-menu-btn" class="text-gray-400 hover:text-blue-400 transition-colors duration-200 p-2 rounded-lg hover:bg-gray-800/50">
-                            <i class="fas fa-bars text-xl"></i>
-                        </button>
-                    </div>
+                    <button class="md:hidden text-gray-400 hover:text-white" onclick="toggleMobileMenu()">
+                        <i class="fas fa-bars"></i>
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <!-- Mobile menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-gray-800/95 backdrop-blur-xl border-t border-gray-700/50">
-            <div class="px-2 pt-2 pb-3 space-y-1">
-                <a href="{{ url_for('index') }}" class="block px-3 py-2 text-gray-300 hover:text-blue-400 hover:bg-gray-700/50 rounded-md transition-all duration-200">
-                    <i class="fas fa-home mr-2"></i>ダッシュボード
-                </a>
-                <a href="{{ url_for('random_question') }}" class="block px-3 py-2 text-gray-300 hover:text-blue-400 hover:bg-gray-700/50 rounded-md transition-all duration-200">
-                    <i class="fas fa-random mr-2"></i>ランダム練習
-                </a>
-                <a href="{{ url_for('genre_practice') }}" class="block px-3 py-2 text-gray-300 hover:text-blue-400 hover:bg-gray-700/50 rounded-md transition-all duration-200">
-                    <i class="fas fa-tags mr-2"></i>ジャンル別演習
-                </a>
-                <a href="{{ url_for('mock_exam') }}" class="block px-3 py-2 text-gray-300 hover:text-blue-400 hover:bg-gray-700/50 rounded-md transition-all duration-200">
-                    <i class="fas fa-clipboard-list mr-2"></i>模擬試験
-                </a>
-                <a href="{{ url_for('history') }}" class="block px-3 py-2 text-gray-300 hover:text-blue-400 hover:bg-gray-700/50 rounded-md transition-all duration-200">
-                    <i class="fas fa-history mr-2"></i>学習履歴
-                </a>
-                {% if session.admin_authenticated %}
-                    <hr class="my-2 border-gray-700">
-                    <a href="{{ url_for('admin') }}" class="block px-3 py-2 text-gray-300 hover:text-blue-400 hover:bg-gray-700/50 rounded-md transition-all duration-200">
-                        <i class="fas fa-cog mr-2"></i>管理画面
+            
+            <!-- Mobile Navigation -->
+            <div id="mobile-menu" class="hidden md:hidden py-4 border-t border-white/10">
+                <div class="space-y-2">
+                    <a href="{{ url_for('index') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'index' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-home mr-2"></i>ダッシュボード
                     </a>
-                    <a href="{{ url_for('admin_logout') }}" class="block px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-md transition-all duration-200">
-                        <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                    <a href="{{ url_for('genre_practice') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'genre_practice' or request.endpoint == 'practice_by_genre' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-dumbbell mr-2"></i>ジャンル別演習
                     </a>
-                {% endif %}
+                    <a href="{{ url_for('mock_exam') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'mock_exam' or request.endpoint == 'mock_exam_start' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-clipboard-list mr-2"></i>模擬試験
+                    </a>
+                    <a href="{{ url_for('history') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-chart-line mr-2"></i>学習履歴
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
@@ -265,16 +176,20 @@
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            <div class="container mx-auto px-4 py-4">
                 {% for category, message in messages %}
-                    <div class="mb-4 p-4 rounded-xl border-l-4 backdrop-blur-sm {% if category == 'error' %}bg-red-900/50 border-red-500 text-red-200{% elif category == 'success' %}bg-green-900/50 border-green-500 text-green-200{% elif category == 'warning' %}bg-yellow-900/50 border-yellow-500 text-yellow-200{% else %}bg-blue-900/50 border-blue-500 text-blue-200{% endif %} animate-pulse">
+                    <div class="alert alert-{{ category }} mb-4 p-4 rounded-lg border backdrop-blur-sm fade-in-up
+                        {% if category == 'error' %}bg-red-500/20 border-red-500/30 text-red-300
+                        {% elif category == 'success' %}bg-green-500/20 border-green-500/30 text-green-300
+                        {% elif category == 'info' %}bg-blue-500/20 border-blue-500/30 text-blue-300
+                        {% else %}bg-yellow-500/20 border-yellow-500/30 text-yellow-300{% endif %}">
                         <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <i class="fas {% if category == 'error' %}fa-exclamation-circle{% elif category == 'success' %}fa-check-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm font-medium">{{ message }}</p>
-                            </div>
+                            <i class="fas 
+                                {% if category == 'error' %}fa-exclamation-circle
+                                {% elif category == 'success' %}fa-check-circle
+                                {% elif category == 'info' %}fa-info-circle
+                                {% else %}fa-exclamation-triangle{% endif %} mr-3"></i>
+                            {{ message }}
                         </div>
                     </div>
                 {% endfor %}
@@ -283,29 +198,21 @@
     {% endwith %}
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-1">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800/80 backdrop-blur-xl border-t border-gray-700/50 mt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="flex items-center space-x-3 mb-4 md:mb-0">
-                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                        <i class="fas fa-graduation-cap text-white text-sm"></i>
-                    </div>
-                    <h3 class="text-lg font-semibold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">FE Master</h3>
-                </div>
-                
-                <p class="text-sm text-gray-400 text-center">
-                    © 2025 基本情報技術者試験学習アプリ
-                </p>
-                
-                <div class="flex items-center space-x-4 mt-4 md:mt-0">
-                    <span class="text-sm text-gray-400">
-                        <i class="fas fa-code mr-1"></i>Flask + SQLite + Tailwind CSS
-                    </span>
+    <footer class="bg-white/5 backdrop-blur-sm border-t border-white/10 mt-auto">
+        <div class="container mx-auto px-4 py-8">
+            <div class="text-center">
+                <p class="text-gray-400 mb-4">基本情報技術者試験 学習アプリ</p>
+                <div class="flex justify-center space-x-6 text-sm text-gray-500">
+                    <span>Flask + SQLite</span>
+                    <span>•</span>
+                    <span>Tailwind CSS</span>
+                    <span>•</span>
+                    <span>Font Awesome</span>
                 </div>
             </div>
         </div>
@@ -313,105 +220,34 @@
 
     <!-- Scripts -->
     <script>
-        // Mobile menu toggle
-        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
-            const mobileMenu = document.getElementById('mobile-menu');
-            const icon = this.querySelector('i');
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('mobile-menu');
+            const button = event.target.closest('button');
             
-            if (mobileMenu.classList.contains('hidden')) {
-                mobileMenu.classList.remove('hidden');
-                icon.classList.remove('fa-bars');
-                icon.classList.add('fa-times');
-            } else {
-                mobileMenu.classList.add('hidden');
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
+            if (!menu.contains(event.target) && !button) {
+                menu.classList.add('hidden');
             }
         });
-
+        
         // Auto-hide flash messages
         setTimeout(function() {
-            const flashMessages = document.querySelectorAll('[class*="bg-red-900"], [class*="bg-green-900"], [class*="bg-yellow-900"], [class*="bg-blue-900"]');
-            flashMessages.forEach(function(message) {
-                if (message.querySelector('i') && message.querySelector('p')) {
-                    message.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
-                    message.style.opacity = '0';
-                    message.style.transform = 'translateX(-100%)';
-                    setTimeout(function() {
-                        message.remove();
-                    }, 500);
-                }
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-20px)';
+                setTimeout(function() {
+                    alert.remove();
+                }, 300);
             });
         }, 5000);
-
-        // Smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-
-        // Enhanced button loading animation
-        document.querySelectorAll('.btn').forEach(button => {
-            button.addEventListener('click', function(e) {
-                if (this.type === 'submit' || this.closest('form')) {
-                    const originalText = this.innerHTML;
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>処理中...';
-                    this.disabled = true;
-                    this.classList.add('animate-pulse');
-                    
-                    // Re-enable after 3 seconds as fallback
-                    setTimeout(() => {
-                        this.innerHTML = originalText;
-                        this.disabled = false;
-                        this.classList.remove('animate-pulse');
-                    }, 3000);
-                }
-            });
-        });
-
-        // Add parallax effect to hero sections
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            const parallax = document.querySelector('.hero-pattern');
-            if (parallax) {
-                parallax.style.transform = `translateY(${scrolled * 0.1}px)`;
-            }
-        });
-
-        // Add intersection observer for animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, observerOptions);
-
-        // Observe cards for animation
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.card').forEach(card => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-                observer.observe(card);
-            });
-        });
     </script>
-
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>

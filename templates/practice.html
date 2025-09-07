@@ -3,179 +3,190 @@
 {% block title %}{{ genre }} - 練習問題 - {{ super() }}{% endblock %}
 
 {% block content %}
-<!-- Header -->
-<div class="mb-8">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-3xl font-bold text-white mb-2">
-                <i class="fas fa-dumbbell text-blue-400 mr-3"></i>{{ genre }} - 練習問題
-            </h1>
-            <p class="text-gray-300">{{ questions|length }}問の練習問題に挑戦しましょう</p>
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2 flex items-center">
+                        <span class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-dumbbell text-white text-xl"></i>
+                        </span>
+                        {{ genre }} 練習問題
+                    </h1>
+                    <p class="text-gray-300">{{ questions|length }}問の練習問題に挑戦しましょう</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="{{ url_for('genre_practice') }}" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
+                        <i class="fas fa-arrow-left mr-2"></i>ジャンル選択に戻る
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="flex items-center space-x-3">
-            <a href="{{ url_for('genre_practice') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left mr-2"></i>ジャンル選択に戻る
-            </a>
-        </div>
-    </div>
-</div>
 
-<!-- Progress Section -->
-<div class="mb-8">
-    <div class="card bg-gray-800 border-gray-700">
-        <div class="card-body p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-white">学習進捗</h3>
-                <span id="progress-text" class="text-sm text-gray-300">0 / {{ questions|length }}</span>
-            </div>
-            <div class="w-full bg-gray-700 rounded-full h-3">
-                <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
-            </div>
-            <div class="flex justify-between items-center mt-4">
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-300">
-                        <i class="fas fa-check-circle text-green-400 mr-1"></i>
-                        正解: <span id="correct-count">0</span>
-                    </span>
-                    <span class="text-sm text-gray-300">
-                        <i class="fas fa-times-circle text-red-400 mr-1"></i>
-                        不正解: <span id="incorrect-count">0</span>
-                    </span>
+        <!-- Progress Section -->
+        <div class="mb-8">
+            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-white">学習進捗</h3>
+                    <span id="progress-text" class="text-sm text-gray-300 bg-white/10 px-3 py-1 rounded-full">0 / {{ questions|length }}</span>
                 </div>
-                <div class="text-sm text-gray-300">
-                    正答率: <span id="accuracy-rate">0%</span>
+                <div class="w-full bg-gray-700/50 rounded-full h-3 overflow-hidden">
+                    <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between items-center mt-4">
+                    <div class="flex items-center space-x-6">
+                        <span class="text-sm text-gray-300 flex items-center">
+                            <span class="w-3 h-3 bg-green-400 rounded-full mr-2"></span>
+                            正解: <span id="correct-count" class="font-semibold ml-1">0</span>
+                        </span>
+                        <span class="text-sm text-gray-300 flex items-center">
+                            <span class="w-3 h-3 bg-red-400 rounded-full mr-2"></span>
+                            不正解: <span id="incorrect-count" class="font-semibold ml-1">0</span>
+                        </span>
+                    </div>
+                    <div class="text-sm text-gray-300">
+                        正答率: <span id="accuracy-rate" class="font-semibold text-white">0%</span>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Question Section -->
-<div id="question-container" class="mb-8">
-    {% for question in questions %}
-    <div class="question-card {% if loop.index0 != 0 %}hidden{% endif %} card bg-gray-800 border-gray-700" data-question-index="{{ loop.index0 }}">
-        <div class="card-header bg-gray-700 border-gray-600">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-white">
-                    問題 {{ loop.index }} / {{ questions|length }}
-                </h3>
-                <div class="flex items-center space-x-2">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                        {{ genre }}
-                    </span>
-                </div>
-            </div>
-        </div>
-        <div class="card-body p-6">
-            <div class="question-text mb-6">
-                <p class="text-white text-lg leading-relaxed whitespace-pre-line">{{ question.question_text }}</p>
-            </div>
-            
-            <div class="choices-container space-y-3">
-                {% for choice_key, choice_text in question.choices.items() %}
-                <div class="choice-option cursor-pointer p-4 bg-gray-700/50 rounded-lg hover:bg-gray-600/50 transition-colors duration-200 border-2 border-transparent hover:border-blue-500/30" 
-                     data-choice="{{ choice_key }}" 
-                     data-question-index="{{ loop.index0 }}"
-                     onclick="selectChoice({{ loop.index0 }}, '{{ choice_key }}')">
-                    <div class="flex items-start">
-                        <div class="flex items-center mr-4 mt-1">
-                            <div class="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio">
-                                <div class="w-3 h-3 rounded-full bg-blue-500 hidden choice-dot"></div>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <span class="font-medium text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
-                            <span class="text-white text-base">{{ choice_text }}</span>
+        <!-- Question Section -->
+        <div id="question-container" class="mb-8">
+            {% for question in questions %}
+            <div class="question-card {% if loop.index0 != 0 %}hidden{% endif %} bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden" data-question-index="{{ loop.index0 }}">
+                <div class="bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-6 border-b border-white/10">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-bold text-white">
+                            問題 {{ loop.index }} / {{ questions|length }}
+                        </h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                {{ genre }}
+                            </span>
                         </div>
                     </div>
                 </div>
-                {% endfor %}
-            </div>
-            
-            <div class="mt-6 flex justify-between items-center">
-                <button onclick="previousQuestion()" 
-                        class="btn btn-secondary {% if loop.index0 == 0 %}opacity-50 cursor-not-allowed{% endif %}"
-                        {% if loop.index0 == 0 %}disabled{% endif %}>
-                    <i class="fas fa-chevron-left mr-2"></i>前の問題
-                </button>
                 
-                <div class="text-center">
-                    <span id="selection-status-{{ loop.index0 }}" class="text-gray-400 text-sm">選択肢をクリックして解答してください</span>
+                <div class="p-8">
+                    <!-- 問題文 -->
+                    <div class="mb-8">
+                        <p class="text-white text-lg leading-relaxed whitespace-pre-line font-medium">{{ question.question_text }}</p>
+                    </div>
+                    
+                    <!-- 選択肢 -->
+                    <div class="choices-container space-y-4 mb-8">
+                        {% for choice_key, choice_text in question.choices.items() %}
+                        <div class="choice-option cursor-pointer p-5 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-200 border-2 border-white/10 hover:border-blue-500/50 group" 
+                             data-choice="{{ choice_key }}" 
+                             data-question-index="{{ loop.index0 }}"
+                             onclick="selectChoice({{ loop.index0 }}, '{{ choice_key }}')">
+                            <div class="flex items-start">
+                                <div class="flex items-center mr-4 mt-1">
+                                    <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors">
+                                        <div class="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hidden choice-dot"></div>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="font-bold text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
+                                    <span class="text-white text-base leading-relaxed">{{ choice_text }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Status & Navigation -->
+                    <div class="flex justify-between items-center">
+                        <button onclick="previousQuestion()" 
+                                class="{% if loop.index0 == 0 %}opacity-50 cursor-not-allowed{% endif %} bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20"
+                                {% if loop.index0 == 0 %}disabled{% endif %}>
+                            <i class="fas fa-chevron-left mr-2"></i>前の問題
+                        </button>
+                        
+                        <div class="text-center">
+                            <span id="selection-status-{{ loop.index0 }}" class="text-gray-400 text-sm bg-white/5 px-4 py-2 rounded-lg border border-white/10">選択肢をクリックして解答してください</span>
+                        </div>
+                        
+                        <div class="w-24"></div> <!-- Spacer -->
+                    </div>
                 </div>
                 
-                <button id="next-btn-{{ loop.index0 }}" onclick="nextQuestion()" 
-                        class="btn btn-primary hidden">
-                    次の問題<i class="fas fa-chevron-right ml-2"></i>
-                </button>
+                <!-- Result Section (Initially Hidden) -->
+                <div class="result-section hidden border-t border-white/10 bg-white/5">
+                    <div class="p-8">
+                        <div class="result-content mb-6">
+                            <!-- Result will be populated by JavaScript -->
+                        </div>
+                        <div class="explanation-content">
+                            {% if question.explanation %}
+                                <div class="bg-white/5 rounded-xl p-6 border border-white/10">
+                                    <h4 class="font-bold text-white mb-3 flex items-center">
+                                        <span class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-info-circle text-blue-400"></i>
+                                        </span>
+                                        解説
+                                    </h4>
+                                    <p class="text-gray-300 leading-relaxed whitespace-pre-line">{{ question.explanation }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Next Button in Result Section -->
+                        <div class="mt-6 text-center">
+                            <button onclick="nextQuestionAfterResult()" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center mx-auto">
+                                {% if loop.last %}
+                                    <i class="fas fa-flag-checkered mr-2"></i>完了画面へ
+                                {% else %}
+                                    <i class="fas fa-arrow-right mr-2"></i>次の問題へ
+                                {% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
+            {% endfor %}
         </div>
-        
-        <!-- Result Section (Initially Hidden) -->
-        <div class="result-section hidden border-t border-gray-600 bg-gray-750">
-            <div class="p-6">
-                <div class="result-content mb-4">
-                    <!-- Result will be populated by JavaScript -->
-                </div>
-                <div class="explanation-content">
-                    {% if question.explanation %}
-                        <h4 class="font-bold text-white mb-2">
-                            <i class="fas fa-info-circle text-blue-400 mr-2"></i>解説
-                        </h4>
-                        <p class="text-gray-300 leading-relaxed whitespace-pre-line bg-gray-800/50 p-4 rounded-lg">{{ question.explanation }}</p>
-                    {% endif %}
-                </div>
-                
-                <!-- Next Button in Result Section -->
-                <div class="mt-4 text-center">
-                    <button onclick="nextQuestionAfterResult()" class="btn btn-primary">
-                        {% if loop.last %}
-                            <i class="fas fa-flag-checkered mr-2"></i>完了画面へ
-                        {% else %}
-                            <i class="fas fa-arrow-right mr-2"></i>次の問題へ
-                        {% endif %}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
 
-<!-- Completion Section (Initially Hidden) -->
-<div id="completion-section" class="hidden">
-    <div class="card bg-gradient-to-r from-green-800 to-blue-800 border-green-600">
-        <div class="card-body text-center p-8">
-            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-trophy text-4xl text-yellow-500"></i>
-            </div>
-            <h2 class="text-3xl font-bold text-white mb-4">お疲れ様でした！</h2>
-            <p class="text-xl text-gray-100 mb-6">{{ genre }}の練習問題を完了しました</p>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-white mb-2" id="final-correct">0</div>
-                    <p class="text-gray-200">正解数</p>
+        <!-- Completion Section (Initially Hidden) -->
+        <div id="completion-section" class="hidden">
+            <div class="bg-gradient-to-r from-green-600/20 to-blue-600/20 backdrop-blur-sm rounded-2xl border border-green-500/30 overflow-hidden">
+                <div class="text-center p-12">
+                    <div class="w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                        <i class="fas fa-trophy text-4xl text-white"></i>
+                    </div>
+                    <h2 class="text-4xl font-bold text-white mb-4">お疲れ様でした！</h2>
+                    <p class="text-xl text-gray-200 mb-8">{{ genre }}の練習問題を完了しました</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                        <div class="bg-white/5 rounded-xl p-6 border border-white/10">
+                            <div class="text-4xl font-bold text-green-400 mb-2" id="final-correct">0</div>
+                            <p class="text-gray-300">正解数</p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-6 border border-white/10">
+                            <div class="text-4xl font-bold text-blue-400 mb-2" id="final-total">{{ questions|length }}</div>
+                            <p class="text-gray-300">総問題数</p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-6 border border-white/10">
+                            <div class="text-4xl font-bold text-purple-400 mb-2" id="final-accuracy">0%</div>
+                            <p class="text-gray-300">正答率</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <a href="{{ url_for('genre_practice') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center">
+                            <i class="fas fa-list mr-2"></i>他のジャンルを練習
+                        </a>
+                        <a href="{{ url_for('practice_by_genre', genre=genre) }}" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
+                            <i class="fas fa-redo mr-2"></i>もう一度挑戦
+                        </a>
+                        <a href="{{ url_for('index') }}" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
+                            <i class="fas fa-home mr-2"></i>ダッシュボードに戻る
+                        </a>
+                    </div>
                 </div>
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-white mb-2" id="final-total">{{ questions|length }}</div>
-                    <p class="text-gray-200">総問題数</p>
-                </div>
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-white mb-2" id="final-accuracy">0%</div>
-                    <p class="text-gray-200">正答率</p>
-                </div>
-            </div>
-            
-            <div class="flex flex-wrap justify-center gap-4">
-                <a href="{{ url_for('genre_practice') }}" class="btn btn-primary bg-white text-gray-800 hover:bg-gray-100">
-                    <i class="fas fa-list mr-2"></i>他のジャンルを練習
-                </a>
-                <a href="{{ url_for('practice_by_genre', genre=genre) }}" class="btn btn-secondary">
-                    <i class="fas fa-redo mr-2"></i>もう一度挑戦
-                </a>
-                <a href="{{ url_for('index') }}" class="btn btn-secondary">
-                    <i class="fas fa-home mr-2"></i>ダッシュボードに戻る
-                </a>
             </div>
         </div>
     </div>
@@ -195,10 +206,12 @@ let totalAnswered = 0;
 document.addEventListener('DOMContentLoaded', function() {
     updateProgress();
     showQuestion(currentQuestionIndex);
+    console.log('Practice initialized with', questions.length, 'questions');
 });
 
 // Show specific question
 function showQuestion(index) {
+    console.log('Showing question', index + 1);
     document.querySelectorAll('.question-card').forEach(card => {
         card.classList.add('hidden');
     });
@@ -214,24 +227,38 @@ function showQuestion(index) {
 
 // Select choice and automatically submit
 function selectChoice(questionIndex, choiceKey) {
+    console.log(`Question ${questionIndex + 1}: Selected choice ${choiceKey}`);
+    
     // Check if this question is already answered
     if (answers[questionIndex]) {
-        return; // Already answered, do nothing
+        console.log('Question already answered, ignoring click');
+        return;
     }
     
     // Clear previous selections for this question
     const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+    if (!questionCard) {
+        console.error('Question card not found');
+        return;
+    }
+    
     questionCard.querySelectorAll('.choice-option').forEach(option => {
-        option.classList.remove('border-blue-500', 'bg-blue-500/20');
-        option.querySelector('.choice-dot').classList.add('hidden');
-        option.querySelector('.choice-radio').classList.remove('border-blue-500');
+        option.classList.remove('border-blue-500', 'bg-blue-500/20', 'border-green-500', 'bg-green-500/20', 'border-red-500', 'bg-red-500/20');
+        const dot = option.querySelector('.choice-dot');
+        const radio = option.querySelector('.choice-radio');
+        if (dot) dot.classList.add('hidden');
+        if (radio) radio.classList.remove('border-blue-500', 'border-green-500', 'border-red-500');
     });
     
     // Mark selected choice
     const selectedOption = questionCard.querySelector(`[data-choice="${choiceKey}"]`);
-    selectedOption.classList.add('border-blue-500', 'bg-blue-500/20');
-    selectedOption.querySelector('.choice-dot').classList.remove('hidden');
-    selectedOption.querySelector('.choice-radio').classList.add('border-blue-500');
+    if (selectedOption) {
+        selectedOption.classList.add('border-blue-500', 'bg-blue-500/20');
+        const dot = selectedOption.querySelector('.choice-dot');
+        const radio = selectedOption.querySelector('.choice-radio');
+        if (dot) dot.classList.remove('hidden');
+        if (radio) radio.classList.add('border-blue-500');
+    }
     
     // Auto-submit answer
     submitAnswer(questionIndex, choiceKey);
@@ -242,8 +269,12 @@ async function submitAnswer(questionIndex, userAnswer) {
     const questionId = questions[questionIndex].id;
     const statusEl = document.getElementById(`selection-status-${questionIndex}`);
     
-    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>判定中...';
-    statusEl.className = 'text-blue-400 text-sm';
+    console.log(`Submitting answer for question ${questionIndex + 1}: ${userAnswer}`);
+    
+    if (statusEl) {
+        statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>判定中...';
+        statusEl.className = 'text-blue-400 text-sm bg-white/5 px-4 py-2 rounded-lg border border-white/10';
+    }
     
     try {
         const response = await fetch(`/questions/${questionId}/answer`, {
@@ -255,6 +286,7 @@ async function submitAnswer(questionIndex, userAnswer) {
         });
         
         const result = await response.json();
+        console.log('Answer result:', result);
         
         if (response.ok) {
             answers[questionIndex] = {
@@ -265,11 +297,15 @@ async function submitAnswer(questionIndex, userAnswer) {
             
             if (result.is_correct) {
                 correctCount++;
-                statusEl.innerHTML = '<i class="fas fa-check-circle text-green-400 mr-2"></i>正解！';
-                statusEl.className = 'text-green-400 text-sm font-semibold';
+                if (statusEl) {
+                    statusEl.innerHTML = '<i class="fas fa-check-circle text-green-400 mr-2"></i>正解！';
+                    statusEl.className = 'text-green-400 text-sm font-semibold bg-green-500/20 px-4 py-2 rounded-lg border border-green-500/30';
+                }
             } else {
-                statusEl.innerHTML = '<i class="fas fa-times-circle text-red-400 mr-2"></i>不正解';
-                statusEl.className = 'text-red-400 text-sm font-semibold';
+                if (statusEl) {
+                    statusEl.innerHTML = '<i class="fas fa-times-circle text-red-400 mr-2"></i>不正解';
+                    statusEl.className = 'text-red-400 text-sm font-semibold bg-red-500/20 px-4 py-2 rounded-lg border border-red-500/30';
+                }
             }
             totalAnswered++;
             
@@ -278,58 +314,75 @@ async function submitAnswer(questionIndex, userAnswer) {
             
             // Disable all choices for this question
             const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
-            questionCard.querySelectorAll('.choice-option').forEach(option => {
-                option.style.pointerEvents = 'none';
-                option.classList.add('opacity-75');
-            });
+            if (questionCard) {
+                questionCard.querySelectorAll('.choice-option').forEach(option => {
+                    option.style.pointerEvents = 'none';
+                    option.classList.add('opacity-75');
+                });
+            }
             
         } else {
-            statusEl.innerHTML = '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i>エラーが発生しました';
-            statusEl.className = 'text-red-400 text-sm';
+            if (statusEl) {
+                statusEl.innerHTML = '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i>エラーが発生しました';
+                statusEl.className = 'text-red-400 text-sm bg-red-500/20 px-4 py-2 rounded-lg border border-red-500/30';
+            }
         }
     } catch (error) {
         console.error('Submit error:', error);
-        statusEl.innerHTML = '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i>通信エラー';
-        statusEl.className = 'text-red-400 text-sm';
+        if (statusEl) {
+            statusEl.innerHTML = '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i>通信エラー';
+            statusEl.className = 'text-red-400 text-sm bg-red-500/20 px-4 py-2 rounded-lg border border-red-500/30';
+        }
     }
 }
 
 // Show result
 function showResult(questionIndex, result) {
     const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+    if (!questionCard) return;
+    
     const resultSection = questionCard.querySelector('.result-section');
     const resultContent = questionCard.querySelector('.result-content');
+    
+    if (!resultSection || !resultContent) return;
     
     const isCorrect = result.is_correct;
     const correctAnswer = result.correct_answer;
     const userAnswer = result.user_answer;
     
     resultContent.innerHTML = `
-        <div class="flex items-center space-x-3 mb-3">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center ${isCorrect ? 'bg-green-500' : 'bg-red-500'}">
-                <i class="fas ${isCorrect ? 'fa-check' : 'fa-times'} text-white"></i>
+        <div class="flex items-center space-x-4 mb-4">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center ${isCorrect ? 'bg-green-500' : 'bg-red-500'} shadow-lg">
+                <i class="fas ${isCorrect ? 'fa-check' : 'fa-times'} text-white text-xl"></i>
             </div>
-            <span class="text-lg font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}">
-                ${isCorrect ? '正解！' : '不正解'}
-            </span>
-        </div>
-        <div class="text-gray-300">
-            <p><strong>あなたの解答:</strong> ${userAnswer}</p>
-            ${!isCorrect ? `<p><strong>正解:</strong> ${correctAnswer}</p>` : ''}
+            <div>
+                <span class="text-2xl font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}">
+                    ${isCorrect ? '正解！' : '不正解'}
+                </span>
+                <div class="text-gray-300 mt-1">
+                    <p><strong>あなたの解答:</strong> ${userAnswer}</p>
+                    ${!isCorrect ? `<p><strong>正解:</strong> ${correctAnswer}</p>` : ''}
+                </div>
+            </div>
         </div>
     `;
     
     resultSection.classList.remove('hidden');
     
-    // Highlight choices
+    // Highlight choices with correct/incorrect colors
     const choices = questionCard.querySelectorAll('.choice-option');
     choices.forEach(choice => {
         const choiceKey = choice.getAttribute('data-choice');
         if (choiceKey === userAnswer) {
-            choice.classList.add(isCorrect ? 'border-green-500' : 'border-red-500');
-            choice.classList.add(isCorrect ? 'bg-green-500/20' : 'bg-red-500/20');
+            if (isCorrect) {
+                choice.classList.add('border-green-500', 'bg-green-500/20');
+            } else {
+                choice.classList.add('border-red-500', 'bg-red-500/20');
+            }
         } else if (choiceKey === correctAnswer && !isCorrect) {
             choice.classList.add('border-green-500', 'bg-green-500/20');
+            choice.style.position = 'relative';
+            choice.innerHTML += '<div class="absolute top-2 right-2 text-green-400 font-bold">正解</div>';
         }
     });
 }
@@ -338,14 +391,6 @@ function showResult(questionIndex, result) {
 function previousQuestion() {
     if (currentQuestionIndex > 0) {
         showQuestion(currentQuestionIndex - 1);
-    }
-}
-
-function nextQuestion() {
-    if (currentQuestionIndex < questions.length - 1) {
-        showQuestion(currentQuestionIndex + 1);
-    } else {
-        showCompletion();
     }
 }
 
@@ -382,11 +427,11 @@ function updateProgress() {
     const incorrectCount = totalAnswered - correctCount;
     const accuracyRate = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
     
-    progressBar.style.width = progressPercent + '%';
-    progressText.textContent = `${totalAnswered} / ${questions.length}`;
-    correctCountEl.textContent = correctCount;
-    incorrectCountEl.textContent = incorrectCount;
-    accuracyRateEl.textContent = accuracyRate + '%';
+    if (progressBar) progressBar.style.width = progressPercent + '%';
+    if (progressText) progressText.textContent = `${totalAnswered} / ${questions.length}`;
+    if (correctCountEl) correctCountEl.textContent = correctCount;
+    if (incorrectCountEl) incorrectCountEl.textContent = incorrectCount;
+    if (accuracyRateEl) accuracyRateEl.textContent = accuracyRate + '%';
 }
 
 // Show completion
