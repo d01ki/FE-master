@@ -61,8 +61,8 @@ def load_json_questions_on_startup():
                         with open(json_filepath, 'r', encoding='utf-8') as json_file:
                             questions = json.load(json_file)
                         
-                        # データベースに保存（重複チェック付き）
-                        saved_count = question_manager.save_questions(questions, check_duplicates=True)
+                        # データベースに保存（重複チェックなし）
+                        saved_count = question_manager.save_questions(questions)
                         if saved_count > 0:
                             loaded_files.append({
                                 'filename': filename,
@@ -164,26 +164,369 @@ def index():
         }
         return render_template('dashboard.html', stats=stats)
 
-# 以下、他のルート定義（省略）...
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    """管理者ログイン"""
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password == app.config['ADMIN_PASSWORD']:
+            session['admin_authenticated'] = True
+            flash('管理者認証に成功しました', 'success')
+            return redirect(url_for('admin'))
+        else:
+            flash('パスワードが正しくありません', 'error')
+    
+    return render_template('admin_login.html')
 
-@app.route('/admin/create_extended_sample', methods=['POST'])
-@admin_required
-def create_extended_sample():
-    """拡張サンプルデータの作成（10問）"""
+@app.route('/admin/logout')
+def admin_logout():
+    """管理者ログアウト"""
+    session.pop('admin_authenticated', None)
+    flash('ログアウトしました', 'info')
+    return redirect(url_for('index'))
+
+@app.route('/questions/<int:question_id>')
+def show_question(question_id):
+    """個別問題の表示"""
     try:
-        processor = PDFProcessor()
-        extended_questions = processor.create_extended_sample_questions()
+        question = question_manager.get_question(question_id)
+        if not question:
+            return render_template('error.html', message='問題が見つかりません'), 404
         
-        saved_count = question_manager.save_questions(extended_questions)
+        return render_template('question.html', question=question)
+    except Exception as e:
+        app.logger.error(f"Show question error: {e}")
+        return render_template('error.html', message='問題の表示中にエラーが発生しました'), 500
+
+@app.route('/questions/<int:question_id>/answer', methods=['POST'])
+def submit_answer(question_id):
+    """解答の提出と判定"""
+    try:
+        data = request.get_json()
+        user_answer = data.get('answer')
+        
+        if not user_answer:
+            return jsonify({'error': '解答が選択されていません'}), 400
+        
+        result = question_manager.check_answer(question_id, user_answer)
+        
+        # 解答履歴を保存
+        question_manager.save_answer_history(question_id, user_answer, result['is_correct'])
+        
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error(f"Submit answer error: {e}")
+        return jsonify({'error': '解答処理中にエラーが発生しました'}), 500
+
+@app.route('/practice/<genre>')
+def practice_by_genre(genre):
+    """ジャンル別練習"""
+    try:
+        questions = question_manager.get_questions_by_genre(genre)
+        
+        if not questions:
+            return render_template('error.html', message=f'ジャンル "{genre}" の問題が見つかりません'), 404
+        
+        # ランダムに並び替え
+        random.shuffle(questions)
+        
+        return render_template('practice.html', questions=questions, genre=genre)
+    except Exception as e:
+        app.logger.error(f"Practice error: {e}")
+        return render_template('error.html', message='練習問題の表示中にエラーが発生しました'), 500
+
+@app.route('/genre_practice')
+def genre_practice():
+    """ジャンル別演習メニュー"""
+    try:
+        # 利用可能なジャンルを取得
+        genres = question_manager.get_available_genres()
+        genre_counts = question_manager.get_question_count_by_genre()
+        
+        # ジャンル別統計を取得
+        with get_db_connection(app.config['DATABASE']) as conn:
+            genre_stats = conn.execute('''
+                SELECT q.genre, 
+                       COUNT(*) as total,
+                       SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct
+                FROM user_answers ua 
+                JOIN questions q ON ua.question_id = q.id 
+                GROUP BY q.genre
+            ''').fetchall()
+        
+        stats_dict = {stat[0]: {'total': stat[1], 'correct': stat[2]} for stat in genre_stats}
+        
+        genre_info = []
+        for genre in genres:
+            count = genre_counts.get(genre, 0)
+            stat = stats_dict.get(genre, {'total': 0, 'correct': 0})
+            accuracy = round((stat['correct'] / stat['total'] * 100), 1) if stat['total'] > 0 else 0
+            
+            genre_info.append({
+                'name': genre,
+                'count': count,
+                'answered': stat['total'],
+                'accuracy': accuracy
+            })
+        
+        return render_template('genre_practice.html', genres=genre_info)
+    except Exception as e:
+        app.logger.error(f"Genre practice error: {e}")
+        return render_template('error.html', message='ジャンル別演習の準備中にエラーが発生しました'), 500
+
+@app.route('/mock_exam')
+def mock_exam():
+    """模擬試験年度選択画面"""
+    try:
+        # 利用可能な年度別問題を取得
+        json_files = []
+        if os.path.exists(app.config['JSON_FOLDER']):
+            for filename in os.listdir(app.config['JSON_FOLDER']):
+                if filename.endswith('.json'):
+                    file_info = parse_filename_info(filename)
+                    if file_info:
+                        json_files.append({
+                            'filename': filename,
+                            'info': file_info
+                        })
+        
+        # 年度順でソート
+        json_files.sort(key=lambda x: (x['info']['year'], x['info']['season']), reverse=True)
+        
+        # JSONファイルがない場合はデータベースから模擬試験を生成
+        if not json_files:
+            # データベースに問題があるかチェック
+            total_questions = question_manager.get_total_questions()
+            if total_questions > 0:
+                # データベースから20問をランダム選択して模擬試験を実施
+                exam_questions_count = min(total_questions, 20)
+                questions = question_manager.get_random_questions(exam_questions_count)
+                
+                # セッションに試験開始時刻を保存
+                session['exam_start_time'] = datetime.now().isoformat()
+                session['exam_questions'] = [q['id'] for q in questions]
+                
+                return render_template('mock_exam_practice.html', 
+                                     questions=questions, 
+                                     exam_info={'display_name': 'データベース問題'})
+            else:
+                return render_template('error.html', message='問題が登録されていません。まず問題をアップロードしてください。'), 404
+        
+        return render_template('mock_exam_select.html', exam_files=json_files)
+    except Exception as e:
+        app.logger.error(f"Mock exam error: {e}")
+        return render_template('error.html', message='模擬試験の準備中にエラーが発生しました'), 500
+
+@app.route('/mock_exam/<filename>')
+def mock_exam_start(filename):
+    """指定年度の模擬試験開始"""
+    try:
+        file_info = parse_filename_info(filename)
+        if not file_info:
+            flash('無効な試験ファイルです', 'error')
+            return redirect(url_for('mock_exam'))
+        
+        # 該当ファイルから問題を読み込み
+        json_filepath = os.path.join(app.config['JSON_FOLDER'], filename)
+        if not os.path.exists(json_filepath):
+            flash('試験ファイルが見つかりません', 'error')
+            return redirect(url_for('mock_exam'))
+        
+        with open(json_filepath, 'r', encoding='utf-8') as f:
+            questions = json.load(f)
+        
+        # 最大20問を選択
+        if len(questions) > 20:
+            questions = random.sample(questions, 20)
+        
+        # セッションに試験情報を保存
+        session['exam_start_time'] = datetime.now().isoformat()
+        session['exam_questions'] = [q.get('question_id', f"Q{i+1:03d}") for i, q in enumerate(questions)]
+        session['exam_year_info'] = file_info
+        session['exam_file_questions'] = questions  # JSONの問題データを保存
+        
+        return render_template('mock_exam_practice.html', 
+                             questions=questions, 
+                             exam_info=file_info)
+        
+    except Exception as e:
+        app.logger.error(f"Mock exam start error: {e}")
+        flash(f'試験ファイルの読み込みに失敗しました: {str(e)}', 'error')
+        return redirect(url_for('mock_exam'))
+
+@app.route('/mock_exam/submit', methods=['POST'])
+def submit_mock_exam():
+    """模擬試験の採点"""
+    try:
+        data = request.get_json()
+        answers = data.get('answers', {})
+        
+        if 'exam_questions' not in session:
+            return jsonify({'error': '試験セッションが見つかりません'}), 400
+        
+        question_ids = session['exam_questions']
+        results = []
+        correct_count = 0
+        
+        # JSONファイルから問題を取得（セッションに保存されている場合）
+        if 'exam_file_questions' in session:
+            file_questions = session['exam_file_questions']
+            question_dict = {q.get('question_id', f"Q{i+1:03d}"): q for i, q in enumerate(file_questions)}
+            
+            for question_id in question_ids:
+                question_data = question_dict.get(question_id)
+                if question_data:
+                    user_answer = answers.get(question_id, '')
+                    is_correct = user_answer == question_data['correct_answer']
+                    
+                    results.append({
+                        'question_id': question_id,
+                        'question_text': question_data['question_text'],
+                        'user_answer': user_answer,
+                        'correct_answer': question_data['correct_answer'],
+                        'is_correct': is_correct,
+                        'explanation': question_data.get('explanation', '')
+                    })
+                    
+                    if is_correct:
+                        correct_count += 1
+        else:
+            # データベースから問題を取得（フォールバック）
+            for question_id in question_ids:
+                if isinstance(question_id, int):
+                    question = question_manager.get_question(question_id)
+                    if question:
+                        user_answer = answers.get(str(question_id), '')
+                        is_correct = user_answer == question['correct_answer']
+                        
+                        # 解答履歴を保存
+                        question_manager.save_answer_history(question_id, user_answer, is_correct)
+                        
+                        results.append({
+                            'question_id': question_id,
+                            'question_text': question['question_text'],
+                            'user_answer': user_answer,
+                            'correct_answer': question['correct_answer'],
+                            'is_correct': is_correct,
+                            'explanation': question.get('explanation', '')
+                        })
+                        
+                        if is_correct:
+                            correct_count += 1
+        
+        score = round((correct_count / len(question_ids)) * 100, 1) if question_ids else 0
+        
+        # セッションクリア
+        session.pop('exam_start_time', None)
+        session.pop('exam_questions', None)
+        session.pop('exam_year_info', None)
+        session.pop('exam_file_questions', None)
         
         return jsonify({
-            'message': f'{saved_count}問の拡張サンプル問題を作成しました',
+            'score': score,
+            'correct_count': correct_count,
+            'total_count': len(question_ids),
+            'results': results
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Submit mock exam error: {e}")
+        return jsonify({'error': '採点処理中にエラーが発生しました'}), 500
+
+@app.route('/history')
+def history():
+    """学習履歴の表示"""
+    try:
+        with get_db_connection(app.config['DATABASE']) as conn:
+            # 詳細な学習履歴
+            detailed_history = conn.execute('''
+                SELECT q.question_text, q.genre, ua.user_answer, ua.is_correct, ua.answered_at,
+                       q.correct_answer, q.explanation
+                FROM user_answers ua 
+                JOIN questions q ON ua.question_id = q.id 
+                ORDER BY ua.answered_at DESC 
+                LIMIT 50
+            ''').fetchall()
+            
+            # 日別統計
+            daily_stats = conn.execute('''
+                SELECT DATE(answered_at) as date, 
+                       COUNT(*) as total,
+                       SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct
+                FROM user_answers 
+                GROUP BY DATE(answered_at) 
+                ORDER BY date DESC 
+                LIMIT 30
+            ''').fetchall()
+            
+            history_data = {
+                'detailed_history': [dict(row) for row in detailed_history],
+                'daily_stats': [dict(row) for row in daily_stats]
+            }
+        
+        return render_template('history.html', history=history_data)
+    except Exception as e:
+        app.logger.error(f"History error: {e}")
+        return render_template('error.html', message='学習履歴の表示中にエラーが発生しました'), 500
+
+@app.route('/admin')
+@admin_required
+def admin():
+    """管理画面"""
+    try:
+        with get_db_connection(app.config['DATABASE']) as conn:
+            question_count = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
+            genres = conn.execute('SELECT DISTINCT genre FROM questions').fetchall()
+            
+            # JSONファイル一覧を取得（年度別情報付き）
+            json_files = []
+            if os.path.exists(app.config['JSON_FOLDER']):
+                for filename in os.listdir(app.config['JSON_FOLDER']):
+                    if filename.endswith('.json'):
+                        filepath = os.path.join(app.config['JSON_FOLDER'], filename)
+                        if os.path.exists(filepath):  # ファイルが存在することを確認
+                            file_size = os.path.getsize(filepath)
+                            file_info = parse_filename_info(filename)
+                            
+                            json_files.append({
+                                'filename': filename,
+                                'size': file_size,
+                                'modified': datetime.fromtimestamp(os.path.getmtime(filepath)).strftime('%Y-%m-%d %H:%M'),
+                                'info': file_info
+                            })
+            
+            # 年度順でソート
+            json_files.sort(key=lambda x: (x['info']['year'], x['info']['season']) if x['info'] else (0, ''), reverse=True)
+            
+            admin_data = {
+                'question_count': question_count,
+                'genres': [row[0] for row in genres],
+                'json_files': json_files
+            }
+        
+        return render_template('admin.html', data=admin_data)
+    except Exception as e:
+        app.logger.error(f"Admin error: {e}")
+        return render_template('error.html', message='管理画面の表示中にエラーが発生しました'), 500
+
+@app.route('/admin/create_sample', methods=['POST'])
+@admin_required
+def create_sample_data():
+    """サンプルデータの作成"""
+    try:
+        processor = PDFProcessor()
+        sample_questions = processor.create_sample_questions()
+        
+        saved_count = question_manager.save_questions(sample_questions)
+        
+        return jsonify({
+            'message': f'{saved_count}問のサンプル問題を作成しました',
             'count': saved_count
         })
         
     except Exception as e:
-        app.logger.error(f"Create extended sample error: {e}")
-        return jsonify({'error': f'拡張サンプルデータ作成中にエラーが発生しました: {str(e)}'}), 500
+        app.logger.error(f"Create sample error: {e}")
+        return jsonify({'error': f'サンプルデータ作成中にエラーが発生しました: {str(e)}'}), 500
 
 @app.route('/admin/reset_database', methods=['POST'])
 @admin_required
