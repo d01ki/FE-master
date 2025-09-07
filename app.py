@@ -61,7 +61,7 @@ def load_json_questions_on_startup():
                         with open(json_filepath, 'r', encoding='utf-8') as json_file:
                             questions = json.load(json_file)
                         
-                        # データベースに保存（重複チェックなし）
+                        # データベースに保存（重複チェックは自動的に行われる）
                         saved_count = question_manager.save_questions(questions)
                         if saved_count > 0:
                             loaded_files.append({
@@ -93,7 +93,6 @@ def admin_required(f):
 
 def parse_filename_info(filename):
     """ファイル名から年度と期の情報を抽出"""
-    # 例: 2025r07_kamoku_a_spring.json → {'year': 2025, 'era': 'r07', 'season': 'spring'}
     pattern = r'(\d{4})r(\d{2})_[^_]+_[^_]+_(\w+)\.json'
     match = re.match(pattern, filename)
     if match:
@@ -115,14 +114,12 @@ def index():
     """メインページ - ダッシュボード表示"""
     try:
         with get_db_connection(app.config['DATABASE']) as conn:
-            # 学習統計の取得
             total_questions = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
             total_answers = conn.execute('SELECT COUNT(*) FROM user_answers').fetchone()[0]
             correct_answers = conn.execute('SELECT COUNT(*) FROM user_answers WHERE is_correct = 1').fetchone()[0]
             
             accuracy_rate = round((correct_answers / total_answers * 100), 1) if total_answers > 0 else 0
             
-            # 最近の学習履歴
             recent_history = conn.execute('''
                 SELECT q.question_text, ua.is_correct, ua.answered_at 
                 FROM user_answers ua 
@@ -131,7 +128,6 @@ def index():
                 LIMIT 10
             ''').fetchall()
             
-            # ジャンル別正答率
             genre_stats = conn.execute('''
                 SELECT q.genre, 
                        COUNT(*) as total,
@@ -153,7 +149,6 @@ def index():
         return render_template('dashboard.html', stats=stats)
     except Exception as e:
         app.logger.error(f"Dashboard error: {e}")
-        # エラー時は空の統計を返す
         stats = {
             'total_questions': 0,
             'total_answers': 0,
@@ -209,8 +204,6 @@ def submit_answer(question_id):
             return jsonify({'error': '解答が選択されていません'}), 400
         
         result = question_manager.check_answer(question_id, user_answer)
-        
-        # 解答履歴を保存
         question_manager.save_answer_history(question_id, user_answer, result['is_correct'])
         
         return jsonify(result)
@@ -227,7 +220,6 @@ def practice_by_genre(genre):
         if not questions:
             return render_template('error.html', message=f'ジャンル "{genre}" の問題が見つかりません'), 404
         
-        # ランダムに並び替え
         random.shuffle(questions)
         
         return render_template('practice.html', questions=questions, genre=genre)
@@ -239,11 +231,9 @@ def practice_by_genre(genre):
 def genre_practice():
     """ジャンル別演習メニュー"""
     try:
-        # 利用可能なジャンルを取得
         genres = question_manager.get_available_genres()
         genre_counts = question_manager.get_question_count_by_genre()
         
-        # ジャンル別統計を取得
         with get_db_connection(app.config['DATABASE']) as conn:
             genre_stats = conn.execute('''
                 SELECT q.genre, 
@@ -278,7 +268,6 @@ def genre_practice():
 def mock_exam():
     """模擬試験年度選択画面"""
     try:
-        # 利用可能な年度別問題を取得
         json_files = []
         if os.path.exists(app.config['JSON_FOLDER']):
             for filename in os.listdir(app.config['JSON_FOLDER']):
@@ -290,19 +279,14 @@ def mock_exam():
                             'info': file_info
                         })
         
-        # 年度順でソート
         json_files.sort(key=lambda x: (x['info']['year'], x['info']['season']), reverse=True)
         
-        # JSONファイルがない場合はデータベースから模擬試験を生成
         if not json_files:
-            # データベースに問題があるかチェック
             total_questions = question_manager.get_total_questions()
             if total_questions > 0:
-                # データベースから20問をランダム選択して模擬試験を実施
                 exam_questions_count = min(total_questions, 20)
                 questions = question_manager.get_random_questions(exam_questions_count)
                 
-                # セッションに試験開始時刻を保存
                 session['exam_start_time'] = datetime.now().isoformat()
                 session['exam_questions'] = [q['id'] for q in questions]
                 
@@ -326,7 +310,6 @@ def mock_exam_start(filename):
             flash('無効な試験ファイルです', 'error')
             return redirect(url_for('mock_exam'))
         
-        # 該当ファイルから問題を読み込み
         json_filepath = os.path.join(app.config['JSON_FOLDER'], filename)
         if not os.path.exists(json_filepath):
             flash('試験ファイルが見つかりません', 'error')
@@ -335,15 +318,13 @@ def mock_exam_start(filename):
         with open(json_filepath, 'r', encoding='utf-8') as f:
             questions = json.load(f)
         
-        # 最大20問を選択
         if len(questions) > 20:
             questions = random.sample(questions, 20)
         
-        # セッションに試験情報を保存
         session['exam_start_time'] = datetime.now().isoformat()
         session['exam_questions'] = [q.get('question_id', f"Q{i+1:03d}") for i, q in enumerate(questions)]
         session['exam_year_info'] = file_info
-        session['exam_file_questions'] = questions  # JSONの問題データを保存
+        session['exam_file_questions'] = questions
         
         return render_template('mock_exam_practice.html', 
                              questions=questions, 
@@ -368,7 +349,6 @@ def submit_mock_exam():
         results = []
         correct_count = 0
         
-        # JSONファイルから問題を取得（セッションに保存されている場合）
         if 'exam_file_questions' in session:
             file_questions = session['exam_file_questions']
             question_dict = {q.get('question_id', f"Q{i+1:03d}"): q for i, q in enumerate(file_questions)}
@@ -391,7 +371,6 @@ def submit_mock_exam():
                     if is_correct:
                         correct_count += 1
         else:
-            # データベースから問題を取得（フォールバック）
             for question_id in question_ids:
                 if isinstance(question_id, int):
                     question = question_manager.get_question(question_id)
@@ -399,7 +378,6 @@ def submit_mock_exam():
                         user_answer = answers.get(str(question_id), '')
                         is_correct = user_answer == question['correct_answer']
                         
-                        # 解答履歴を保存
                         question_manager.save_answer_history(question_id, user_answer, is_correct)
                         
                         results.append({
@@ -416,7 +394,6 @@ def submit_mock_exam():
         
         score = round((correct_count / len(question_ids)) * 100, 1) if question_ids else 0
         
-        # セッションクリア
         session.pop('exam_start_time', None)
         session.pop('exam_questions', None)
         session.pop('exam_year_info', None)
@@ -438,7 +415,6 @@ def history():
     """学習履歴の表示"""
     try:
         with get_db_connection(app.config['DATABASE']) as conn:
-            # 詳細な学習履歴
             detailed_history = conn.execute('''
                 SELECT q.question_text, q.genre, ua.user_answer, ua.is_correct, ua.answered_at,
                        q.correct_answer, q.explanation
@@ -448,7 +424,6 @@ def history():
                 LIMIT 50
             ''').fetchall()
             
-            # 日別統計
             daily_stats = conn.execute('''
                 SELECT DATE(answered_at) as date, 
                        COUNT(*) as total,
@@ -478,13 +453,12 @@ def admin():
             question_count = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
             genres = conn.execute('SELECT DISTINCT genre FROM questions').fetchall()
             
-            # JSONファイル一覧を取得（年度別情報付き）
             json_files = []
             if os.path.exists(app.config['JSON_FOLDER']):
                 for filename in os.listdir(app.config['JSON_FOLDER']):
                     if filename.endswith('.json'):
                         filepath = os.path.join(app.config['JSON_FOLDER'], filename)
-                        if os.path.exists(filepath):  # ファイルが存在することを確認
+                        if os.path.exists(filepath):
                             file_size = os.path.getsize(filepath)
                             file_info = parse_filename_info(filename)
                             
@@ -495,7 +469,6 @@ def admin():
                                 'info': file_info
                             })
             
-            # 年度順でソート
             json_files.sort(key=lambda x: (x['info']['year'], x['info']['season']) if x['info'] else (0, ''), reverse=True)
             
             admin_data = {
@@ -508,6 +481,75 @@ def admin():
     except Exception as e:
         app.logger.error(f"Admin error: {e}")
         return render_template('error.html', message='管理画面の表示中にエラーが発生しました'), 500
+
+@app.route('/admin/upload_json', methods=['POST'])
+@admin_required
+def upload_json():
+    """JSON問題ファイルのアップロードと処理"""
+    try:
+        if 'json_file' not in request.files:
+            return jsonify({'success': False, 'error': 'JSONファイルが選択されていません'}), 400
+        
+        file = request.files['json_file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'ファイルが選択されていません'}), 400
+        
+        if not file.filename.lower().endswith('.json'):
+            return jsonify({'success': False, 'error': 'JSONファイルを選択してください'}), 400
+        
+        try:
+            content = file.read().decode('utf-8')
+            questions = json.loads(content)
+        except UnicodeDecodeError:
+            return jsonify({'success': False, 'error': 'ファイルの文字エンコーディングが正しくありません。'}), 400
+        except json.JSONDecodeError as e:
+            return jsonify({'success': False, 'error': f'JSONファイルの形式が正しくありません: {str(e)}'}), 400
+        
+        if not isinstance(questions, list):
+            return jsonify({'success': False, 'error': 'JSONファイルは問題の配列である必要があります'}), 400
+        
+        if len(questions) == 0:
+            return jsonify({'success': False, 'error': 'JSONファイルに問題が含まれていません'}), 400
+        
+        for i, question in enumerate(questions):
+            required_fields = ['question_text', 'choices', 'correct_answer']
+            for field in required_fields:
+                if field not in question:
+                    return jsonify({'success': False, 'error': f'問題{i+1}: 必須フィールド "{field}" がありません'}), 400
+            
+            if 'question_id' not in question:
+                question['question_id'] = f"問{i+1}"
+                
+            if 'genre' not in question:
+                question['genre'] = 'その他'
+                
+            if 'explanation' not in question:
+                question['explanation'] = ''
+        
+        file_info = parse_filename_info(file.filename)
+        
+        json_filepath = os.path.join(app.config['JSON_FOLDER'], file.filename)
+        with open(json_filepath, 'w', encoding='utf-8') as json_file:
+            json.dump(questions, json_file, ensure_ascii=False, indent=2)
+        
+        saved_count = question_manager.save_questions(questions)
+        
+        message = f'{len(questions)}問の問題をJSONファイルとデータベースに正常に保存しました'
+        if file_info:
+            message += f' ({file_info["display_name"]})'
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'count': len(questions),
+            'saved_to_db': saved_count,
+            'json_file': file.filename,
+            'file_info': file_info
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Upload JSON error: {e}")
+        return jsonify({'success': False, 'error': f'JSON処理中にエラーが発生しました: {str(e)}'}), 500
 
 @app.route('/admin/create_sample', methods=['POST'])
 @admin_required
@@ -534,7 +576,6 @@ def reset_database():
     """データベースの初期化"""
     try:
         with get_db_connection(app.config['DATABASE']) as conn:
-            # 全データを削除
             conn.execute('DELETE FROM user_answers')
             conn.execute('DELETE FROM questions')
             conn.commit()
