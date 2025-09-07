@@ -1,131 +1,286 @@
-# FE-Master - 基本情報技術者試験 過去問学習アプリ
+# 基本情報技術者試験 学習アプリ (FE Master)
 
-基本情報技術者試験の過去問を効率的に学習できるWebアプリケーションです。
+Flask + SQLite + Tailwind CSS を使用した現代的な学習プラットフォーム
 
-## 🚀 クイックスタート
+## 🚀 主な機能
 
-### 1. 必要なライブラリをインストール
-```bash
-pip install -r requirements.txt
-```
+### ✅ 完全実装済み
 
-### 2. アプリケーションを起動
-```bash
-python3 app.py
-```
+- **📚 問題管理システム**
+  - JSONファイルからの問題データ一括アップロード
+  - 年度別過去問の管理（例：2025r07_kamoku_a_spring.json）
+  - 重複チェック機能付きの問題登録
 
-### 3. ブラウザでアクセス
-- **メインページ**: http://localhost:8000
-- **API ドキュメント**: http://localhost:8000/docs
-- **問題一覧 API**: http://localhost:8000/api/problems
+- **🎯 ジャンル別演習**
+  - 8つの主要ジャンルに対応
+  - ジャンル別正答率の可視化
+  - 苦手分野の特定と集中学習
 
-## 📱 主要機能
+- **📝 模擬試験機能**
+  - 年度別過去問からの模擬試験生成
+  - リアルタイム採点システム
+  - 詳細な解答解説表示
 
-### 🎓 学習機能
-- **分野別問題学習**: システム構成要素、データベース、ネットワーク、アルゴリズム、セキュリティ
-- **解答・解説表示**: 各問題に詳細な解説付き
-- **学習履歴記録**: 解答履歴と正答率を自動記録
+- **📊 学習分析・統計**
+  - 個人学習進捗の追跡
+  - ジャンル別パフォーマンス分析
+  - 学習履歴の詳細記録
 
-### 📊 統計・分析
-- **学習進捗の可視化**: 総問題数、正答率、分野別成績
-- **弱点分野の特定**: カテゴリ別の成績分析
-- **学習効果の測定**: 時間経過による成績向上を追跡
+- **🎨 モダンUI/UX**
+  - ダークテーマデザイン
+  - レスポンシブレイアウト
+  - アニメーション効果とインタラクティブな要素
 
-## 🔧 技術スタック
+- **🔒 管理機能**
+  - セキュアな管理者認証
+  - データベース管理ツール
+  - ファイルアップロード管理
 
-- **バックエンド**: FastAPI (Python)
-- **データベース**: SQLite (簡単セットアップ)
-- **API ドキュメント**: Swagger UI / ReDoc
-- **デプロイ**: スタンドアロン実行可能
-
-## 📚 サンプル問題
-
-アプリケーションには以下のサンプル問題が含まれています：
-
-1. **システム性能** - スループットに関する問題
-2. **データベース** - 正規化に関する問題
-3. **ネットワーク** - TCP/IPモデルに関する問題
-4. **アルゴリズム** - ソートアルゴリズムの計算量
-5. **セキュリティ** - ファイアウォールの機能
-
-## 💻 API 使用例
-
-### 問題一覧を取得
-```bash
-curl http://localhost:8000/api/problems
-```
-
-### 特定の問題を取得
-```bash
-curl http://localhost:8000/api/problems/1
-```
-
-### カテゴリ別問題を取得
-```bash
-curl "http://localhost:8000/api/problems?category=データベース"
-```
-
-### 解答を送信
-```bash
-curl -X POST "http://localhost:8000/api/problems/1/answer" \
-     -H "Content-Type: application/x-www-form-urlencoded" \
-     -d "selected_index=0"
-```
-
-### 統計情報を取得
-```bash
-curl http://localhost:8000/api/stats
-```
-
-## 📁 ファイル構成
+## 📁 プロジェクト構成
 
 ```
 FE-master/
 ├── app.py                 # メインアプリケーション
-├── requirements.txt       # 依存ライブラリ
-├── README.md             # このファイル
-├── fe_master.db          # SQLiteデータベース (自動生成)
-└── backend/              # 詳細なバックエンド実装
-    ├── app/
-    ├── scripts/
-    └── alembic/
+├── run.py                 # アプリケーション起動スクリプト
+├── requirements.txt       # Python依存関係
+├── fe_exam.db            # SQLiteデータベース（自動作成）
+├── uploads/              # アップロードファイル保存先
+├── json_questions/       # JSON問題ファイル保存先
+├── templates/            # HTMLテンプレート
+│   ├── base.html         # ベーステンプレート（ダークテーマ）
+│   ├── dashboard.html    # ダッシュボード
+│   ├── genre_practice.html # ジャンル別演習
+│   ├── practice.html     # 練習問題画面
+│   ├── mock_exam_select.html # 模擬試験選択
+│   ├── mock_exam_practice.html # 模擬試験実施
+│   ├── history.html      # 学習履歴
+│   ├── admin.html        # 管理画面
+│   ├── admin_login.html  # 管理者ログイン
+│   ├── question.html     # 個別問題表示
+│   └── error.html        # エラーページ
+├── utils/                # ユーティリティ
+│   ├── database.py       # データベース管理
+│   ├── question_manager.py # 問題管理クラス
+│   └── pdf_processor.py  # PDF処理（サンプル生成）
+└── static/               # 静的ファイル（CSS/JS/画像）
 ```
 
-## 🛠️ トラブルシューティング
+## 🛠️ セットアップ手順
 
-### ライブラリインストールエラー
+### 1. 必要な環境
+- Python 3.8以上
+- pip（Python パッケージインストーラー）
+
+### 2. インストール
+
 ```bash
-# pipを更新
-pip install --upgrade pip
+# リポジトリをクローン
+git clone https://github.com/d01ki/FE-master.git
+cd FE-master
 
-# 個別インストール
-pip install fastapi uvicorn pydantic
+# 依存関係をインストール
+pip install -r requirements.txt
+
+# アプリケーションを起動
+python run.py
 ```
 
-### ポートが使用中の場合
-アプリケーションはデフォルトでポート8000を使用します。変更する場合は`app.py`内の`PORT`変数を編集してください。
+### 3. アクセス
+- アプリケーション: http://localhost:5000
+- 管理画面: http://localhost:5000/admin/login
+  - デフォルトパスワード: `fe2025admin`
 
-### データベースリセット
-```bash
-# データベースファイルを削除して再作成
-rm fe_master.db
-python3 app.py
+## 📋 使用方法
+
+### 1. 問題データの準備
+
+推奨JSONファイル形式：
+```json
+[
+  {
+    "question_id": "問１",
+    "question_text": "問題文...",
+    "choices": {
+      "ア": "選択肢1",
+      "イ": "選択肢2", 
+      "ウ": "選択肢3",
+      "エ": "選択肢4"
+    },
+    "correct_answer": "エ",
+    "explanation": "解説文...",
+    "genre": "基礎理論"
+  }
+]
 ```
 
-## 📝 ライセンス
+### 2. 学習の流れ
 
-MIT License - 教育目的での使用を推奨します。
+1. **管理画面で問題をアップロード**
+   - JSON形式の過去問ファイルをアップロード
+   - 年度別ファイル名推奨：`2025r07_kamoku_a_spring.json`
 
-## ⚠️ 注意事項
+2. **ジャンル別演習で苦手分野を特定**
+   - 8つのジャンルから選択
+   - 正答率を確認して弱点を把握
 
-- このアプリケーションは教育・学習目的で作成されています
-- サンプル問題はオリジナルで作成されています
-- 実際の過去問を使用する場合は著作権と利用規約を確認してください
+3. **模擬試験で実力測定**
+   - 年度別過去問から選択
+   - 本番形式での練習
 
-## 🌐 開発者向け情報
+4. **学習履歴で進捗確認**
+   - 日別統計の確認
+   - 詳細な解答履歴の閲覧
 
-より詳細な開発情報や拡張機能については`backend/`ディレクトリ内のドキュメントを参照してください。
+## 🎯 対応ジャンル
+
+1. **基礎理論** - 数学、論理演算、情報理論
+2. **アルゴリズムとプログラミング** - データ構造、アルゴリズム、プログラム設計
+3. **コンピュータシステム** - ハードウェア、アーキテクチャ、システム構成
+4. **技術要素** - ヒューマンインターフェース、マルチメディア
+5. **ネットワーク** - ネットワーク方式、通信プロトコル、インターネット
+6. **データベース** - データモデル、正規化、SQL、トランザクション
+7. **セキュリティ** - 情報セキュリティ、暗号化、認証
+8. **システム開発** - 開発プロセス、設計手法、テスト
+9. **マネジメント** - プロジェクト管理、サービスマネジメント
+
+## 🔧 技術仕様
+
+### バックエンド
+- **Flask**: Webフレームワーク
+- **SQLite**: データベース
+- **Python 3.8+**: プログラミング言語
+
+### フロントエンド
+- **Tailwind CSS**: CSSフレームワーク
+- **Font Awesome**: アイコンライブラリ
+- **Vanilla JavaScript**: インタラクティブ機能
+
+### データベース設計
+
+```sql
+-- 問題テーブル
+CREATE TABLE questions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question_id TEXT UNIQUE,
+    question_text TEXT NOT NULL,
+    choices TEXT NOT NULL,  -- JSON形式
+    correct_answer TEXT NOT NULL,
+    explanation TEXT,
+    genre TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 解答履歴テーブル
+CREATE TABLE user_answers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question_id INTEGER,
+    user_answer TEXT NOT NULL,
+    is_correct BOOLEAN NOT NULL,
+    answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (question_id) REFERENCES questions (id)
+);
+```
+
+## 🎨 UI/UX特徴
+
+### ダークテーマデザイン
+- モダンで目に優しいダークカラーパレット
+- グラデーション効果とアニメーション
+- レスポンシブデザイン対応
+
+### インタラクティブ要素
+- ホバーエフェクト
+- スムーズなトランジション
+- プログレスバーアニメーション
+- リアルタイムフィードバック
+
+### ユーザビリティ
+- 直感的なナビゲーション
+- 明確な視覚的フィードバック
+- アクセシビリティ配慮
+
+## 🔒 セキュリティ
+
+- 管理者認証システム
+- SQLインジェクション対策
+- XSS（クロスサイトスクリプティング）対策
+- ファイルアップロード制限
+
+## 📊 パフォーマンス
+
+- データベースクエリ最適化
+- 効率的なファイル管理
+- クライアントサイドキャッシュ活用
+
+## 🚀 今後の拡張予定
+
+- [ ] ユーザー認証システム
+- [ ] マルチユーザー対応
+- [ ] 学習計画機能
+- [ ] AI駆動の学習推奨システム
+- [ ] モバイルアプリ対応
+- [ ] REST API提供
+
+## 📝 更新履歴
+
+### v2.0.0 (2025-09-06)
+- ✨ **JSONアップロード機能を完全修正**
+  - エラーハンドリングの改善
+  - 文字エンコーディング対応強化
+  - 重複チェック機能の実装
+
+- 🎯 **ジャンル別演習機能を新規追加**
+  - 8つの主要ジャンルに対応
+  - ジャンル別正答率の可視化
+  - 苦手分野の特定機能
+
+- 📝 **模擬試験機能の年度選択対応**
+  - 年度別JSONファイルからの試験生成
+  - ファイル名パターン解析機能
+  - "2025年春期"形式での表示
+
+- 🎨 **UIの大幅改善**
+  - ダークテーマの採用
+  - モダンなデザインシステム
+  - アニメーション効果の追加
+  - レスポンシブデザインの改善
+
+- 🔧 **アーキテクチャの改善**
+  - QuestionManagerクラスの機能拡張
+  - データベース操作の最適化
+  - エラーハンドリングの強化
+
+### v1.0.0 (初期リリース)
+- 基本的な問題管理機能
+- 簡易的な学習機能
+- 基本的な管理画面
+
+## 🤝 コントリビューション
+
+プロジェクトへの貢献を歓迎します！
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。詳細は [LICENSE](LICENSE) ファイルを参照してください。
+
+## 📞 サポート
+
+質問や問題がある場合は、以下の方法でお気軽にお問い合わせください：
+
+- GitHub Issues: [Issues](https://github.com/d01ki/FE-master/issues)
+- Email: [your-email@example.com]
+
+## 🙏 謝辞
+
+- 基本情報技術者試験の過去問を提供するIPA（情報処理推進機構）
+- Tailwind CSS、Flask、その他のオープンソースライブラリの開発者の皆様
 
 ---
 
-📚 **Happy Learning!** 基本情報技術者試験の合格を目指して頑張ってください！
+**⭐ このプロジェクトが役に立ったら、ぜひスターをお願いします！**
