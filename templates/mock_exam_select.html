@@ -3,131 +3,169 @@
 {% block title %}模擬試験選択 - {{ super() }}{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">
-        <i class="fas fa-clipboard-list text-primary"></i> 模擬試験
-    </h1>
-    <p class="text-gray-600">過去問から年度を選択して模擬試験を受験できます</p>
-</div>
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-white mb-4 flex items-center justify-center">
+                    <span class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center mr-4">
+                        <i class="fas fa-clipboard-list text-white text-xl"></i>
+                    </span>
+                    模擬試験
+                </h1>
+                <p class="text-xl text-gray-300">過去問から年度を選択して模擬試験を受験できます</p>
+            </div>
+        </div>
 
-{% if exam_files %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for exam_file in exam_files %}
-            <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-4">
-                                <i class="fas fa-calendar-alt text-white text-xl"></i>
+        {% if exam_files %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {% for exam_file in exam_files %}
+                    <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden hover:bg-white/10 transition-all duration-300 hover:border-orange-500/50">
+                        <div class="p-8">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center mr-4">
+                                        <i class="fas fa-calendar-alt text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-white mb-1">
+                                            {{ exam_file.info.display_name }}
+                                        </h3>
+                                        <p class="text-sm text-gray-400">
+                                            令和{{ exam_file.info.era_year }}年度
+                                        </p>
+                                    </div>
+                                </div>
+                                {% if exam_file.info.season == 'spring' %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30">
+                                        <i class="fas fa-seedling mr-1"></i>春期
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                                        <i class="fas fa-leaf mr-1"></i>秋期
+                                    </span>
+                                {% endif %}
                             </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-900">
-                                    {{ exam_file.info.display_name }}
-                                </h3>
-                                <p class="text-sm text-gray-500">
-                                    令和{{ exam_file.info.era_year }}年度
+                            
+                            <div class="mb-6 space-y-3">
+                                <p class="text-sm text-gray-300 flex items-center">
+                                    <i class="fas fa-file-alt mr-2 text-blue-400"></i>
+                                    ファイル: {{ exam_file.filename }}
+                                </p>
+                                <p class="text-sm text-gray-300 flex items-center">
+                                    <i class="fas fa-clock mr-2 text-purple-400"></i>
+                                    制限時間: 90分（推奨）
+                                </p>
+                                <p class="text-sm text-gray-300 flex items-center">
+                                    <i class="fas fa-question-circle mr-2 text-green-400"></i>
+                                    問題数: 最大20問
                                 </p>
                             </div>
+                            
+                            <div class="text-center">
+                                <a href="{{ url_for('mock_exam_start', filename=exam_file.filename) }}" 
+                                   class="inline-flex items-center justify-center w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105">
+                                    <i class="fas fa-play mr-2"></i>
+                                    試験開始
+                                </a>
+                            </div>
                         </div>
-                        {% if exam_file.info.season == 'spring' %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <i class="fas fa-seedling mr-1"></i>春期
-                            </span>
-                        {% else %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                <i class="fas fa-leaf mr-1"></i>秋期
-                            </span>
-                        {% endif %}
                     </div>
-                    
-                    <div class="mb-4">
-                        <p class="text-sm text-gray-600 mb-2">
-                            <i class="fas fa-file-alt mr-1"></i>
-                            ファイル: {{ exam_file.filename }}
-                        </p>
-                        <p class="text-sm text-gray-600">
-                            <i class="fas fa-clock mr-1"></i>
-                            制限時間: 90分（推奨）
-                        </p>
+                {% endfor %}
+            </div>
+
+            <!-- 注意事項 -->
+            <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-8 backdrop-blur-sm">
+                <h3 class="text-xl font-semibold text-yellow-300 mb-4 flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-3"></i>模擬試験について
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-green-400 mt-1 flex-shrink-0"></i>
+                        <p class="text-sm text-gray-300">各試験は最大20問から構成されています</p>
                     </div>
-                    
-                    <div class="flex justify-center">
-                        <a href="{{ url_for('mock_exam_start', filename=exam_file.filename) }}" 
-                           class="inline-flex items-center px-4 py-2 bg-primary hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200">
-                            <i class="fas fa-play mr-2"></i>
-                            試験開始
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-green-400 mt-1 flex-shrink-0"></i>
+                        <p class="text-sm text-gray-300">制限時間は90分を推奨していますが、自分のペースで受験可能です</p>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-green-400 mt-1 flex-shrink-0"></i>
+                        <p class="text-sm text-gray-300">試験中はブラウザを閉じないでください（進行状況が失われます）</p>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-green-400 mt-1 flex-shrink-0"></i>
+                        <p class="text-sm text-gray-300">試験終了後、詳細な結果と解説を確認できます</p>
+                    </div>
+                </div>
+            </div>
+
+        {% else %}
+            <!-- 試験ファイルがない場合 -->
+            <div class="text-center py-16">
+                <div class="max-w-md mx-auto">
+                    <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8 border border-white/10">
+                        <i class="fas fa-folder-open text-4xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-2xl font-semibold text-white mb-4">模擬試験用ファイルがありません</h3>
+                    <p class="text-gray-300 mb-8 leading-relaxed">
+                        年度別の過去問JSONファイルをアップロードすると、模擬試験を受験できるようになります。
+                    </p>
+                    <div class="space-y-4">
+                        <p class="text-sm text-gray-400 bg-white/5 px-4 py-2 rounded-lg border border-white/10">
+                            <i class="fas fa-lightbulb mr-2 text-yellow-400"></i>
+                            ファイル名の形式: 2025r07_kamoku_a_spring.json
+                        </p>
+                        <a href="{{ url_for('admin_login') }}" 
+                           class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105">
+                            <i class="fas fa-upload mr-2"></i>
+                            管理画面でファイルをアップロード
                         </a>
                     </div>
                 </div>
             </div>
-        {% endfor %}
-    </div>
+        {% endif %}
 
-    <!-- 注意事項 -->
-    <div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-        <h3 class="text-lg font-semibold text-yellow-800 mb-3">
-            <i class="fas fa-exclamation-triangle mr-2"></i>模擬試験について
-        </h3>
-        <ul class="text-sm text-yellow-700 space-y-2">
-            <li><i class="fas fa-check mr-2"></i>各試験は最大20問から構成されています</li>
-            <li><i class="fas fa-check mr-2"></i>制限時間は90分を推奨していますが、自分のペースで受験可能です</li>
-            <li><i class="fas fa-check mr-2"></i>試験中はブラウザを閉じないでください（進行状況が失われます）</li>
-            <li><i class="fas fa-check mr-2"></i>試験終了後、詳細な結果と解説を確認できます</li>
-        </ul>
-    </div>
-
-{% else %}
-    <!-- 試験ファイルがない場合 -->
-    <div class="text-center py-12">
-        <div class="max-w-md mx-auto">
-            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-folder-open text-4xl text-gray-400"></i>
-            </div>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">模擬試験用ファイルがありません</h3>
-            <p class="text-gray-600 mb-6">
-                年度別の過去問JSONファイルをアップロードすると、模擬試験を受験できるようになります。
-            </p>
-            <div class="space-y-3">
-                <p class="text-sm text-gray-500">
-                    <i class="fas fa-lightbulb mr-1"></i>
-                    ファイル名の形式: 2025r07_kamoku_a_spring.json
-                </p>
-                <a href="{{ url_for('admin_login') }}" 
-                   class="inline-flex items-center px-4 py-2 bg-primary hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200">
-                    <i class="fas fa-upload mr-2"></i>
-                    管理画面でファイルをアップロード
+        <!-- ランダム練習オプション -->
+        <div class="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-8 backdrop-blur-sm">
+            <h3 class="text-xl font-semibold text-blue-300 mb-6 flex items-center">
+                <i class="fas fa-random mr-3"></i>その他の練習方法
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <a href="{{ url_for('random_question') }}" 
+                   class="flex items-center p-6 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-blue-500/50 transition-all duration-200 group">
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mr-4 group-hover:bg-blue-500/30 transition-colors">
+                        <i class="fas fa-shuffle text-blue-400"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-white mb-1">ランダム練習</h4>
+                        <p class="text-sm text-gray-400">全問題からランダムに出題</p>
+                    </div>
+                </a>
+                <a href="{{ url_for('history') }}" 
+                   class="flex items-center p-6 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-green-500/50 transition-all duration-200 group">
+                    <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mr-4 group-hover:bg-green-500/30 transition-colors">
+                        <i class="fas fa-history text-green-400"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-white mb-1">学習履歴</h4>
+                        <p class="text-sm text-gray-400">過去の学習記録を確認</p>
+                    </div>
                 </a>
             </div>
         </div>
-    </div>
-{% endif %}
 
-<!-- ランダム練習オプション -->
-<div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-blue-800 mb-3">
-        <i class="fas fa-random mr-2"></i>その他の練習方法
-    </h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <a href="{{ url_for('random_question') }}" 
-           class="flex items-center p-4 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors duration-200">
-            <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
-                <i class="fas fa-shuffle text-white"></i>
+        <!-- Quick Navigation -->
+        <div class="mt-8 text-center">
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="{{ url_for('index') }}" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
+                    <i class="fas fa-home mr-2"></i>ダッシュボードに戻る
+                </a>
+                <a href="{{ url_for('genre_practice') }}" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
+                    <i class="fas fa-dumbbell mr-2"></i>ジャンル別演習
+                </a>
             </div>
-            <div>
-                <h4 class="font-medium text-blue-900">ランダム練習</h4>
-                <p class="text-sm text-blue-700">全問題からランダムに出題</p>
-            </div>
-        </a>
-        <a href="{{ url_for('history') }}" 
-           class="flex items-center p-4 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors duration-200">
-            <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4">
-                <i class="fas fa-history text-white"></i>
-            </div>
-            <div>
-                <h4 class="font-medium text-blue-900">学習履歴</h4>
-                <p class="text-sm text-blue-700">過去の学習記録を確認</p>
-            </div>
-        </a>
+        </div>
     </div>
 </div>
 {% endblock %}
