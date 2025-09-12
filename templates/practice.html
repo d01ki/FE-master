@@ -79,9 +79,10 @@
                     <!-- 選択肢 -->
                     <div class="choices-container space-y-4 mb-8">
                         {% for choice_key, choice_text in question.choices.items() %}
-                        <div class="choice-option cursor-pointer p-5 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-200 border-2 border-white/10 hover:border-blue-500/50 group" 
+                        <button class="choice-option w-full text-left cursor-pointer p-5 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-200 border-2 border-white/10 hover:border-blue-500/50 group" 
                              data-choice="{{ choice_key }}" 
-                             data-question-index="{{ loop.index0 }}">
+                             data-question-index="{{ loop.index0 }}"
+                             onclick="handleChoiceClick(event, {{ loop.index0 }}, '{{ choice_key }}')">
                             <div class="flex items-start">
                                 <div class="flex items-center mr-4 mt-1">
                                     <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors">
@@ -93,7 +94,7 @@
                                     <span class="text-white text-base leading-relaxed">{{ choice_text }}</span>
                                 </div>
                             </div>
-                        </div>
+                        </button>
                         {% endfor %}
                     </div>
                     
@@ -209,21 +210,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     updateProgress();
     showQuestion(currentQuestionIndex);
-    
-    // Add click event listeners to all choice options
-    document.querySelectorAll('.choice-option').forEach(option => {
-        option.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const questionIndex = parseInt(this.getAttribute('data-question-index'));
-            const choiceKey = this.getAttribute('data-choice');
-            
-            console.log('Choice clicked:', questionIndex, choiceKey, this);
-            selectChoice(questionIndex, choiceKey);
-        });
-    });
 });
+
+// Handle choice click with proper event handling
+function handleChoiceClick(event, questionIndex, choiceKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log('Choice clicked:', questionIndex, choiceKey);
+    selectChoice(questionIndex, choiceKey);
+}
 
 // Show specific question
 function showQuestion(index) {
@@ -293,7 +289,7 @@ async function submitAnswer(questionIndex, userAnswer) {
     
     console.log(`Submitting answer for question ${questionIndex + 1}: ${userAnswer}`);
     console.log('Question data:', question);
-    
+
     if (statusEl) {
         statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>判定中...';
         statusEl.className = 'text-blue-400 text-sm bg-white/5 px-4 py-2 rounded-lg border border-white/10';
@@ -339,6 +335,7 @@ async function submitAnswer(questionIndex, userAnswer) {
             const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
             if (questionCard) {
                 questionCard.querySelectorAll('.choice-option').forEach(option => {
+                    option.disabled = true;
                     option.style.pointerEvents = 'none';
                     option.classList.add('opacity-75');
                 });
