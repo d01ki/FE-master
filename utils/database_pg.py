@@ -1,22 +1,21 @@
 """
-PostgreSQL データベース管理ユーティリティ
+PostgreSQL データベース管理ユーティリティ (psycopg3対応)
 """
 
-import psycopg2
-import psycopg2.extras
+import psycopg
 from contextlib import contextmanager
 from urllib.parse import urlparse
 
 def get_db_connection(database_url):
     """PostgreSQL データベース接続を取得"""
-    return psycopg2.connect(database_url)
+    return psycopg.connect(database_url)
 
 @contextmanager
 def get_db_context(database_url):
     """PostgreSQL データベース接続のコンテキストマネージャー"""
     conn = None
     try:
-        conn = psycopg2.connect(database_url)
+        conn = psycopg.connect(database_url)
         yield conn
     except Exception as e:
         if conn:
