@@ -113,6 +113,15 @@ class DatabaseManager:
             """,
             """
             CREATE INDEX IF NOT EXISTS idx_user_answers_question_id ON user_answers(question_id)
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(80) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                is_admin BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
             """
         ]
         
@@ -330,6 +339,389 @@ def initialize_app():
         logger.error(f"Application initialization error: {e}")
 
 # 以下、ルート定義は既存のapp.pyと同じ...
+from functools import wraps
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('このページにアクセスするにはログインが必要です。', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/')
+def index():
+    """ホームページ"""
+    return render_template('index.html')
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    """ダッシュボード"""
+    user_id = session['user_id']
+    
+    # 統計情報を取得
+    total_questions_query = "SELECT COUNT(*) as count FROM questions"
+    total_questions = db_manager.execute_query(total_questions_query)[0]['count']
+    
+    user_answers_query = "SELECT COUNT(*) as count FROM user_answers WHERE user_id = %s" if db_manager.db_type == 'postgresql' else "SELECT COUNT(*) as count FROM user_answers WHERE user_id = ?"
+    total_answers = db_manager.execute_query(user_answers_query, (user_id,))[0]['count']
+    
+    correct_answers_query = "SELECT COUNT(*) as count FROM user_answers WHERE user_id = %s AND is_correct = TRUE" if db_manager.db_type == 'postgresql' else "SELECT COUNT(*) as count FROM user_answers WHERE user_id = ? AND is_correct = 1"
+    correct_answers = db_manager.execute_query(correct_answers_query, (user_id,))[0]['count']
+    
+    accuracy_rate = 0
+    if total_answers > 0:
+        accuracy_rate = round((correct_answers / total_answers) * 100, 1)
+        
+    stats = {
+        'total_questions': total_questions,
+        'total_answers': total_answers,
+        'correct_answers': correct_answers,
+        'accuracy_rate': accuracy_rate
+    }
+    
+    return render_template('dashboard.html', stats=stats)
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """ユーザー登録"""
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        if not username or not password:
+            flash('ユーザー名とパスワードを入力してください。', 'error')
+            return redirect(url_for('register'))
+
+        # ユーザー名の重複チェック
+        existing_user = db_manager.execute_query(
+            'SELECT id FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id FROM users WHERE username = ?',
+            (username,)
+        )
+        if existing_user:
+            flash('このユーザー名は既に使用されています。', 'error')
+            return redirect(url_for('register'))
+
+        password_hash = generate_password_hash(password)
+        
+        try:
+            db_manager.execute_query(
+                'INSERT INTO users (username, password_hash) VALUES (%s, %s)' if db_manager.db_type == 'postgresql' else 'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+                (username, password_hash)
+            )
+            flash('登録が完了しました。ログインしてください。', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            flash(f'登録中にエラーが発生しました: {e}', 'error')
+            return redirect(url_for('register'))
+
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """ログイン"""
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        user = db_manager.execute_query(
+            'SELECT * FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT * FROM users WHERE username = ?',
+            (username,)
+        )
+        
+        if user and check_password_hash(user[0]['password_hash'], password):
+            session.clear()
+            session['user_id'] = user[0]['id']
+            session['username'] = user[0]['username']
+            session['is_admin'] = user[0]['is_admin']
+            flash('ログインしました。', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('ユーザー名またはパスワードが正しくありません。', 'error')
+            return redirect(url_for('login'))
+            
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    """ログアウト"""
+    session.clear()
+    flash('ログアウトしました。', 'info')
+    return redirect(url_for('index'))
+
+# --- 機能ルート ---
+
+@app.route('/random')
+@login_required
+def random_question():
+    """ランダム問題ページ"""
+    # データベースからランダムに1問取得
+    query = "SELECT id FROM questions ORDER BY RANDOM() LIMIT 1" if db_manager.db_type == 'sqlite' else "SELECT id FROM questions ORDER BY RANDOM() LIMIT 1"
+    result = db_manager.execute_query(query)
+    
+    if not result:
+        flash('問題が見つかりません。データベースに問題が登録されているか確認してください。', 'warning')
+        return redirect(url_for('dashboard'))
+        
+    question_id = result[0]['id']
+    return redirect(url_for('show_question', question_id=question_id))
+
+@app.route('/question/<int:question_id>', methods=['GET', 'POST'])
+@login_required
+def show_question(question_id):
+    """個別問題の表示と回答"""
+    query = "SELECT * FROM questions WHERE id = %s" if db_manager.db_type == 'postgresql' else "SELECT * FROM questions WHERE id = ?"
+    question = db_manager.execute_query(query, (question_id,))
+    
+    if not question:
+        flash('指定された問題が見つかりません。', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # DBから取得したquestionはリスト内の辞書なので、最初の要素を取り出す
+    question_data = question[0]
+    
+    # choicesがJSON文字列の場合、Pythonオブジェクトに変換
+    if isinstance(question_data['choices'], str):
+        choices = json.loads(question_data['choices'])
+    else:
+        choices = question_data['choices']
+
+    return render_template('question.html', question=question_data, choices=choices)
+
+@app.route('/submit_answer', methods=['POST'])
+@login_required
+def submit_answer():
+    """回答を提出し、採点する"""
+    try:
+        question_id = request.form.get('question_id', type=int)
+        user_answer = request.form.get('answer')
+        user_id = session['user_id']
+
+        if not question_id or not user_answer:
+            flash('無効な回答です。', 'error')
+            return redirect(url_for('dashboard'))
+
+        # 正解を取得
+        query = "SELECT correct_answer, explanation FROM questions WHERE id = %s" if db_manager.db_type == 'postgresql' else "SELECT correct_answer, explanation FROM questions WHERE id = ?"
+        result = db_manager.execute_query(query, (question_id,))
+        if not result:
+            flash('問題が見つかりません。', 'error')
+            return redirect(url_for('dashboard'))
+
+        correct_answer = result[0]['correct_answer']
+        explanation = result[0]['explanation']
+        is_correct = (user_answer == correct_answer)
+
+        # 回答履歴を保存
+        insert_query = """
+            INSERT INTO user_answers (user_id, question_id, user_answer, is_correct)
+            VALUES (%s, %s, %s, %s)
+        """ if db_manager.db_type == 'postgresql' else """
+            INSERT INTO user_answers (user_id, question_id, user_answer, is_correct)
+            VALUES (?, ?, ?, ?)
+        """
+        db_manager.execute_query(insert_query, (user_id, question_id, user_answer, is_correct))
+
+        flash(f'正解は「{correct_answer}」です。' + ('正解！' if is_correct else '不正解'), 'info')
+        return render_template('result.html', is_correct=is_correct, explanation=explanation, question_id=question_id)
+
+    except Exception as e:
+        logger.error(f"Answer submission error: {e}")
+        flash('回答の処理中にエラーが発生しました。', 'error')
+        return redirect(url_for('dashboard'))
+
+@app.route('/history')
+@login_required
+def history():
+    """学習履歴ページ"""
+    user_id = session['user_id']
+    query = """ 
+        SELECT q.question_text, ua.user_answer, ua.is_correct, ua.answered_at
+        FROM user_answers ua
+        JOIN questions q ON ua.question_id = q.id
+        WHERE ua.user_id = %s
+        ORDER BY ua.answered_at DESC
+        LIMIT 50
+    """ if db_manager.db_type == 'postgresql' else """
+        SELECT q.question_text, ua.user_answer, ua.is_correct, ua.answered_at
+        FROM user_answers ua
+        JOIN questions q ON ua.question_id = q.id
+        WHERE ua.user_id = ?
+        ORDER BY ua.answered_at DESC
+        LIMIT 50
+    """
+    answers = db_manager.execute_query(query, (user_id,))
+    return render_template('history.html', answers=answers)
+
+@app.route('/genre_practice')
+@login_required
+def genre_practice():
+    """ジャンル選択ページ"""
+    query = "SELECT DISTINCT genre FROM questions ORDER BY genre"
+    genres = [row['genre'] for row in db_manager.execute_query(query)]
+    return render_template('genre_practice.html', genres=genres)
+
+@app.route('/genre/<path:genre_name>')
+@login_required
+def genre_questions(genre_name):
+    """ジャンル別の問題一覧ページ"""
+    query = "SELECT id, question_text FROM questions WHERE genre = %s ORDER BY id" if db_manager.db_type == 'postgresql' else "SELECT id, question_text FROM questions WHERE genre = ? ORDER BY id"
+    questions = db_manager.execute_query(query, (genre_name,))
+    return render_template('problem_list.html', questions=questions, title=f'{genre_name}演習')
+
+    return render_template('mock_exam_select.html', exam_files=exam_files)
+
+@app.route('/mock_exam/<path:filename>')
+@login_required
+def mock_exam_start(filename):
+    """指定年度の模擬試験開始"""
+    try:
+        json_folder = 'json_questions'
+        json_filepath = os.path.join(json_folder, filename)
+        
+        if not os.path.exists(json_filepath):
+            flash('試験ファイルが見つかりません', 'error')
+            return redirect(url_for('mock_exam'))
+        
+        with open(json_filepath, 'r', encoding='utf-8') as f:
+            questions = json.load(f)
+        
+        # セッションに試験情報を保存
+        session['current_exam'] = {
+            'filename': filename,
+            'questions': questions,
+            'start_time': datetime.now().isoformat()
+        }
+        
+        return render_template('mock_exam_practice.html', 
+                             questions=questions, 
+                             exam_filename=filename)
+        
+    except Exception as e:
+        logger.error(f"Mock exam start error: {e}")
+        flash(f'試験ファイルの読み込みに失敗しました: {str(e)}', 'error')
+        return redirect(url_for('mock_exam'))
+
+@app.route('/mock_exam/submit', methods=['POST'])
+@login_required
+def submit_mock_exam():
+    """模擬試験の採点"""
+    try:
+        data = request.get_json()
+        answers = data.get('answers', {})
+        user_id = session['user_id']
+        
+        if 'current_exam' not in session:
+            return jsonify({'error': '試験セッションが見つかりません'}), 400
+        
+        exam_questions = session['current_exam']['questions']
+        results = []
+        correct_count = 0
+        
+        for i, question_data in enumerate(exam_questions):
+            question_id_str = f"q{i}" # フロントエンドで question_id の代わりにインデックスが使われていると仮定
+            user_answer = answers.get(question_id_str, '')
+            is_correct = user_answer == question_data['correct_answer']
+            
+            if is_correct:
+                correct_count += 1
+            
+            # DBから永続的なquestion IDを取得、なければスキップ
+            db_question = db_manager.execute_query("SELECT id FROM questions WHERE question_text = %s", (question_data['question_text'],))
+            if db_question:
+                persistent_question_id = db_question[0]['id']
+                # 回答履歴を保存
+                db_manager.execute_query(
+                    "INSERT INTO user_answers (user_id, question_id, user_answer, is_correct) VALUES (%s, %s, %s, %s)",
+                    (user_id, persistent_question_id, user_answer, is_correct)
+                )
+
+            results.append({
+                'question_text': question_data['question_text'],
+                'user_answer': user_answer,
+                'correct_answer': question_data['correct_answer'],
+                'is_correct': is_correct,
+                'explanation': question_data.get('explanation', '')
+            })
+        
+        score = round((correct_count / len(exam_questions)) * 100, 1) if exam_questions else 0
+        
+        session.pop('current_exam', None)
+        
+        return jsonify({
+            'score': score,
+            'correct_count': correct_count,
+            'total_count': len(exam_questions),
+            'results': results
+        })
+        
+    except Exception as e:
+        logger.error(f"Submit mock exam error: {e}")
+        return jsonify({'error': '採点処理中にエラーが発生しました'}), 500
+
+
+# --- 管理者機能ルート ---
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('is_admin'):
+            flash('管理者権限が必要です。', 'danger')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin')
+@admin_required
+def admin_dashboard():
+    """管理者ダッシュボード"""
+    # 問題数のカウント
+    total_questions = db_manager.execute_query("SELECT COUNT(*) as count FROM questions")[0]['count']
+    
+    # JSONファイルの情報を取得
+    json_folder = 'json_questions'
+    json_files_info = []
+    if os.path.exists(json_folder):
+        for filename in os.listdir(json_folder):
+            if filename.endswith('.json'):
+                filepath = os.path.join(json_folder, filename)
+                try:
+                    mtime = os.path.getmtime(filepath)
+                    last_modified = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+                    json_files_info.append({
+                        'name': filename,
+                        'last_modified': last_modified
+                    })
+                except OSError:
+                    # ファイルが存在しない場合などのエラー処理
+                    continue
+    
+    return render_template('admin.html', 
+                           total_questions=total_questions, 
+                           json_files=json_files_info)
+
+@app.route('/admin/delete_json/<filename>', methods=['POST'])
+@admin_required
+def delete_json_file(filename):
+    """JSONファイルを削除する"""
+    try:
+        json_folder = 'json_questions'
+        filepath = os.path.join(json_folder, filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            flash(f'{filename} を削除しました。', 'success')
+        else:
+            flash(f'{filename} が見つかりません。', 'error')
+    except Exception as e:
+        logger.error(f"Error deleting JSON file {filename}: {e}")
+        flash(f'ファイルの削除中にエラーが発生しました: {e}', 'error')
+    return redirect(url_for('admin_dashboard'))
+
+# mock_exam_start と submit_mock_exam は missing_routes.py から移植するが、
+# session と db_manager を使うように修正が必要。
+# 今回は一旦基本的な機能のみ実装し、後ほど対応する。
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

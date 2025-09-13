@@ -145,8 +145,8 @@
                 <a href="{{ url_for('random_question') }}" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20 btn-hover">
                     <i class="fas fa-random mr-2"></i>ランダム問題
                 </a>
-                {% if session.admin_authenticated %}
-                <a href="{{ url_for('admin') }}" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center btn-hover">
+                {% if session.is_admin %}
+                <a href="{{ url_for('admin_dashboard') }}" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center btn-hover">
                     <i class="fas fa-cog mr-2"></i>管理画面
                 </a>
                 {% endif %}
