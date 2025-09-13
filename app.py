@@ -1,89 +1,76 @@
 """
 基本情報技術者試験 学習アプリ
-Flask + SQLite + Tailwind CSS を使用した学習プラットフォーム
+Flask + PostgreSQL + Tailwind CSS を使用した学習プラットフォーム
+ユーザー認証機能付き
 """
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
-import sqlite3
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+import psycopg2
+import psycopg2.extras
 import json
 import os
 import re
 from datetime import datetime
 import random
+import bcrypt
+from functools import wraps
 from utils.pdf_processor import PDFProcessor
-from utils.database import init_db, get_db_connection
-from utils.question_manager import QuestionManager
+from utils.database_pg import init_db, get_db_connection
+from utils.question_manager_pg import QuestionManager
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
 
+# Login Manager設定
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'ログインが必要です。'
+login_manager.login_message_category = 'info'
+
 # アプリケーション設定
-app.config['DATABASE'] = 'fe_exam.db'
+app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/fe_exam_db')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['JSON_FOLDER'] = 'json_questions'
-# 管理者パスワードを環境変数から取得（デフォルトあり）
 app.config['ADMIN_PASSWORD'] = os.environ.get('ADMIN_PASSWORD', 'fe2025admin')
 
-# アップロードフォルダとJSONフォルダを作成
+# フォルダを作成
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['JSON_FOLDER'], exist_ok=True)
 
 # データベースの初期化
-if not os.path.exists(app.config['DATABASE']):
+try:
     print("データベースを初期化しています...")
-    init_db(app.config['DATABASE'])
-    
-    # サンプル問題を自動作成
-    try:
-        processor = PDFProcessor()
-        sample_questions = processor.create_sample_questions()
-        question_manager = QuestionManager(app.config['DATABASE'])
-        saved_count = question_manager.save_questions(sample_questions)
-        print(f"サンプル問題 {saved_count}問を作成しました。")
-    except Exception as e:
-        print(f"サンプル問題作成中にエラーが発生しました: {e}")
+    init_db(app.config['DATABASE_URL'])
+    print("データベース初期化完了")
+except Exception as e:
+    print(f"データベース初期化エラー: {e}")
 
 # QuestionManagerの初期化
-question_manager = QuestionManager(app.config['DATABASE'])
+question_manager = QuestionManager(app.config['DATABASE_URL'])
 
-# JSONフォルダの問題を自動読み込み
-def load_json_questions_on_startup():
-    """起動時にJSONフォルダの問題を自動読み込み"""
+class User(UserMixin):
+    def __init__(self, id, username, email):
+        self.id = id
+        self.username = username
+        self.email = email
+
+@login_manager.user_loader
+def load_user(user_id):
     try:
-        if os.path.exists(app.config['JSON_FOLDER']):
-            loaded_files = []
-            total_questions = 0
-            
-            for filename in os.listdir(app.config['JSON_FOLDER']):
-                if filename.endswith('.json'):
-                    json_filepath = os.path.join(app.config['JSON_FOLDER'], filename)
-                    try:
-                        with open(json_filepath, 'r', encoding='utf-8') as json_file:
-                            questions = json.load(json_file)
-                        
-                        # データベースに保存（重複チェックは自動的に行われる）
-                        saved_count = question_manager.save_questions(questions)
-                        if saved_count > 0:
-                            loaded_files.append({
-                                'filename': filename,
-                                'count': saved_count
-                            })
-                            total_questions += saved_count
-                    except Exception as e:
-                        print(f"ファイル {filename} の読み込みでエラー: {e}")
-                        continue
-            
-            if loaded_files:
-                print(f"JSONフォルダから {len(loaded_files)}個のファイルを自動読み込み、{total_questions}問をデータベースに追加しました。")
+        with get_db_connection(app.config['DATABASE_URL']) as conn:
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor.execute('SELECT id, username, email FROM users WHERE id = %s', (user_id,))
+            user_data = cursor.fetchone()
+            if user_data:
+                return User(user_data['id'], user_data['username'], user_data['email'])
     except Exception as e:
-        print(f"JSON自動読み込み中にエラー: {e}")
-
-# アプリ起動時にJSON問題を自動読み込み
-load_json_questions_on_startup()
+        app.logger.error(f"User load error: {e}")
+    return None
 
 def admin_required(f):
     """管理者認証デコレータ"""
-    from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('admin_authenticated'):
@@ -113,29 +100,49 @@ def parse_filename_info(filename):
 def index():
     """メインページ - ダッシュボード表示"""
     try:
-        with get_db_connection(app.config['DATABASE']) as conn:
-            total_questions = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
-            total_answers = conn.execute('SELECT COUNT(*) FROM user_answers').fetchone()[0]
-            correct_answers = conn.execute('SELECT COUNT(*) FROM user_answers WHERE is_correct = 1').fetchone()[0]
+        user_id = current_user.id if current_user.is_authenticated else None
+        
+        with get_db_connection(app.config['DATABASE_URL']) as conn:
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             
-            accuracy_rate = round((correct_answers / total_answers * 100), 1) if total_answers > 0 else 0
+            cursor.execute('SELECT COUNT(*) as count FROM questions')
+            total_questions = cursor.fetchone()['count']
             
-            recent_history = conn.execute('''
-                SELECT q.question_text, ua.is_correct, ua.answered_at 
-                FROM user_answers ua 
-                JOIN questions q ON ua.question_id = q.id 
-                ORDER BY ua.answered_at DESC 
-                LIMIT 10
-            ''').fetchall()
-            
-            genre_stats = conn.execute('''
-                SELECT q.genre, 
-                       COUNT(*) as total,
-                       SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct
-                FROM user_answers ua 
-                JOIN questions q ON ua.question_id = q.id 
-                GROUP BY q.genre
-            ''').fetchall()
+            if user_id:
+                cursor.execute('SELECT COUNT(*) as count FROM user_answers WHERE user_id = %s', (user_id,))
+                total_answers = cursor.fetchone()['count']
+                
+                cursor.execute('SELECT COUNT(*) as count FROM user_answers WHERE user_id = %s AND is_correct = true', (user_id,))
+                correct_answers = cursor.fetchone()['count']
+                
+                accuracy_rate = round((correct_answers / total_answers * 100), 1) if total_answers > 0 else 0
+                
+                cursor.execute('''
+                    SELECT q.question_text, ua.is_correct, ua.answered_at 
+                    FROM user_answers ua 
+                    JOIN questions q ON ua.question_id = q.id 
+                    WHERE ua.user_id = %s
+                    ORDER BY ua.answered_at DESC 
+                    LIMIT 10
+                ''', (user_id,))
+                recent_history = cursor.fetchall()
+                
+                cursor.execute('''
+                    SELECT q.genre, 
+                           COUNT(*) as total,
+                           SUM(CASE WHEN ua.is_correct = true THEN 1 ELSE 0 END) as correct
+                    FROM user_answers ua 
+                    JOIN questions q ON ua.question_id = q.id 
+                    WHERE ua.user_id = %s
+                    GROUP BY q.genre
+                ''', (user_id,))
+                genre_stats = cursor.fetchall()
+            else:
+                total_answers = 0
+                correct_answers = 0
+                accuracy_rate = 0
+                recent_history = []
+                genre_stats = []
             
             stats = {
                 'total_questions': total_questions,
@@ -159,6 +166,107 @@ def index():
         }
         return render_template('dashboard.html', stats=stats)
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """ユーザー登録"""
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        password_confirm = request.form.get('password_confirm', '')
+        
+        # バリデーション
+        if not username or not email or not password:
+            flash('すべてのフィールドを入力してください', 'error')
+            return render_template('register.html')
+        
+        if password != password_confirm:
+            flash('パスワードが一致しません', 'error')
+            return render_template('register.html')
+        
+        if len(password) < 6:
+            flash('パスワードは6文字以上で入力してください', 'error')
+            return render_template('register.html')
+        
+        try:
+            with get_db_connection(app.config['DATABASE_URL']) as conn:
+                cursor = conn.cursor()
+                
+                # ユーザー名とメールの重複チェック
+                cursor.execute('SELECT id FROM users WHERE username = %s OR email = %s', (username, email))
+                if cursor.fetchone():
+                    flash('ユーザー名またはメールアドレスがすでに使用されています', 'error')
+                    return render_template('register.html')
+                
+                # パスワードハッシュ化
+                password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                
+                # ユーザー作成
+                cursor.execute('''
+                    INSERT INTO users (username, email, password_hash, created_at)
+                    VALUES (%s, %s, %s, %s) RETURNING id
+                ''', (username, email, password_hash, datetime.now()))
+                
+                user_id = cursor.fetchone()[0]
+                conn.commit()
+                
+                # 自動ログイン
+                user = User(user_id, username, email)
+                login_user(user)
+                
+                flash('アカウントが作成されました', 'success')
+                return redirect(url_for('index'))
+                
+        except Exception as e:
+            app.logger.error(f"Registration error: {e}")
+            flash('登録処理中にエラーが発生しました', 'error')
+    
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """ユーザーログイン"""
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        
+        if not username or not password:
+            flash('ユーザー名とパスワードを入力してください', 'error')
+            return render_template('login.html')
+        
+        try:
+            with get_db_connection(app.config['DATABASE_URL']) as conn:
+                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor.execute('SELECT id, username, email, password_hash FROM users WHERE username = %s OR email = %s', (username, username))
+                user_data = cursor.fetchone()
+                
+                if user_data and bcrypt.checkpw(password.encode('utf-8'), user_data['password_hash'].encode('utf-8')):
+                    user = User(user_data['id'], user_data['username'], user_data['email'])
+                    login_user(user, remember=True)
+                    
+                    next_page = request.args.get('next')
+                    if next_page:
+                        return redirect(next_page)
+                    
+                    flash(f'ようこそ、{user_data["username"]}さん', 'success')
+                    return redirect(url_for('index'))
+                else:
+                    flash('ユーザー名またはパスワードが正しくありません', 'error')
+                    
+        except Exception as e:
+            app.logger.error(f"Login error: {e}")
+            flash('ログイン処理中にエラーが発生しました', 'error')
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def user_logout():
+    """ユーザーログアウト"""
+    logout_user()
+    flash('ログアウトしました', 'info')
+    return redirect(url_for('index'))
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     """管理者ログイン"""
@@ -177,7 +285,7 @@ def admin_login():
 def admin_logout():
     """管理者ログアウト"""
     session.pop('admin_authenticated', None)
-    flash('ログアウトしました', 'info')
+    flash('管理者ログアウトしました', 'info')
     return redirect(url_for('index'))
 
 @app.route('/questions/<int:question_id>')
@@ -194,6 +302,7 @@ def show_question(question_id):
         return render_template('error.html', message='問題の表示中にエラーが発生しました'), 500
 
 @app.route('/questions/<int:question_id>/answer', methods=['POST'])
+@login_required
 def submit_answer(question_id):
     """解答の提出と判定"""
     try:
@@ -204,7 +313,7 @@ def submit_answer(question_id):
             return jsonify({'error': '解答が選択されていません'}), 400
         
         result = question_manager.check_answer(question_id, user_answer)
-        question_manager.save_answer_history(question_id, user_answer, result['is_correct'])
+        question_manager.save_answer_history(question_id, user_answer, result['is_correct'], current_user.id)
         
         return jsonify(result)
     except Exception as e:
@@ -212,6 +321,7 @@ def submit_answer(question_id):
         return jsonify({'error': '解答処理中にエラーが発生しました'}), 500
 
 @app.route('/practice/<genre>')
+@login_required
 def practice_by_genre(genre):
     """ジャンル別練習"""
     try:
@@ -234,17 +344,26 @@ def genre_practice():
         genres = question_manager.get_available_genres()
         genre_counts = question_manager.get_question_count_by_genre()
         
-        with get_db_connection(app.config['DATABASE']) as conn:
-            genre_stats = conn.execute('''
-                SELECT q.genre, 
-                       COUNT(*) as total,
-                       SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct
-                FROM user_answers ua 
-                JOIN questions q ON ua.question_id = q.id 
-                GROUP BY q.genre
-            ''').fetchall()
+        user_id = current_user.id if current_user.is_authenticated else None
         
-        stats_dict = {stat[0]: {'total': stat[1], 'correct': stat[2]} for stat in genre_stats}
+        with get_db_connection(app.config['DATABASE_URL']) as conn:
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            
+            if user_id:
+                cursor.execute('''
+                    SELECT q.genre, 
+                           COUNT(*) as total,
+                           SUM(CASE WHEN ua.is_correct = true THEN 1 ELSE 0 END) as correct
+                    FROM user_answers ua 
+                    JOIN questions q ON ua.question_id = q.id 
+                    WHERE ua.user_id = %s
+                    GROUP BY q.genre
+                ''', (user_id,))
+                genre_stats = cursor.fetchall()
+            else:
+                genre_stats = []
+        
+        stats_dict = {stat['genre']: {'total': stat['total'], 'correct': stat['correct']} for stat in genre_stats}
         
         genre_info = []
         for genre in genres:
@@ -294,145 +413,45 @@ def mock_exam():
                                      questions=questions, 
                                      exam_info={'display_name': 'データベース問題'})
             else:
-                return render_template('error.html', message='問題が登録されていません。まず問題をアップロードしてください。'), 404
+                return render_template('error.html', message='問題が登録されていません。'), 404
         
         return render_template('mock_exam_select.html', exam_files=json_files)
     except Exception as e:
         app.logger.error(f"Mock exam error: {e}")
         return render_template('error.html', message='模擬試験の準備中にエラーが発生しました'), 500
 
-@app.route('/mock_exam/<filename>')
-def mock_exam_start(filename):
-    """指定年度の模擬試験開始"""
-    try:
-        file_info = parse_filename_info(filename)
-        if not file_info:
-            flash('無効な試験ファイルです', 'error')
-            return redirect(url_for('mock_exam'))
-        
-        json_filepath = os.path.join(app.config['JSON_FOLDER'], filename)
-        if not os.path.exists(json_filepath):
-            flash('試験ファイルが見つかりません', 'error')
-            return redirect(url_for('mock_exam'))
-        
-        with open(json_filepath, 'r', encoding='utf-8') as f:
-            questions = json.load(f)
-        
-        if len(questions) > 20:
-            questions = random.sample(questions, 20)
-        
-        session['exam_start_time'] = datetime.now().isoformat()
-        session['exam_questions'] = [q.get('question_id', f"Q{i+1:03d}") for i, q in enumerate(questions)]
-        session['exam_year_info'] = file_info
-        session['exam_file_questions'] = questions
-        
-        return render_template('mock_exam_practice.html', 
-                             questions=questions, 
-                             exam_info=file_info)
-        
-    except Exception as e:
-        app.logger.error(f"Mock exam start error: {e}")
-        flash(f'試験ファイルの読み込みに失敗しました: {str(e)}', 'error')
-        return redirect(url_for('mock_exam'))
-
-@app.route('/mock_exam/submit', methods=['POST'])
-def submit_mock_exam():
-    """模擬試験の採点"""
-    try:
-        data = request.get_json()
-        answers = data.get('answers', {})
-        
-        if 'exam_questions' not in session:
-            return jsonify({'error': '試験セッションが見つかりません'}), 400
-        
-        question_ids = session['exam_questions']
-        results = []
-        correct_count = 0
-        
-        if 'exam_file_questions' in session:
-            file_questions = session['exam_file_questions']
-            question_dict = {q.get('question_id', f"Q{i+1:03d}"): q for i, q in enumerate(file_questions)}
-            
-            for question_id in question_ids:
-                question_data = question_dict.get(question_id)
-                if question_data:
-                    user_answer = answers.get(question_id, '')
-                    is_correct = user_answer == question_data['correct_answer']
-                    
-                    results.append({
-                        'question_id': question_id,
-                        'question_text': question_data['question_text'],
-                        'user_answer': user_answer,
-                        'correct_answer': question_data['correct_answer'],
-                        'is_correct': is_correct,
-                        'explanation': question_data.get('explanation', '')
-                    })
-                    
-                    if is_correct:
-                        correct_count += 1
-        else:
-            for question_id in question_ids:
-                if isinstance(question_id, int):
-                    question = question_manager.get_question(question_id)
-                    if question:
-                        user_answer = answers.get(str(question_id), '')
-                        is_correct = user_answer == question['correct_answer']
-                        
-                        question_manager.save_answer_history(question_id, user_answer, is_correct)
-                        
-                        results.append({
-                            'question_id': question_id,
-                            'question_text': question['question_text'],
-                            'user_answer': user_answer,
-                            'correct_answer': question['correct_answer'],
-                            'is_correct': is_correct,
-                            'explanation': question.get('explanation', '')
-                        })
-                        
-                        if is_correct:
-                            correct_count += 1
-        
-        score = round((correct_count / len(question_ids)) * 100, 1) if question_ids else 0
-        
-        session.pop('exam_start_time', None)
-        session.pop('exam_questions', None)
-        session.pop('exam_year_info', None)
-        session.pop('exam_file_questions', None)
-        
-        return jsonify({
-            'score': score,
-            'correct_count': correct_count,
-            'total_count': len(question_ids),
-            'results': results
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Submit mock exam error: {e}")
-        return jsonify({'error': '採点処理中にエラーが発生しました'}), 500
-
 @app.route('/history')
+@login_required
 def history():
     """学習履歴の表示"""
     try:
-        with get_db_connection(app.config['DATABASE']) as conn:
-            detailed_history = conn.execute('''
+        user_id = current_user.id
+        
+        with get_db_connection(app.config['DATABASE_URL']) as conn:
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            
+            cursor.execute('''
                 SELECT q.question_text, q.genre, ua.user_answer, ua.is_correct, ua.answered_at,
                        q.correct_answer, q.explanation
                 FROM user_answers ua 
                 JOIN questions q ON ua.question_id = q.id 
+                WHERE ua.user_id = %s
                 ORDER BY ua.answered_at DESC 
                 LIMIT 50
-            ''').fetchall()
+            ''', (user_id,))
+            detailed_history = cursor.fetchall()
             
-            daily_stats = conn.execute('''
+            cursor.execute('''
                 SELECT DATE(answered_at) as date, 
                        COUNT(*) as total,
-                       SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct
+                       SUM(CASE WHEN is_correct = true THEN 1 ELSE 0 END) as correct
                 FROM user_answers 
+                WHERE user_id = %s
                 GROUP BY DATE(answered_at) 
                 ORDER BY date DESC 
                 LIMIT 30
-            ''').fetchall()
+            ''', (user_id,))
+            daily_stats = cursor.fetchall()
             
             history_data = {
                 'detailed_history': [dict(row) for row in detailed_history],
@@ -449,9 +468,17 @@ def history():
 def admin():
     """管理画面"""
     try:
-        with get_db_connection(app.config['DATABASE']) as conn:
-            question_count = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
-            genres = conn.execute('SELECT DISTINCT genre FROM questions').fetchall()
+        with get_db_connection(app.config['DATABASE_URL']) as conn:
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            
+            cursor.execute('SELECT COUNT(*) as count FROM questions')
+            question_count = cursor.fetchone()['count']
+            
+            cursor.execute('SELECT DISTINCT genre FROM questions')
+            genres = [row['genre'] for row in cursor.fetchall()]
+            
+            cursor.execute('SELECT COUNT(*) as count FROM users')
+            user_count = cursor.fetchone()['count']
             
             json_files = []
             if os.path.exists(app.config['JSON_FOLDER']):
@@ -473,7 +500,8 @@ def admin():
             
             admin_data = {
                 'question_count': question_count,
-                'genres': [row[0] for row in genres],
+                'user_count': user_count,
+                'genres': genres,
                 'json_files': json_files
             }
         
@@ -511,6 +539,7 @@ def upload_json():
         if len(questions) == 0:
             return jsonify({'success': False, 'error': 'JSONファイルに問題が含まれていません'}), 400
         
+        # バリデーション
         for i, question in enumerate(questions):
             required_fields = ['question_text', 'choices', 'correct_answer']
             for field in required_fields:
@@ -519,19 +548,19 @@ def upload_json():
             
             if 'question_id' not in question:
                 question['question_id'] = f"問{i+1}"
-                
             if 'genre' not in question:
                 question['genre'] = 'その他'
-                
             if 'explanation' not in question:
                 question['explanation'] = ''
         
         file_info = parse_filename_info(file.filename)
         
+        # JSONファイル保存
         json_filepath = os.path.join(app.config['JSON_FOLDER'], file.filename)
         with open(json_filepath, 'w', encoding='utf-8') as json_file:
             json.dump(questions, json_file, ensure_ascii=False, indent=2)
         
+        # データベースに保存
         saved_count = question_manager.save_questions(questions)
         
         message = f'{len(questions)}問の問題をJSONファイルとデータベースに正常に保存しました'
@@ -551,33 +580,15 @@ def upload_json():
         app.logger.error(f"Upload JSON error: {e}")
         return jsonify({'success': False, 'error': f'JSON処理中にエラーが発生しました: {str(e)}'}), 500
 
-@app.route('/admin/create_sample', methods=['POST'])
-@admin_required
-def create_sample_data():
-    """サンプルデータの作成"""
-    try:
-        processor = PDFProcessor()
-        sample_questions = processor.create_sample_questions()
-        
-        saved_count = question_manager.save_questions(sample_questions)
-        
-        return jsonify({
-            'message': f'{saved_count}問のサンプル問題を作成しました',
-            'count': saved_count
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Create sample error: {e}")
-        return jsonify({'error': f'サンプルデータ作成中にエラーが発生しました: {str(e)}'}), 500
-
 @app.route('/admin/reset_database', methods=['POST'])
 @admin_required
 def reset_database():
     """データベースの初期化"""
     try:
-        with get_db_connection(app.config['DATABASE']) as conn:
-            conn.execute('DELETE FROM user_answers')
-            conn.execute('DELETE FROM questions')
+        with get_db_connection(app.config['DATABASE_URL']) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM user_answers')
+            cursor.execute('DELETE FROM questions')
             conn.commit()
         
         return jsonify({'message': 'データベースを初期化しました'})
@@ -598,21 +609,6 @@ def get_random_question():
     except Exception as e:
         app.logger.error(f"Get random question error: {e}")
         return jsonify({'error': 'ランダム問題の取得中にエラーが発生しました'}), 500
-
-@app.route('/random')
-def random_question():
-    """ランダム問題への直接アクセス"""
-    try:
-        question = question_manager.get_random_question()
-        if not question:
-            flash('問題が見つかりません。まず問題を登録してください。', 'error')
-            return redirect(url_for('admin_login'))
-        
-        return redirect(url_for('show_question', question_id=question['id']))
-    except Exception as e:
-        app.logger.error(f"Random question error: {e}")
-        flash('ランダム問題の表示中にエラーが発生しました。', 'error')
-        return redirect(url_for('index'))
 
 @app.errorhandler(404)
 def not_found_error(error):
