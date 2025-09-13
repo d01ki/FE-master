@@ -1,13 +1,13 @@
 """
 基本情報技術者試験 学習アプリ
 Flask + PostgreSQL + Tailwind CSS を使用した学習プラットフォーム
-ユーザー認証機能付き
+ユーザー認証機能付き (psycopg3対応)
 """
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import psycopg2
-import psycopg2.extras
+import psycopg
+from psycopg.rows import dict_row
 import json
 import os
 import re
@@ -60,7 +60,7 @@ class User(UserMixin):
 def load_user(user_id):
     try:
         with get_db_connection(app.config['DATABASE_URL']) as conn:
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = conn.cursor(row_factory=dict_row)
             cursor.execute('SELECT id, username, email FROM users WHERE id = %s', (user_id,))
             user_data = cursor.fetchone()
             if user_data:
@@ -103,7 +103,7 @@ def index():
         user_id = current_user.id if current_user.is_authenticated else None
         
         with get_db_connection(app.config['DATABASE_URL']) as conn:
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = conn.cursor(row_factory=dict_row)
             
             cursor.execute('SELECT COUNT(*) as count FROM questions')
             total_questions = cursor.fetchone()['count']
@@ -236,7 +236,7 @@ def login():
         
         try:
             with get_db_connection(app.config['DATABASE_URL']) as conn:
-                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor = conn.cursor(row_factory=dict_row)
                 cursor.execute('SELECT id, username, email, password_hash FROM users WHERE username = %s OR email = %s', (username, username))
                 user_data = cursor.fetchone()
                 
@@ -347,7 +347,7 @@ def genre_practice():
         user_id = current_user.id if current_user.is_authenticated else None
         
         with get_db_connection(app.config['DATABASE_URL']) as conn:
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = conn.cursor(row_factory=dict_row)
             
             if user_id:
                 cursor.execute('''
@@ -428,7 +428,7 @@ def history():
         user_id = current_user.id
         
         with get_db_connection(app.config['DATABASE_URL']) as conn:
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = conn.cursor(row_factory=dict_row)
             
             cursor.execute('''
                 SELECT q.question_text, q.genre, ua.user_answer, ua.is_correct, ua.answered_at,
@@ -469,7 +469,7 @@ def admin():
     """管理画面"""
     try:
         with get_db_connection(app.config['DATABASE_URL']) as conn:
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = conn.cursor(row_factory=dict_row)
             
             cursor.execute('SELECT COUNT(*) as count FROM questions')
             question_count = cursor.fetchone()['count']
