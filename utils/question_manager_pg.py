@@ -1,9 +1,9 @@
 """
-PostgreSQL用問題管理クラス
+PostgreSQL用問題管理クラス (psycopg3対応)
 """
 
-import psycopg2
-import psycopg2.extras
+import psycopg
+from psycopg.rows import dict_row
 import json
 import random
 from .database_pg import get_db_connection
@@ -64,7 +64,7 @@ class QuestionManager:
         """IDで問題を取得"""
         try:
             with get_db_connection(self.database_url) as conn:
-                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor = conn.cursor(row_factory=dict_row)
                 cursor.execute(
                     'SELECT * FROM questions WHERE id = %s',
                     (question_id,)
@@ -86,7 +86,7 @@ class QuestionManager:
         """ランダムな問題を1問取得"""
         try:
             with get_db_connection(self.database_url) as conn:
-                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor = conn.cursor(row_factory=dict_row)
                 cursor.execute('SELECT * FROM questions ORDER BY RANDOM() LIMIT 1')
                 
                 question = cursor.fetchone()
@@ -104,7 +104,7 @@ class QuestionManager:
         """ランダムな問題を指定数取得"""
         try:
             with get_db_connection(self.database_url) as conn:
-                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor = conn.cursor(row_factory=dict_row)
                 cursor.execute('SELECT * FROM questions ORDER BY RANDOM() LIMIT %s', (count,))
                 
                 questions = cursor.fetchall()
@@ -125,7 +125,7 @@ class QuestionManager:
         """ジャンル別問題取得"""
         try:
             with get_db_connection(self.database_url) as conn:
-                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor = conn.cursor(row_factory=dict_row)
                 cursor.execute('SELECT * FROM questions WHERE genre = %s', (genre,))
                 
                 questions = cursor.fetchall()
@@ -161,7 +161,7 @@ class QuestionManager:
         """ジャンル別問題数を取得"""
         try:
             with get_db_connection(self.database_url) as conn:
-                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor = conn.cursor(row_factory=dict_row)
                 cursor.execute('SELECT genre, COUNT(*) as count FROM questions GROUP BY genre')
                 
                 counts = cursor.fetchall()
@@ -227,7 +227,7 @@ class QuestionManager:
         """ユーザー統計を取得"""
         try:
             with get_db_connection(self.database_url) as conn:
-                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor = conn.cursor(row_factory=dict_row)
                 
                 # 総解答数
                 cursor.execute('SELECT COUNT(*) as total FROM user_answers WHERE user_id = %s', (user_id,))
