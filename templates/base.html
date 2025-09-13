@@ -126,16 +126,18 @@
                     <a href="{{ url_for('mock_exam') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'mock_exam' or request.endpoint == 'mock_exam_start' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-clipboard-list mr-2"></i>模擬試験
                     </a>
-                    <a href="{{ url_for('history') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
-                        <i class="fas fa-chart-line mr-2"></i>学習履歴
-                    </a>
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('history') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                            <i class="fas fa-chart-line mr-2"></i>学習履歴
+                        </a>
+                    {% endif %}
                 </div>
                 
                 <!-- User/Admin Links -->
                 <div class="flex items-center space-x-3">
-                    {% if session.user_id %}
+                    {% if current_user.is_authenticated %}
                         <!-- ログイン済みユーザー -->
-                        <span class="text-gray-300 hidden sm:block">こんにちは、{{ session.username }}さん</span>
+                        <span class="text-gray-300 hidden sm:block">こんにちは、{{ current_user.username }}さん</span>
                         <a href="{{ url_for('user_logout') }}" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
                             <i class="fas fa-sign-out-alt mr-1"></i>ログアウト
                         </a>
@@ -181,9 +183,11 @@
                     <a href="{{ url_for('mock_exam') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'mock_exam' or request.endpoint == 'mock_exam_start' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-clipboard-list mr-2"></i>模擬試験
                     </a>
-                    <a href="{{ url_for('history') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
-                        <i class="fas fa-chart-line mr-2"></i>学習履歴
-                    </a>
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('history') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                            <i class="fas fa-chart-line mr-2"></i>学習履歴
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
