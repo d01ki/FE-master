@@ -1,251 +1,169 @@
 {% extends "base.html" %}
 
-{% block title %}問題 - {{ super() }}{% endblock %}
+{% block title %}問題 - 基本情報技術者試験 学習プラットフォーム{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-    <div class="container mx-auto px-6 py-8">
-        <!-- 問題カード -->
-        <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden mb-8">
-            <div class="bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-6 border-b border-white/10">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-white flex items-center">
-                        <span class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-question-circle text-blue-400"></i>
-                        </span>
-                        問題
-                    </h2>
-                    <div class="flex items-center space-x-2">
-                        {% if question.genre %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                                <i class="fas fa-tag mr-1"></i>{{ question.genre }}
-                            </span>
-                        {% endif %}
-                        <span class="text-sm text-gray-400 bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                            ID: {{ question.question_id or question.id }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="p-8">
-                <!-- 問題文 -->
-                <div class="mb-8">
-                    <p class="text-white text-lg leading-relaxed font-medium whitespace-pre-line">{{ question.question_text }}</p>
-                </div>
-                
-                <!-- 選択肢 -->
-                <div class="space-y-4 mb-8">
-                    {% for choice_key, choice_text in question.choices.items() %}
-                        <button class="choice-option w-full text-left p-5 bg-white/5 rounded-xl border-2 border-white/10 hover:bg-white/10 hover:border-blue-500/50 transition-all duration-200 group"
-                                data-choice="{{ choice_key }}"
-                                onclick="selectAnswer('{{ choice_key }}')">
-                            <div class="flex items-start">
-                                <div class="flex items-center mr-4 mt-1">
-                                    <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors">
-                                        <div class="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hidden choice-dot"></div>
-                                    </div>
-                                </div>
-                                <div class="flex-1">
-                                    <span class="font-bold text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
-                                    <span class="text-white text-base leading-relaxed">{{ choice_text }}</span>
-                                </div>
-                            </div>
-                        </button>
-                    {% endfor %}
-                </div>
-                
-                <!-- スマートなナビゲーションボタン -->
-                <div class="flex justify-center">
-                    <div class="relative group">
-                        <a href="{{ url_for('random_question') }}" class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg transition-all duration-200 font-medium flex items-center backdrop-blur-sm border border-white/20">
-                            <span class="mr-3 text-lg">🎯</span>
-                            <span>次の問題</span>
-                            <i class="fas fa-arrow-right ml-3 text-blue-400"></i>
-                        </a>
-                    </div>
-                </div>
+<div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div class="card p-8">
+        <!-- 問題情報 -->
+        <div class="mb-6">
+            <div class="flex flex-wrap items-center gap-4 mb-4">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    {{ question.genre }}
+                </span>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    {{ question.difficulty }}
+                </span>
             </div>
         </div>
-        
-        <!-- 解答結果エリア（非表示） -->
-        <div id="result-area" class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden mb-8 hidden">
-            <div class="bg-gradient-to-r from-green-600/20 to-blue-600/20 p-6 border-b border-white/10">
-                <h3 class="text-lg font-semibold text-white" id="result-title">解答結果</h3>
-            </div>
-            <div class="p-8">
-                <div id="result-content"></div>
+
+        <!-- 問題文 -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">問題</h2>
+            <p class="text-gray-800 leading-relaxed">{{ question.question_text }}</p>
+        </div>
+
+        <!-- 選択肢 -->
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">選択肢</h3>
+            <div class="space-y-3" id="choices">
+                {% for choice in question.choices %}
+                <label class="flex items-start p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                    <input type="radio" name="answer" value="{{ loop.index0|chr(65) }}" class="mt-1 mr-3 text-blue-600">
+                    <div>
+                        <span class="font-medium text-gray-700">{{ loop.index0|chr(65) }}.</span>
+                        <span class="ml-2 text-gray-800">{{ choice }}</span>
+                    </div>
+                </label>
+                {% endfor %}
             </div>
         </div>
-        
-        <!-- 解説エリア -->
-        <div id="explanation-area" class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden hidden">
-            <div class="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 p-6 border-b border-white/10">
-                <h3 class="text-lg font-semibold text-white flex items-center">
-                    <span class="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-lightbulb text-yellow-400"></i>
-                    </span>
-                    解説
-                </h3>
-            </div>
-            <div class="p-8">
-                <p id="explanation-text" class="text-gray-300 leading-relaxed text-base mb-6 whitespace-pre-line"></p>
-                
-                <!-- スマートなアクションボタン -->
-                <div class="flex justify-center">
-                    <a href="{{ url_for('random_question') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center">
-                        <span class="mr-3 text-lg">🚀</span>
-                        <span>次の問題へ</span>
-                        <i class="fas fa-chevron-right ml-3"></i>
-                    </a>
-                </div>
+
+        <!-- 解答ボタン -->
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button id="submitAnswer" class="btn-primary flex-1">
+                解答する
+            </button>
+            <a href="{{ url_for('random') }}" class="btn-secondary flex-1 text-center">
+                次の問題
+            </a>
+        </div>
+
+        <!-- 解答結果 -->
+        <div id="result" class="mt-8 hidden">
+            <div id="resultContent" class="p-6 rounded-lg">
+                <!-- JavaScript で動的に追加 -->
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const submitBtn = document.getElementById('submitAnswer');
+    const resultDiv = document.getElementById('result');
+    const resultContent = document.getElementById('resultContent');
+    
+    submitBtn.addEventListener('click', function() {
+        const selectedAnswer = document.querySelector('input[name="answer"]:checked');
+        
+        if (!selectedAnswer) {
+            alert('選択肢を選んでください。');
+            return;
+        }
+        
+        // ボタンを無効化
+        submitBtn.disabled = true;
+        submitBtn.textContent = '解答中...';
+        
+        // 解答を送信
+        fetch(`/questions/{{ question.id }}/answer`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                answer: selectedAnswer.value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                submitBtn.disabled = false;
+                submitBtn.textContent = '解答する';
+                return;
+            }
+            
+            // 結果を表示
+            const isCorrect = data.is_correct;
+            const correctAnswer = data.correct_answer;
+            const explanation = data.explanation;
+            
+            resultContent.innerHTML = `
+                <div class="${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4 mb-4">
+                    <h4 class="${isCorrect ? 'text-green-800' : 'text-red-800'} font-bold text-lg mb-2">
+                        ${isCorrect ? '✅ 正解！' : '❌ 不正解'}
+                    </h4>
+                    <p class="${isCorrect ? 'text-green-700' : 'text-red-700'}">
+                        正解: ${correctAnswer}
+                    </p>
+                </div>
+                
+                ${explanation ? `
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="text-blue-800 font-bold mb-2">📝 解説</h4>
+                    <p class="text-blue-700">${explanation}</p>
+                </div>
+                ` : ''}
+            `;
+            
+            resultDiv.classList.remove('hidden');
+            
+            // 選択肢を無効化
+            document.querySelectorAll('input[name="answer"]').forEach(input => {
+                input.disabled = true;
+            });
+            
+            // 正解の選択肢をハイライト
+            document.querySelectorAll('label').forEach((label, index) => {
+                const letter = String.fromCharCode(65 + index);
+                if (letter === correctAnswer) {
+                    label.classList.add('bg-green-100', 'border-green-300');
+                } else if (selectedAnswer.value === letter && !isCorrect) {
+                    label.classList.add('bg-red-100', 'border-red-300');
+                }
+            });
+            
+            submitBtn.textContent = '解答済み';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('エラーが発生しました。');
+            submitBtn.disabled = false;
+            submitBtn.textContent = '解答する';
+        });
+    });
+});
+</script>
 {% endblock %}
 
 {% block scripts %}
 <script>
-let answered = false;
-
-// 解答選択関数
-function selectAnswer(selectedChoice) {
-    if (answered) return; // 既に解答済みの場合は何もしない
-    
-    answered = true;
-    
-    // すべての選択肢を無効化してクリックを防ぐ
-    document.querySelectorAll('.choice-option').forEach(option => {
-        option.disabled = true;
-        option.style.pointerEvents = 'none';
-        option.classList.add('opacity-75');
+// ページ読み込み時のアニメーション
+document.addEventListener('DOMContentLoaded', function() {
+    const choices = document.querySelectorAll('#choices label');
+    choices.forEach((choice, index) => {
+        setTimeout(() => {
+            choice.style.opacity = '0';
+            choice.style.transform = 'translateY(20px)';
+            choice.style.transition = 'all 0.3s ease';
+            setTimeout(() => {
+                choice.style.opacity = '1';
+                choice.style.transform = 'translateY(0)';
+            }, 50);
+        }, index * 100);
     });
-    
-    // 選択された選択肢をハイライト
-    const selectedOption = document.querySelector(`[data-choice="${selectedChoice}"]`);
-    if (selectedOption) {
-        selectedOption.classList.add('border-blue-500', 'bg-blue-500/20');
-        const dot = selectedOption.querySelector('.choice-dot');
-        const radio = selectedOption.querySelector('.choice-radio');
-        if (dot) dot.classList.remove('hidden');
-        if (radio) radio.classList.add('border-blue-500');
-    }
-    
-    // 解答を送信
-    fetch(`/questions/{{ question.id }}/answer`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            answer: selectedChoice
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert('エラー: ' + data.error);
-            return;
-        }
-        
-        showResult(data);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('解答送信中にエラーが発生しました。');
-    });
-}
-
-function showResult(data) {
-    // 正解/不正解の表示
-    const isCorrect = data.is_correct;
-    const resultTitle = document.getElementById('result-title');
-    
-    resultTitle.innerHTML = isCorrect 
-        ? '<i class="fas fa-check-circle mr-2 text-green-400"></i>正解！'
-        : '<i class="fas fa-times-circle mr-2 text-red-400"></i>不正解';
-    
-    // 結果内容を作成
-    let resultHTML = `
-        <div class="space-y-4">
-            <div class="flex items-center justify-between p-6 rounded-xl ${isCorrect ? 'bg-green-500/20 border-2 border-green-500/50' : 'bg-red-500/20 border-2 border-red-500/50'}">
-                <div>
-                    <span class="font-medium text-lg ${isCorrect ? 'text-green-300' : 'text-red-300'}">
-                        あなたの解答: ${data.user_answer}
-                    </span>
-                </div>
-                ${isCorrect ? 
-                    '<i class="fas fa-check text-green-400 text-2xl"></i>' : 
-                    '<i class="fas fa-times text-red-400 text-2xl"></i>'
-                }
-            </div>
-    `;
-    
-    if (!isCorrect) {
-        resultHTML += `
-            <div class="flex items-center justify-between p-6 bg-blue-500/20 border-2 border-blue-500/50 rounded-xl">
-                <div>
-                    <span class="font-medium text-lg text-blue-300">
-                        正解: ${data.correct_answer}
-                    </span>
-                </div>
-                <i class="fas fa-lightbulb text-blue-400 text-2xl"></i>
-            </div>
-        `;
-    }
-    
-    resultHTML += '</div>';
-    document.getElementById('result-content').innerHTML = resultHTML;
-    
-    // 選択肢の色分け
-    document.querySelectorAll('.choice-option').forEach(option => {
-        const choiceKey = option.getAttribute('data-choice');
-        option.classList.remove('hover:bg-white/10', 'hover:border-blue-500/50');
-        
-        if (choiceKey === data.correct_answer) {
-            option.classList.add('bg-green-500/20', 'border-green-500', 'border-2');
-        } else if (choiceKey === data.user_answer && !isCorrect) {
-            option.classList.add('bg-red-500/20', 'border-red-500', 'border-2');
-        }
-    });
-    
-    // 結果エリアを表示
-    document.getElementById('result-area').classList.remove('hidden');
-    
-    // 解説がある場合は表示
-    if (data.explanation && data.explanation.trim()) {
-        document.getElementById('explanation-text').textContent = data.explanation;
-        document.getElementById('explanation-area').classList.remove('hidden');
-    }
-    
-    // 結果エリアにスクロール
-    document.getElementById('result-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-// キーボードショートカット
-document.addEventListener('keydown', function(e) {
-    if (answered) {
-        // 解答後はSpaceキーで次の問題
-        if (e.key === ' ') {
-            e.preventDefault();
-            window.location.href = "{{ url_for('random_question') }}";
-        }
-        return;
-    }
-    
-    // 数字キーで選択肢を選択
-    if (e.key >= '1' && e.key <= '4') {
-        const choices = ['ア', 'イ', 'ウ', 'エ'];
-        const choiceIndex = parseInt(e.key) - 1;
-        if (choiceIndex < choices.length) {
-            const targetChoice = choices[choiceIndex];
-            const targetButton = document.querySelector(`[data-choice="${targetChoice}"]`);
-            if (targetButton && !answered) {
-                selectAnswer(targetChoice);
-            }
-        }
-    }
 });
 </script>
 {% endblock %}
