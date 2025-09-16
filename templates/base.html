@@ -108,37 +108,37 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <!-- Logo -->
-                <a href="{{ url_for('index') }}" class="flex items-center space-x-3 group">
+                <a href="{{ url_for('dashboard') if session.user_id else url_for('login') }}" class="flex items-center space-x-3 group">
                     <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                         <i class="fas fa-graduation-cap text-white text-lg"></i>
                     </div>
                     <span class="text-xl font-bold text-white hidden sm:block">FE学習アプリ</span>
                 </a>
                 
-                <!-- Navigation Links -->
+                <!-- Navigation Links (ログイン済みの場合のみ表示) -->
+                {% if session.user_id %}
                 <div class="hidden md:flex items-center space-x-1">
-                    <a href="{{ url_for('index') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'index' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('dashboard') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'dashboard' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-home mr-2"></i>ダッシュボード
                     </a>
-                    <a href="{{ url_for('genre_practice') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'genre_practice' or request.endpoint == 'practice_by_genre' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('genre_practice') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'genre_practice' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-dumbbell mr-2"></i>ジャンル別演習
                     </a>
-                    <a href="{{ url_for('mock_exam') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'mock_exam' or request.endpoint == 'mock_exam_start' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('mock_exam') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'mock_exam' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-clipboard-list mr-2"></i>模擬試験
                     </a>
-                    {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('history') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
-                            <i class="fas fa-chart-line mr-2"></i>学習履歴
-                        </a>
-                    {% endif %}
+                    <a href="{{ url_for('history') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-chart-line mr-2"></i>学習履歴
+                    </a>
                 </div>
+                {% endif %}
                 
                 <!-- User/Admin Links -->
                 <div class="flex items-center space-x-3">
-                    {% if current_user.is_authenticated %}
+                    {% if session.user_id %}
                         <!-- ログイン済みユーザー -->
-                        <span class="text-gray-300 hidden sm:block">こんにちは、{{ current_user.username }}さん</span>
-                        <a href="{{ url_for('user_logout') }}" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
+                        <span class="text-gray-300 hidden sm:block">こんにちは、{{ session.username }}さん</span>
+                        <a href="{{ url_for('logout') }}" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
                             <i class="fas fa-sign-out-alt mr-1"></i>ログアウト
                         </a>
                     {% else %}
@@ -151,45 +151,34 @@
                         </a>
                     {% endif %}
                     
-                    {% if session.admin_authenticated %}
-                        <a href="{{ url_for('admin') }}" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium flex items-center">
-                            <i class="fas fa-cog mr-2"></i>管理
-                        </a>
-                        <a href="{{ url_for('admin_logout') }}" class="text-gray-400 hover:text-white transition-colors duration-200">
-                            <i class="fas fa-user-shield"></i>
-                        </a>
-                    {% else %}
-                        <a href="{{ url_for('admin_login') }}" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
-                            <i class="fas fa-user-shield mr-2"></i>管理者
-                        </a>
-                    {% endif %}
-                    
                     <!-- Mobile menu button -->
+                    {% if session.user_id %}
                     <button class="md:hidden text-gray-400 hover:text-white" onclick="toggleMobileMenu()">
                         <i class="fas fa-bars"></i>
                     </button>
+                    {% endif %}
                 </div>
             </div>
             
             <!-- Mobile Navigation -->
+            {% if session.user_id %}
             <div id="mobile-menu" class="hidden md:hidden py-4 border-t border-white/10">
                 <div class="space-y-2">
-                    <a href="{{ url_for('index') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'index' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('dashboard') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'dashboard' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-home mr-2"></i>ダッシュボード
                     </a>
-                    <a href="{{ url_for('genre_practice') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'genre_practice' or request.endpoint == 'practice_by_genre' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('genre_practice') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'genre_practice' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-dumbbell mr-2"></i>ジャンル別演習
                     </a>
-                    <a href="{{ url_for('mock_exam') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'mock_exam' or request.endpoint == 'mock_exam_start' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('mock_exam') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'mock_exam' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-clipboard-list mr-2"></i>模擬試験
                     </a>
-                    {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('history') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
-                            <i class="fas fa-chart-line mr-2"></i>学習履歴
-                        </a>
-                    {% endif %}
+                    <a href="{{ url_for('history') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-chart-line mr-2"></i>学習履歴
+                    </a>
                 </div>
             </div>
+            {% endif %}
         </div>
     </nav>
 
