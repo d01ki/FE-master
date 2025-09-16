@@ -1,85 +1,187 @@
 {% extends "base.html" %}
 
-{% block title %}ジャンル別演習 - 基本情報技術者試験 学習プラットフォーム{% endblock %}
+{% block title %}ジャンル別演習 - {{ super() }}{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-4">ジャンル別演習</h1>
-        <p class="text-gray-600">分野ごとに集中して学習できます。苦手分野を重点的に対策しましょう。</p>
-    </div>
-
-    {% if genres %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for genre in genres %}
-        <div class="card p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">{{ genre.name }}</h3>
-                <span class="text-2xl">📚</span>
-            </div>
-            
-            <div class="space-y-2 mb-6">
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-600">問題数:</span>
-                    <span class="font-medium text-gray-900">{{ genre.count }}問</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-600">解答済み:</span>
-                    <span class="font-medium text-gray-900">{{ genre.answered }}問</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-600">正答率:</span>
-                    <span class="font-medium {{ 'text-green-600' if genre.accuracy >= 70 else 'text-orange-600' if genre.accuracy >= 50 else 'text-red-600' }}">
-                        {{ genre.accuracy }}%
-                    </span>
-                </div>
-            </div>
-            
-            <!-- 進捗バー -->
-            <div class="mb-4">
-                <div class="flex justify-between text-xs text-gray-600 mb-1">
-                    <span>進捗</span>
-                    <span>{{ "%.0f"|format((genre.answered / genre.count * 100) if genre.count > 0 else 0) }}%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                         style="width: {{ (genre.answered / genre.count * 100) if genre.count > 0 else 0 }}%"></div>
-                </div>
-            </div>
-            
-            <a href="{{ url_for('practice_by_genre', genre=genre.name) }}" 
-               class="btn-primary w-full text-center block">
-                演習開始
+<!-- Header -->
+<div class="mb-8">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-100 mb-2">
+                <i class="fas fa-tags text-blue-400 mr-3"></i>ジャンル別演習
+            </h1>
+            <p class="text-gray-300">得意・苦手分野を集中的に学習しましょう</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-2"></i>ダッシュボードに戻る
             </a>
         </div>
-        {% endfor %}
     </div>
-    {% else %}
-    <div class="card p-8 text-center">
-        <div class="text-6xl mb-4">📚</div>
-        <h3 class="text-xl font-semibold text-gray-900 mb-2">問題が登録されていません</h3>
-        <p class="text-gray-600 mb-6">管理者に問題の登録を依頼してください。</p>
-        {% if current_user.is_admin %}
-        <a href="{{ url_for('admin') }}" class="btn-primary">
-            管理画面で問題を追加
-        </a>
-        {% endif %}
-    </div>
-    {% endif %}
 </div>
 
+<!-- Genre Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for genre in genres %}
+    <div class="card bg-gray-800 border-gray-700 group hover:bg-gray-750 transition-all duration-300">
+        <div class="card-body p-6">
+            <!-- Genre Icon and Name -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center mr-4
+                                {% if genre.name == '基礎理論' %}bg-gradient-to-br from-blue-500 to-blue-600
+                                {% elif genre.name == 'アルゴリズムとプログラミング' %}bg-gradient-to-br from-green-500 to-green-600
+                                {% elif genre.name == 'コンピュータシステム' %}bg-gradient-to-br from-purple-500 to-purple-600
+                                {% elif genre.name == '技術要素' %}bg-gradient-to-br from-orange-500 to-orange-600
+                                {% elif genre.name == 'ネットワーク' %}bg-gradient-to-br from-cyan-500 to-cyan-600
+                                {% elif genre.name == 'データベース' %}bg-gradient-to-br from-red-500 to-red-600
+                                {% elif genre.name == 'セキュリティ' %}bg-gradient-to-br from-yellow-500 to-yellow-600
+                                {% elif genre.name == 'システム開発' %}bg-gradient-to-br from-indigo-500 to-indigo-600
+                                {% elif genre.name == 'マネジメント' %}bg-gradient-to-br from-pink-500 to-pink-600
+                                {% else %}bg-gradient-to-br from-gray-500 to-gray-600{% endif %}
+                                group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas {% if genre.name == '基礎理論' %}fa-calculator
+                                    {% elif genre.name == 'アルゴリズムとプログラミング' %}fa-code
+                                    {% elif genre.name == 'コンピュータシステム' %}fa-microchip
+                                    {% elif genre.name == '技術要素' %}fa-cogs
+                                    {% elif genre.name == 'ネットワーク' %}fa-network-wired
+                                    {% elif genre.name == 'データベース' %}fa-database
+                                    {% elif genre.name == 'セキュリティ' %}fa-shield-alt
+                                    {% elif genre.name == 'システム開発' %}fa-project-diagram
+                                    {% elif genre.name == 'マネジメント' %}fa-users-cog
+                                    {% else %}fa-book{% endif %} text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-100 mb-1">{{ genre.name }}</h3>
+                        <p class="text-sm text-gray-400">{{ genre.count }}問</p>
+                    </div>
+                </div>
+                
+                <!-- Accuracy Badge -->
+                {% if genre.answered > 0 %}
+                    <div class="flex flex-col items-end">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                     {% if genre.accuracy >= 80 %}bg-green-100 text-green-800
+                                     {% elif genre.accuracy >= 60 %}bg-yellow-100 text-yellow-800
+                                     {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ genre.accuracy }}%
+                        </span>
+                        <span class="text-xs text-gray-400 mt-1">{{ genre.answered }}問解答済み</span>
+                    </div>
+                {% else %}
+                    <div class="flex flex-col items-end">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            未着手
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Progress Bar -->
+            {% if genre.answered > 0 %}
+                <div class="w-full bg-gray-700 rounded-full h-2 mb-4">
+                    <div class="h-2 rounded-full transition-all duration-1000 ease-out
+                                {% if genre.accuracy >= 80 %}bg-gradient-to-r from-green-400 to-green-600
+                                {% elif genre.accuracy >= 60 %}bg-gradient-to-r from-yellow-400 to-orange-500
+                                {% else %}bg-gradient-to-r from-red-400 to-red-600{% endif %}" 
+                         style="width: {{ genre.accuracy }}%"></div>
+                </div>
+            {% else %}
+                <div class="w-full bg-gray-700 rounded-full h-2 mb-4">
+                    <div class="h-2 rounded-full bg-gray-600" style="width: 0%"></div>
+                </div>
+            {% endif %}
+            
+            <!-- Action Button -->
+            <a href="{{ url_for('practice_by_genre', genre=genre.name) }}" 
+               class="w-full btn btn-primary group-hover:bg-blue-600 transition-colors duration-300">
+                <i class="fas fa-play mr-2"></i>演習開始
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- No Genres State -->
+{% if not genres %}
+<div class="text-center py-16">
+    <div class="max-w-md mx-auto">
+        <div class="w-32 h-32 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center mx-auto mb-8">
+            <i class="fas fa-folder-open text-6xl text-gray-400"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-gray-100 mb-4">問題が登録されていません</h3>
+        <p class="text-gray-300 mb-8">
+            ジャンル別演習を開始するには、まず問題データをアップロードする必要があります。
+        </p>
+        {% if session.is_admin %}
+        <a href="{{ url_for('admin') }}" class="btn btn-primary">
+            <i class="fas fa-upload mr-2"></i>管理画面で問題を追加
+        </a>
+        {% else %}
+        <p class="text-gray-400">管理者に問題の追加を依頼してください。</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Tips Section -->
+{% if genres %}
+<div class="mt-16 bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-2xl p-8 border border-gray-700">
+    <div class="text-center">
+        <h3 class="text-2xl font-bold text-gray-100 mb-4">
+            <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>効果的な学習のコツ
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-target text-white text-2xl"></i>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-100 mb-2">苦手分野を重点的に</h4>
+                <p class="text-gray-300 text-sm">正答率の低いジャンルを優先的に学習しましょう</p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-repeat text-white text-2xl"></i>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-100 mb-2">繰り返し学習</h4>
+                <p class="text-gray-300 text-sm">間違えた問題は何度も復習して確実に理解しましょう</p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-chart-line text-white text-2xl"></i>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-100 mb-2">進捗を記録</h4>
+                <p class="text-gray-300 text-sm">学習履歴を確認して成長を実感しましょう</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // カードのアニメーション
-    const cards = document.querySelectorAll('.card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
+    // Progress bars animation
+    const progressBars = document.querySelectorAll('[style*="width:"]');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
         setTimeout(() => {
-            card.style.transition = 'all 0.5s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
+            bar.style.width = width;
+        }, 500);
+    });
+    
+    // Hover effects for cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-4px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
     });
 });
 </script>
