@@ -1,144 +1,127 @@
-# 基本情報技術者試験 学習アプリ
+# FE Master - 基本情報技術者試験学習アプリ
 
-Flask + PostgreSQL + Tailwind CSSを使用した基本情報技術者試験の学習プラットフォームです。
+PostgreSQL対応のユーザー認証機能付き基本情報技術者試験学習アプリ
 
-## 新機能（user-auth-postgresql ブランチ）
+## 🚀 新機能
 
-### ✅ 完了済み
-- **ユーザー認証機能**
-  - 新規登録・ログイン・ログアウト
-  - パスワードのハッシュ化（bcrypt）
-  - ユーザーデータの分離
-- **PostgreSQL対応**
-  - SQLiteからPostgreSQLへの移行
-  - ユーザー毎のデータ管理
-- **UI改善**
-  - フッターから技術スタック表記を削除
-  - ユーザー認証用のログイン・登録画面追加
-  - レスポンシブデザイン対応
+### ユーザー認証システム
+- **ユーザー登録・ログイン機能**
+- **セッション管理**
+- **ユーザー別学習履歴**
+- **管理者権限システム**
 
-### 🚀 主な機能
+### セキュリティ
+- パスワードハッシュ化
+- セッションベース認証
+- CSRF保護
 
-1. **ユーザー管理**
-   - 安全な新規登録（パスワード強度チェック付き）
-   - ログイン認証
-   - ユーザー毎のデータ分離
+## 📋 機能
 
-2. **問題管理**
-   - JSON形式での問題アップロード
-   - 問題の重複チェック
-   - ジャンル別問題整理
+- **ユーザー管理**: 登録・ログイン・ログアウト
+- **ジャンル別演習**: 分野ごとに集中学習
+- **ランダム問題**: 手軽に問題練習
+- **学習履歴**: 個人の進捗管理
+- **レスポンシブデザイン**: 全デバイス対応
+- **データベース**: PostgreSQL/SQLite両対応
 
-3. **学習機能**
-   - ジャンル別演習
-   - 模擬試験
-   - 個人の学習履歴追跡
+## 🛠️ セットアップ
 
-4. **管理機能**
-   - 管理者専用画面
-   - 問題アップロード
-   - ユーザー統計表示
-
-## セットアップ
-
-### 前提条件
+### 必要要件
 - Python 3.8+
-- PostgreSQL 12+
+- PostgreSQL (本番環境)
+- SQLite (開発環境)
 
 ### インストール
 
-1. リポジトリをクローン
 ```bash
 git clone https://github.com/d01ki/FE-master.git
 cd FE-master
 git checkout user-auth-postgresql
-```
 
-2. 仮想環境を作成・有効化
-```bash
+# 仮想環境作成
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
-```
 
-3. 依存関係をインストール
-```bash
+# 依存関係インストール
 pip install -r requirements.txt
+
+# アプリケーション起動
+python app_postgresql.py
 ```
 
-4. PostgreSQLデータベースを設定
-```sql
-CREATE DATABASE fe_exam_db;
-CREATE USER fe_user WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE fe_exam_db TO fe_user;
+## 🔐 認証情報
+
+### デフォルトアカウント
+- **管理者**: `admin` / `admin123`
+
+### 新規ユーザー登録
+1. `/register` にアクセス
+2. ユーザー名（3文字以上）
+3. パスワード（6文字以上）
+4. パスワード確認
+
+## 🌐 デプロイ（Render）
+
+### 環境変数
+```
+DATABASE_URL=your_postgresql_url
+SECRET_KEY=your_secret_key
 ```
 
-5. 環境変数を設定
-```bash
-# .env ファイルを作成
-echo "DATABASE_URL=postgresql://fe_user:your_password@localhost:5432/fe_exam_db" > .env
-echo "SECRET_KEY=your-secret-key-here" >> .env
-echo "ADMIN_PASSWORD=your-admin-password" >> .env
+### 設定
+- **Build Command**: `pip install -r requirements.txt`
+- **Start Command**: `python app_postgresql.py`
+
+## 📊 データベース構造
+
+### テーブル
+- **users**: ユーザー情報
+- **questions**: 問題データ
+- **user_answers**: ユーザー回答履歴
+
+## 🎯 使用方法
+
+1. **ログイン**: `/login` でログイン
+2. **ダッシュボード**: `/dashboard` で学習状況確認
+3. **問題演習**: ジャンル別またはランダム
+4. **履歴確認**: `/history` で過去の回答を確認
+
+## 📁 プロジェクト構造
+
+```
+FE-master/
+├── app_postgresql.py      # メインアプリケーション
+├── auth.py               # 認証モジュール
+├── database.py           # データベース管理
+├── requirements.txt      # 依存関係
+├── templates/
+│   ├── auth/            # 認証テンプレート
+│   │   ├── login.html
+│   │   └── register.html
+│   └── dashboard.html   # ダッシュボード
+└── json_questions/      # 問題データ
 ```
 
-6. アプリケーションを起動
-```bash
-python app.py
-```
+## 🔧 開発者向け
 
-## 使用方法
+### ローカル開発
+- SQLiteを使用（データベースファイル自動作成）
+- `python app_postgresql.py` で起動
+- デフォルト管理者アカウントが自動作成
 
-### 一般ユーザー
-1. `/register` から新規登録
-2. `/login` からログイン
-3. ダッシュボードで学習状況を確認
-4. ジャンル別演習や模擬試験を実施
+### 本番環境
+- PostgreSQLを使用
+- 環境変数 `DATABASE_URL` が必要
+- セキュリティキー設定必須
 
-### 管理者
-1. `/admin/login` から管理者ログイン
-2. JSON形式の問題ファイルをアップロード
-3. ユーザー統計を確認
-
-## データベース構造
-
-### テーブル構成
-- `users`: ユーザー情報
-- `questions`: 問題データ
-- `user_answers`: ユーザーの解答履歴
-
-## デプロイ
-
-### Render.com での展開
-
-1. `DATABASE_URL` を PostgreSQL の接続URLに設定
-2. `SECRET_KEY` を安全なランダム文字列に設定
-3. `ADMIN_PASSWORD` を管理者パスワードに設定
-
-## 変更点（fix-ui-issues から）
-
-- ✅ PostgreSQL対応（SQLiteから移行）
-- ✅ ユーザー認証システム追加
-- ✅ ユーザー毎のデータ分離
-- ✅ サンプル問題生成機能を削除
-- ✅ フッターのFlask + SQLite等の表記を削除
-- ✅ 新規登録・ログイン画面追加
-- ✅ セキュリティ強化（bcryptによるパスワードハッシュ化）
-
-## 技術スタック
-
-- **Backend**: Flask 2.3.3
-- **Database**: PostgreSQL
-- **Authentication**: Flask-Login + bcrypt
-- **Frontend**: Tailwind CSS + Font Awesome
-- **Deployment**: Gunicorn
-
-## ライセンス
+## 📝 ライセンス
 
 MIT License
 
-## 貢献
+## 🤝 コントリビューション
 
-プルリクエストやイシューの報告は歓迎します。
+Issue、Pull Request お待ちしています！
 
 ---
 
-**注意**: このブランチ（user-auth-postgresql）は本格的なユーザー認証とPostgreSQL対応を含む改良版です。本番環境での使用を想定しています。
+**基本情報技術者試験の合格を応援します！** 🎯📚
