@@ -1,76 +1,3 @@
-@app.route('/mock_exam/submit', methods=['POST'])
-@login_required
-def submit_mock_exam():
-    """模擬試験の採点"""
-    try:
-        data = request.get_json()
-        answers = data.get('answers', {})
-        
-        if 'exam_questions' not in session:
-            return jsonify({'error': '試験セッションが見つかりません'}), 400
-        
-        question_ids = session['exam_questions']
-        results = []
-        correct_count = 0
-        
-        if 'exam_file_questions' in session:
-            file_questions = session['exam_file_questions']
-            question_dict = {q.get('question_id', f"Q{i+1:03d}"): q for i, q in enumerate(file_questions)}
-            
-            for question_id in question_ids:
-                question_data = question_dict.get(question_id)
-                if question_data:
-                    user_answer = answers.get(question_id, '')
-                    is_correct = user_answer == question_data['correct_answer']
-                    
-                    results.append({
-                        'question_id': question_id,
-                        'question_text': question_data['question_text'],
-                        'user_answer': user_answer,
-                        'correct_answer': question_data['correct_answer'],
-                        'is_correct': is_correct,
-                        'explanation': question_data.get('explanation', '')
-                    })
-                    
-                    if is_correct:
-                        correct_count += 1
-        else:
-            for question_id in question_ids:
-                if isinstance(question_id, int):
-                    question = question_manager.get_question(question_id)
-                    if question:
-                        user_answer = answers.get(str(question_id), '')
-                        is_correct = user_answer == question['correct_answer']
-                        
-                        question_manager.save_answer_history(question_id, user_answer, is_correct)
-                        
-                        results.append({
-                            'question_id': question_id,
-                            'question_text': question['question_text'],
-                            'user_answer': user_answer,
-                            'correct_answer': question['correct_answer'],
-                            'is_correct': is_correct,
-                            'explanation': question.get('explanation', '')
-                        })
-                        
-                        if is_correct:
-                            correct_count += 1
-        
-        score = round((correct_count / len(question_ids)) * 100, 1) if question_ids else 0
-        
-        session.pop('exam_start_time', None)
-        session.pop('exam_questions', None)
-        session.pop('exam_year_info', None)
-        session.pop('exam_file_questions', None)
-        
-        return jsonify({
-            'score': score,
-            'correct_count': correct_count,
-            'total_count': len(question_ids),
-            'results': results
-        })
-        
-    except Exception as e:
         app.logger.error(f"Submit mock exam error: {e}")
         return jsonify({'error': '採点処理中にエラーが発生しました'}), 500
 
@@ -81,7 +8,6 @@ def history():
     try:
         with get_db_connection(app.config['DATABASE_URL'], app.config['DATABASE']) as conn:
             if is_postgresql(app.config['DATABASE_URL']):
-                # PostgreSQL
                 with conn.cursor() as cur:
                     cur.execute('''
                         SELECT q.question_text, q.genre, ua.user_answer, ua.is_correct, ua.answered_at,
@@ -103,18 +29,22 @@ def history():
                         LIMIT 30
                     ''')
                     daily_stats = cur.fetchall()
+                    
+                    history_data = {
+                        'detailed_history': [dict(row) for row in detailed_history],
+                        'daily_stats': [dict(row) for row in daily_stats]
+                    }
             else:
-                # SQLite
-                detailed_history = [dict(row) for row in conn.execute('''
+                detailed_history = conn.execute('''
                     SELECT q.question_text, q.genre, ua.user_answer, ua.is_correct, ua.answered_at,
                            q.correct_answer, q.explanation
                     FROM user_answers ua 
                     JOIN questions q ON ua.question_id = q.id 
                     ORDER BY ua.answered_at DESC 
                     LIMIT 50
-                ''').fetchall()]
+                ''').fetchall()
                 
-                daily_stats = [dict(row) for row in conn.execute('''
+                daily_stats = conn.execute('''
                     SELECT DATE(answered_at) as date, 
                            COUNT(*) as total,
                            SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct
@@ -122,36 +52,34 @@ def history():
                     GROUP BY DATE(answered_at) 
                     ORDER BY date DESC 
                     LIMIT 30
-                ''').fetchall()]
-            
-            history_data = {
-                'detailed_history': [dict(row) for row in detailed_history] if is_postgresql(app.config['DATABASE_URL']) else detailed_history,
-                'daily_stats': [dict(row) for row in daily_stats] if is_postgresql(app.config['DATABASE_URL']) else daily_stats
-            }
+                ''').fetchall()
+                
+                history_data = {
+                    'detailed_history': [dict(row) for row in detailed_history],
+                    'daily_stats': [dict(row) for row in daily_stats]
+                }
         
         return render_template('history.html', history=history_data)
     except Exception as e:
         app.logger.error(f"History error: {e}")
         return render_template('error.html', message='学習履歴の表示中にエラーが発生しました'), 500
 
-# 管理機能
 @app.route('/admin')
-@old_admin_required
+@admin_required
 def admin():
     """管理画面"""
     try:
         with get_db_connection(app.config['DATABASE_URL'], app.config['DATABASE']) as conn:
             if is_postgresql(app.config['DATABASE_URL']):
-                # PostgreSQL
                 with conn.cursor() as cur:
                     cur.execute('SELECT COUNT(*) as count FROM questions')
                     question_count = cur.fetchone()['count']
                     cur.execute('SELECT DISTINCT genre FROM questions')
                     genres = [row['genre'] for row in cur.fetchall()]
             else:
-                # SQLite
                 question_count = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
-                genres = [row[0] for row in conn.execute('SELECT DISTINCT genre FROM questions').fetchall()]
+                genres = conn.execute('SELECT DISTINCT genre FROM questions').fetchall()
+                genres = [row[0] for row in genres]
             
             json_files = []
             if os.path.exists(app.config['JSON_FOLDER']):
@@ -183,7 +111,7 @@ def admin():
         return render_template('error.html', message='管理画面の表示中にエラーが発生しました'), 500
 
 @app.route('/admin/upload_json', methods=['POST'])
-@old_admin_required
+@admin_required
 def upload_json():
     """JSON問題ファイルのアップロードと処理"""
     try:
@@ -252,7 +180,7 @@ def upload_json():
         return jsonify({'success': False, 'error': f'JSON処理中にエラーが発生しました: {str(e)}'}), 500
 
 @app.route('/admin/create_sample', methods=['POST'])
-@old_admin_required
+@admin_required
 def create_sample_data():
     """サンプルデータの作成"""
     try:
@@ -271,21 +199,20 @@ def create_sample_data():
         return jsonify({'error': f'サンプルデータ作成中にエラーが発生しました: {str(e)}'}), 500
 
 @app.route('/admin/reset_database', methods=['POST'])
-@old_admin_required
+@admin_required
 def reset_database():
     """データベースの初期化"""
     try:
         with get_db_connection(app.config['DATABASE_URL'], app.config['DATABASE']) as conn:
             if is_postgresql(app.config['DATABASE_URL']):
-                # PostgreSQL
                 with conn.cursor() as cur:
                     cur.execute('DELETE FROM user_answers')
                     cur.execute('DELETE FROM questions')
                 conn.commit()
             else:
-                # SQLite
                 conn.execute('DELETE FROM user_answers')
                 conn.execute('DELETE FROM questions')
+                conn.commit()
         
         return jsonify({'message': 'データベースを初期化しました'})
         
@@ -293,7 +220,6 @@ def reset_database():
         app.logger.error(f"Reset database error: {e}")
         return jsonify({'error': f'データベース初期化中にエラーが発生しました: {str(e)}'}), 500
 
-# API エンドポイント
 @app.route('/api/questions/random')
 @login_required
 def get_random_question():
@@ -324,7 +250,6 @@ def random_question():
         flash('ランダム問題の表示中にエラーが発生しました。', 'error')
         return redirect(url_for('index'))
 
-# エラーハンドラ
 @app.errorhandler(404)
 def not_found_error(error):
     """404エラーハンドラ"""
@@ -335,13 +260,6 @@ def internal_error(error):
     """500エラーハンドラ"""
     app.logger.error(f"Internal error: {error}")
     return render_template('error.html', message='内部サーバーエラーが発生しました'), 500
-
-# アプリケーション初期化
-print("アプリケーションを初期化しています...")
-initialize_app()
-question_manager = QuestionManager(app.config['DATABASE_URL'], app.config['DATABASE'])
-load_json_questions_on_startup()
-print("✅ アプリケーション初期化完了")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
