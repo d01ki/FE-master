@@ -1,8 +1,16 @@
 import os
-import psycopg2
 import sqlite3
 import json
 import logging
+
+# PostgreSQLライブラリのインポート（エラー時はSQLiteのみ使用）
+try:
+    import psycopg2
+    import psycopg2.extras
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    PSYCOPG2_AVAILABLE = False
+    print("Warning: psycopg2 not available. PostgreSQL support disabled.")
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +19,14 @@ class DatabaseManager:
         self.db_type = config['DATABASE_TYPE']
         self.config = config
         
+        # PostgreSQLが利用できない場合はSQLiteにフォールバック
+        if self.db_type == 'postgresql' and not PSYCOPG2_AVAILABLE:
+            print("PostgreSQL requested but psycopg2 not available. Falling back to SQLite.")
+            self.db_type = 'sqlite'
+            config['DATABASE_TYPE'] = 'sqlite'
+        
     def get_connection(self):
-        if self.db_type == 'postgresql':
+        if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
             conn = psycopg2.connect(self.config['DATABASE_URL'])
             conn.autocommit = False
             return conn
@@ -24,7 +38,7 @@ class DatabaseManager:
     def execute_query(self, query, params=None):
         conn = self.get_connection()
         try:
-            if self.db_type == 'postgresql':
+            if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
                 cur = conn.cursor()
                 cur.execute(query, params or ())
                 if query.strip().upper().startswith(('SELECT', 'WITH')):
@@ -52,7 +66,7 @@ class DatabaseManager:
             conn.close()
     
     def init_database(self):
-        if self.db_type == 'postgresql':
+        if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
             self._init_postgresql()
         else:
             self._init_sqlite()
