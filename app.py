@@ -1,3 +1,79 @@
+@app.route('/mock_exam/submit', methods=['POST'])
+@login_required
+def submit_mock_exam():
+    """模擬試験の採点"""
+    try:
+        data = request.get_json()
+        answers = data.get('answers', {})
+        
+        if 'exam_questions' not in session:
+            return jsonify({'error': '試験セッションが見つかりません'}), 400
+        
+        question_ids = session['exam_questions']
+        results = []
+        correct_count = 0
+        
+        if 'exam_file_questions' in session:
+            file_questions = session['exam_file_questions']
+            question_dict = {q.get('question_id', f"Q{i+1:03d}"): q for i, q in enumerate(file_questions)}
+            
+            for question_id in question_ids:
+                question_data = question_dict.get(question_id)
+                if question_data:
+                    user_answer = answers.get(question_id, '')
+                    is_correct = user_answer == question_data['correct_answer']
+                    
+                    results.append({
+                        'question_id': question_id,
+                        'question_text': question_data['question_text'],
+                        'user_answer': user_answer,
+                        'correct_answer': question_data['correct_answer'],
+                        'is_correct': is_correct,
+                        'explanation': question_data.get('explanation', '')
+                    })
+                    
+                    if is_correct:
+                        correct_count += 1
+        else:
+            for question_id in question_ids:
+                if isinstance(question_id, int):
+                    question = question_manager.get_question(question_id)
+                    if question:
+                        user_answer = answers.get(str(question_id), '')
+                        is_correct = user_answer == question['correct_answer']
+                        
+                        question_manager.save_answer_history(question_id, user_answer, is_correct)
+                        
+                        results.append({
+                            'question_id': question_id,
+                            'question_text': question['question_text'],
+                            'user_answer': user_answer,
+                            'correct_answer': question['correct_answer'],
+                            'is_correct': is_correct,
+                            'explanation': question.get('explanation', '')
+                        })
+                        
+                        if is_correct:
+                            correct_count += 1
+        
+        score = round((correct_count / len(question_ids)) * 100, 1) if question_ids else 0
+        
+        session.pop('exam_start_time', None)
+        session.pop('exam_questions', None)
+        session.pop('exam_year_info', None)
+        session.pop('exam_file_questions', None)
+        
+        return jsonify({
+            'score': score,
+            'correct_count': correct_count,
+            'total_count': len(question_ids),
+            'results': results
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Submit mock exam error: {e}")
+        return jsonify({'error': '採点処理中にエラーが発生しました'}), 500
+
 @app.route('/history')
 @login_required
 def history():
