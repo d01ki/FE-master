@@ -5,8 +5,14 @@
 
 import re
 import sqlite3
-import psycopg2
-import psycopg2.extras
+
+# PostgreSQLライブラリのインポート（エラー時は無視）
+try:
+    import psycopg2
+    import psycopg2.extras
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    PSYCOPG2_AVAILABLE = False
 
 def parse_filename_info(filename):
     """ファイル名から年度と期の情報を抽出"""
@@ -28,7 +34,7 @@ def parse_filename_info(filename):
 
 def is_postgresql(database_url):
     """PostgreSQLかどうかを判定"""
-    return database_url and database_url.startswith('postgres')
+    return database_url and database_url.startswith('postgres') and PSYCOPG2_AVAILABLE
 
 def get_db_connection(database_url=None, database_file=None):
     """データベース接続を取得"""
