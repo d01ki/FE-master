@@ -1,170 +1,140 @@
-# FE Master - 基本情報技術者試験学習アプリ
+# 基本情報技術者試験 学習アプリ（認証統合版）
 
-PostgreSQL対応のユーザー認証機能付き基本情報技術者試験学習アプリ
+## 概要
 
-## 🚀 新機能
+基本情報技術者試験の学習をサポートするWebアプリケーションです。
+mainブランチの全機能（模擬試験、ランダム問題、履歴、管理者画面）にユーザー認証システムを統合しました。
 
-### ユーザー認証システム
-- **ユーザー登録・ログイン機能**
-- **セッション管理（Flask-Login）**
-- **ユーザー別学習履歴**
-- **管理者権限システム**
+## 主な機能
 
-### セキュリティ
-- パスワードハッシュ化（Werkzeug）
-- セッションベース認証
-- ログイン必須ページ保護
+### ユーザー機能
+- **ユーザー登録・ログイン**: セキュアな認証システム
+- **ダッシュボード**: 学習状況の一覧表示
+- **ランダム問題**: データベースからランダムに問題を出題
+- **ジャンル別演習**: ジャンル毎の集中学習
+- **模擬試験**: 年度別・制限時間付きの本格模擬試験
+- **学習履歴**: 解答履歴と成績の分析
 
-## 📋 機能
+### 管理者機能
+- **問題管理**: JSON形式での問題データのアップロード
+- **データベース管理**: 問題データの初期化・管理
+- **統計情報**: 問題数、ジャンル数等の確認
 
-- **ユーザー管理**: 登録・ログイン・ログアウト
-- **ダッシュボード**: 学習状況の可視化
-- **ランダム問題**: 手軽に問題練習
-- **問題演習**: サンプル問題での学習
-- **学習履歴**: 個人の進捗管理（開発中）
-- **管理機能**: 管理者向け統計・ユーザー管理
-- **レスポンシブデザイン**: 全デバイス対応
-- **データベース**: PostgreSQL/SQLite両対応
+## 技術スタック
 
-## 🛠️ セットアップ
+- **Backend**: Flask (Python)
+- **Database**: PostgreSQL (本番環境) / SQLite (開発環境)
+- **Authentication**: Flask-Session + Werkzeug Security
+- **Frontend**: HTML5, Tailwind CSS, JavaScript
+- **Deployment**: Render.com
 
-### 必要要件
-- Python 3.8+
-- PostgreSQL (本番環境推奨)
-- SQLite (開発環境・フォールバック)
+## デプロイ
 
-### インストール
+### Render.com での設定
+
+1. **Web Service として作成**
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `python app.py`
+
+2. **環境変数の設定**
+   ```
+   DATABASE_URL=<PostgreSQL接続URL>
+   SECRET_KEY=<安全なランダム文字列>
+   ADMIN_PASSWORD=<管理者パスワード>
+   ```
+
+3. **PostgreSQLデータベース**
+   - Render PostgreSQL サービスを作成
+   - DATABASE_URL を自動設定
+
+## ローカル開発
 
 ```bash
-git clone https://github.com/d01ki/FE-master.git
-cd FE-master
-git checkout user-auth-postgresql
-
-# 仮想環境作成
-python -m venv venv
-source venv/bin/activate  # Windows: venv\\Scripts\\activate
-
-# 依存関係インストール
+# 依存関係のインストール
 pip install -r requirements.txt
 
-# アプリケーション起動
+# ローカル実行（SQLite使用）
 python app.py
 ```
 
-## 🔐 認証情報
-
-### デフォルトアカウント（自動作成）
-- **管理者**: `admin` / `admin123`
-
-### 新規ユーザー登録
-1. `/register` にアクセス
-2. ユーザー名（3文字以上）
-3. パスワード（6文字以上）
-4. パスワード確認
-5. メールアドレス（任意）
-
-## 🌐 デプロイ（Render/Heroku）
-
-### 環境変数
-```
-DATABASE_URL=postgresql://username:password@host:port/database
-SECRET_KEY=your_secret_key_here
-```
-
-### 設定
-- **Build Command**: `pip install -r requirements.txt`
-- **Start Command**: `python app.py`
-
-## 📊 データベース構造
-
-### テーブル（自動作成）
-- **users**: ユーザー情報・権限
-- **questions**: 問題データ
-- **user_answers**: ユーザー回答履歴
-
-### データベース対応
-- **PostgreSQL**: 本番環境（自動検出）
-- **SQLite**: 開発環境・フォールバック
-
-## 🎯 使用方法
-
-### 1. 初回アクセス
-1. アプリケーションにアクセス
-2. ログイン画面にリダイレクト
-3. 新規登録またはデモアカウントでログイン
-
-### 2. 学習開始
-1. **ダッシュボード**: 学習状況を確認
-2. **ランダム問題**: 問題を解いて学習
-3. **管理機能**: 管理者は統計情報を確認
-
-### 3. 機能利用
-- ログアウトは右上のアイコンから
-- モバイル表示では ☰ メニューから操作
-
-## 📁 プロジェクト構造
+## ファイル構成
 
 ```
-FE-master/
 ├── app.py                    # メインアプリケーション
+├── auth.py                   # 認証システム
+├── database.py               # データベース管理
+├── question_manager.py       # 問題管理システム
+├── utils.py                  # ユーティリティ関数
 ├── requirements.txt          # 依存関係
-├── templates/
-│   ├── auth/                # 認証テンプレート
-│   │   ├── login.html       # ログイン画面
-│   │   └── register.html    # 登録画面
-│   ├── dashboard.html       # ダッシュボード
-│   ├── question.html        # 問題表示
-│   ├── admin.html          # 管理画面
-│   └── base.html           # ベーステンプレート
-└── json_questions/         # 問題データフォルダ
+├── templates/               # HTMLテンプレート
+│   ├── auth/               # 認証関連テンプレート
+│   ├── base.html           # ベーステンプレート
+│   ├── dashboard.html      # ダッシュボード
+│   ├── question.html       # 問題表示
+│   ├── mock_exam_*.html    # 模擬試験関連
+│   ├── history.html        # 学習履歴
+│   └── admin.html          # 管理画面
+├── static/                 # 静的ファイル
+└── json_questions/         # JSON問題データ
 ```
 
-## 🔧 開発者向け情報
+## データベース設計
 
-### ローカル開発
-- SQLiteを自動使用（ファイル自動作成）
-- `python app.py` で起動
-- デフォルト管理者アカウント自動作成
-- サンプル問題も自動作成
+### Users テーブル
+- ユーザー情報と認証データ
+- 管理者フラグ
 
-### 本番環境
-- `DATABASE_URL`でPostgreSQL自動選択
-- セキュリティキー設定必須
-- テーブル自動作成
-- 管理者アカウント自動作成
+### Questions テーブル
+- 問題文、選択肢、正解、解説
+- ジャンル分類
 
-### 技術スタック
-- **Backend**: Flask + Flask-Login
-- **Database**: PostgreSQL (psycopg2-binary) / SQLite
-- **Frontend**: Tailwind CSS + Font Awesome
-- **Security**: Werkzeug (パスワードハッシュ)
+### User_answers テーブル
+- ユーザーの解答履歴
+- 正解/不正解の記録
 
-## 🚨 重要な変更点
+## 使用方法
 
-### ログイン機能追加により：
-- **すべてのページがログイン必須**
-- **未認証ユーザーは自動的にログイン画面へ**
-- **セッション管理でログイン状態を保持**
-- **管理者権限による機能制限**
+1. **初回設定**
+   - アプリにアクセス
+   - ユーザー登録
+   - 管理者による問題データのアップロード
 
-### 削除予定ファイル
-- `templates/login.html` (重複)
-- `templates/register.html` (重複)
-- `auth.py` (app.pyに統合)
-- `database.py` (app.pyに統合)
+2. **学習開始**
+   - ログイン後、ダッシュボードから各機能にアクセス
+   - ランダム問題や模擬試験で学習
+   - 履歴画面で進捗確認
 
-## 📝 ライセンス
+3. **問題データ形式**
+   ```json
+   [
+     {
+       "question_id": "Q001",
+       "question_text": "問題文",
+       "choices": {
+         "ア": "選択肢1",
+         "イ": "選択肢2",
+         "ウ": "選択肢3",
+         "エ": "選択肢4"
+       },
+       "correct_answer": "ア",
+       "explanation": "解説文",
+       "genre": "基礎理論"
+     }
+   ]
+   ```
+
+## セキュリティ機能
+
+- パスワードハッシュ化（Werkzeug Security）
+- セッション管理
+- CSRF保護
+- 管理者権限の分離
+
+## ライセンス
 
 MIT License
 
-## 🤝 コントリビューション
+## 更新履歴
 
-Issue、Pull Request お待ちしています！
-
----
-
-**基本情報技術者試験の合格を応援します！** 🎯📚
-
-### 🔗 リンク
-- [デモサイト](https://fe-master.onrender.com) *(デプロイ時)*
-- [GitHub](https://github.com/d01ki/FE-master)
+- v2.0: ユーザー認証システム統合
+- v1.0: 基本機能実装（mainブランチ）
