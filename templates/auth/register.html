@@ -1,184 +1,214 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新規登録 - FE Master</title>
+    <title>新規登録 - 基本情報技術者試験 学習アプリ</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
         body {
-            background: linear-gradient(-45deg, #1e3a8a, #3730a3, #6366f1, #8b5cf6);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            min-height: 100vh;
-        }
-        
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .glass {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-        }
-        
-        .btn-hover {
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-        
-        .fade-in-up {
-            animation: fadeInUp 0.8s ease-out;
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            font-family: 'Inter', sans-serif;
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-    <div class="glass rounded-3xl p-8 w-full max-w-md shadow-2xl fade-in-up">
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mb-4">
-                <i class="fas fa-user-plus text-2xl text-white"></i>
+<body class="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div class="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <!-- Header -->
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mb-6">
+                    <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-2">新規登録</h2>
+                <p class="text-gray-300">学習を始めるためにアカウントを作成してください</p>
             </div>
-            <h1 class="text-3xl font-bold text-white mb-2">新規登録</h1>
-            <p class="text-gray-200">FE Master アカウントを作成</p>
-        </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="mb-6 p-4 rounded-xl text-white backdrop-blur-sm border {% if category == 'error' %}bg-red-500/20 border-red-400/30{% elif category == 'success' %}bg-green-500/20 border-green-400/30{% else %}bg-blue-500/20 border-blue-400/30{% endif %}">
-                        <div class="flex items-center">
-                            <i class="fas {% if category == 'error' %}fa-exclamation-circle{% elif category == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
-                            {{ message }}
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="p-4 rounded-lg border backdrop-blur-sm
+                            {% if category == 'error' %}bg-red-500/20 border-red-500/30 text-red-300
+                            {% elif category == 'success' %}bg-green-500/20 border-green-500/30 text-green-300
+                            {% elif category == 'info' %}bg-blue-500/20 border-blue-500/30 text-blue-300
+                            {% else %}bg-yellow-500/20 border-yellow-500/30 text-yellow-300{% endif %}">
+                            <div class="flex items-center">
+                                <i class="fas 
+                                    {% if category == 'error' %}fa-exclamation-circle
+                                    {% elif category == 'success' %}fa-check-circle
+                                    {% elif category == 'info' %}fa-info-circle
+                                    {% else %}fa-exclamation-triangle{% endif %} mr-3"></i>
+                                {{ message }}
+                            </div>
                         </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Register Form -->
+            <form class="space-y-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8" method="POST">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-white mb-2">
+                        <i class="fas fa-user mr-2"></i>ユーザー名 <span class="text-red-400">*</span>
+                    </label>
+                    <input id="username" name="username" type="text" required
+                           class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="3文字以上のユーザー名">
+                    <p class="text-xs text-gray-400 mt-1">3文字以上で入力してください</p>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-white mb-2">
+                        <i class="fas fa-envelope mr-2"></i>メールアドレス
+                    </label>
+                    <input id="email" name="email" type="email"
+                           class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="example@email.com（任意）">
+                    <p class="text-xs text-gray-400 mt-1">任意項目です</p>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-white mb-2">
+                        <i class="fas fa-lock mr-2"></i>パスワード <span class="text-red-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <input id="password" name="password" type="password" required
+                               class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                               placeholder="6文字以上のパスワード">
+                        <button type="button" onclick="togglePassword('password')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors">
+                            <i id="password-icon" class="fas fa-eye"></i>
+                        </button>
                     </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+                    <p class="text-xs text-gray-400 mt-1">6文字以上で入力してください</p>
+                </div>
 
-        <form method="POST" class="space-y-6">
-            <div>
-                <label for="username" class="block text-white font-medium mb-2 flex items-center">
-                    <i class="fas fa-user mr-2"></i>ユーザー名
-                </label>
-                <input type="text" id="username" name="username" required
-                       class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all"
-                       placeholder="3文字以上で入力">
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium text-white mb-2">
+                        <i class="fas fa-lock mr-2"></i>パスワード確認 <span class="text-red-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <input id="confirm_password" name="confirm_password" type="password" required
+                               class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                               placeholder="パスワードを再入力">
+                        <button type="button" onclick="togglePassword('confirm_password')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors">
+                            <i id="confirm-password-icon" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">確認のため同じパスワードを入力してください</p>
+                </div>
+
+                <button type="submit"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 transform hover:-translate-y-1">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    アカウント作成
+                </button>
+            </form>
+
+            <!-- Login Link -->
+            <div class="text-center">
+                <p class="text-gray-300">
+                    既にアカウントをお持ちの場合は
+                    <a href="{{ url_for('login') }}" class="font-medium text-blue-400 hover:text-blue-300 transition-colors">
+                        ログイン
+                    </a>
+                </p>
             </div>
-            
-            <div>
-                <label for="password" class="block text-white font-medium mb-2 flex items-center">
-                    <i class="fas fa-lock mr-2"></i>パスワード
-                </label>
-                <div class="relative">
-                    <input type="password" id="password" name="password" required
-                           class="w-full px-4 py-3 pr-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all"
-                           placeholder="6文字以上で入力">
-                    <button type="button" id="togglePassword" 
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-white transition-colors">
-                        <i id="eyeIcon" class="fas fa-eye"></i>
-                        <i id="eyeOffIcon" class="fas fa-eye-slash hidden"></i>
-                    </button>
+
+            <!-- Registration Info -->
+            <div class="text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-3">登録について</h3>
+                <div class="space-y-2 text-sm text-gray-300">
+                    <p><i class="fas fa-check-circle text-green-400 mr-2"></i>完全無料でご利用いただけます</p>
+                    <p><i class="fas fa-check-circle text-green-400 mr-2"></i>学習履歴が保存されます</p>
+                    <p><i class="fas fa-check-circle text-green-400 mr-2"></i>個人の進捗管理が可能です</p>
                 </div>
             </div>
-
-            <div>
-                <label for="confirm_password" class="block text-white font-medium mb-2 flex items-center">
-                    <i class="fas fa-check mr-2"></i>パスワード確認
-                </label>
-                <div class="relative">
-                    <input type="password" id="confirm_password" name="confirm_password" required
-                           class="w-full px-4 py-3 pr-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all"
-                           placeholder="パスワードを再入力">
-                    <button type="button" id="toggleConfirmPassword" 
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-white transition-colors">
-                        <i id="eyeIcon2" class="fas fa-eye"></i>
-                        <i id="eyeOffIcon2" class="fas fa-eye-slash hidden"></i>
-                    </button>
-                </div>
-            </div>
-
-            <button type="submit" 
-                    class="w-full py-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold rounded-xl transition-all duration-300 btn-hover flex items-center justify-center">
-                <i class="fas fa-user-plus mr-2"></i>アカウント作成
-            </button>
-        </form>
-
-        <div class="text-center mt-8">
-            <p class="text-gray-200 mb-3">既にアカウントをお持ちですか？</p>
-            <a href="{{ url_for('login') }}" class="inline-flex items-center text-white font-semibold hover:text-blue-300 transition-colors">
-                <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-            </a>
         </div>
     </div>
 
     <script>
-        // パスワード表示/非表示の切り替え
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            const eyeIcon = document.getElementById('eyeIcon');
-            const eyeOffIcon = document.getElementById('eyeOffIcon');
+        function togglePassword(fieldId) {
+            const passwordInput = document.getElementById(fieldId);
+            const iconId = fieldId === 'password' ? 'password-icon' : 'confirm-password-icon';
+            const passwordIcon = document.getElementById(iconId);
             
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                eyeIcon.classList.add('hidden');
-                eyeOffIcon.classList.remove('hidden');
+                passwordIcon.classList.remove('fa-eye');
+                passwordIcon.classList.add('fa-eye-slash');
             } else {
                 passwordInput.type = 'password';
-                eyeIcon.classList.remove('hidden');
-                eyeOffIcon.classList.add('hidden');
+                passwordIcon.classList.remove('fa-eye-slash');
+                passwordIcon.classList.add('fa-eye');
             }
-        });
+        }
 
-        // 確認パスワード表示/非表示の切り替え
-        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('confirm_password');
-            const eyeIcon = document.getElementById('eyeIcon2');
-            const eyeOffIcon = document.getElementById('eyeOffIcon2');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                eyeIcon.classList.add('hidden');
-                eyeOffIcon.classList.remove('hidden');
-            } else {
-                passwordInput.type = 'password';
-                eyeIcon.classList.remove('hidden');
-                eyeOffIcon.classList.add('hidden');
-            }
-        });
-
-        // パスワード一致チェック
+        // Password confirmation validation
         document.getElementById('confirm_password').addEventListener('input', function() {
             const password = document.getElementById('password').value;
             const confirmPassword = this.value;
             
             if (confirmPassword && password !== confirmPassword) {
-                this.style.borderColor = '#ef4444';
+                this.setCustomValidity('パスワードが一致しません');
+                this.classList.add('border-red-500');
+                this.classList.remove('border-white/20');
             } else {
-                this.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                this.setCustomValidity('');
+                this.classList.remove('border-red-500');
+                this.classList.add('border-white/20');
             }
         });
+
+        // Username validation
+        document.getElementById('username').addEventListener('input', function() {
+            const username = this.value;
+            
+            if (username.length > 0 && username.length < 3) {
+                this.setCustomValidity('ユーザー名は3文字以上で入力してください');
+                this.classList.add('border-red-500');
+                this.classList.remove('border-white/20');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('border-red-500');
+                this.classList.add('border-white/20');
+            }
+        });
+
+        // Password length validation
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            
+            if (password.length > 0 && password.length < 6) {
+                this.setCustomValidity('パスワードは6文字以上で入力してください');
+                this.classList.add('border-red-500');
+                this.classList.remove('border-white/20');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('border-red-500');
+                this.classList.add('border-white/20');
+            }
+        });
+
+        // Auto-hide flash messages
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('[class*="bg-red-500/20"], [class*="bg-green-500/20"], [class*="bg-blue-500/20"], [class*="bg-yellow-500/20"]');
+            alerts.forEach(function(alert) {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-20px)';
+                setTimeout(function() {
+                    alert.remove();
+                }, 300);
+            });
+        }, 5000);
     </script>
 </body>
 </html>
