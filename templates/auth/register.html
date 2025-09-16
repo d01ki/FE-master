@@ -5,20 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>新規登録 - FE Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .glass-morphism {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        body {
+            background: linear-gradient(-45deg, #1e3a8a, #3730a3, #6366f1, #8b5cf6);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            min-height: 100vh;
         }
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        .btn-hover {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
-<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
-    <div class="glass-morphism rounded-3xl p-8 w-full max-w-md shadow-2xl">
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="glass rounded-3xl p-8 w-full max-w-md shadow-2xl fade-in-up">
         <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mb-4">
+                <i class="fas fa-user-plus text-2xl text-white"></i>
+            </div>
             <h1 class="text-3xl font-bold text-white mb-2">新規登録</h1>
             <p class="text-gray-200">FE Master アカウントを作成</p>
         </div>
@@ -26,8 +67,11 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="mb-4 p-3 rounded-lg text-white {% if category == 'error' %}bg-red-500/20{% elif category == 'success' %}bg-green-500/20{% else %}bg-blue-500/20{% endif %}">
-                        {{ message }}
+                    <div class="mb-6 p-4 rounded-xl text-white backdrop-blur-sm border {% if category == 'error' %}bg-red-500/20 border-red-400/30{% elif category == 'success' %}bg-green-500/20 border-green-400/30{% else %}bg-blue-500/20 border-blue-400/30{% endif %}">
+                        <div class="flex items-center">
+                            <i class="fas {% if category == 'error' %}fa-exclamation-circle{% elif category == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
+                            {{ message }}
+                        </div>
                     </div>
                 {% endfor %}
             {% endif %}
@@ -35,38 +79,106 @@
 
         <form method="POST" class="space-y-6">
             <div>
-                <label for="username" class="block text-white font-medium mb-2">ユーザー名</label>
+                <label for="username" class="block text-white font-medium mb-2 flex items-center">
+                    <i class="fas fa-user mr-2"></i>ユーザー名
+                </label>
                 <input type="text" id="username" name="username" required
-                       class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+                       class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all"
                        placeholder="3文字以上で入力">
             </div>
             
             <div>
-                <label for="password" class="block text-white font-medium mb-2">パスワード</label>
-                <input type="password" id="password" name="password" required
-                       class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
-                       placeholder="6文字以上で入力">
+                <label for="password" class="block text-white font-medium mb-2 flex items-center">
+                    <i class="fas fa-lock mr-2"></i>パスワード
+                </label>
+                <div class="relative">
+                    <input type="password" id="password" name="password" required
+                           class="w-full px-4 py-3 pr-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all"
+                           placeholder="6文字以上で入力">
+                    <button type="button" id="togglePassword" 
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-white transition-colors">
+                        <i id="eyeIcon" class="fas fa-eye"></i>
+                        <i id="eyeOffIcon" class="fas fa-eye-slash hidden"></i>
+                    </button>
+                </div>
             </div>
 
             <div>
-                <label for="confirm_password" class="block text-white font-medium mb-2">パスワード確認</label>
-                <input type="password" id="confirm_password" name="confirm_password" required
-                       class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
-                       placeholder="パスワードを再入力">
+                <label for="confirm_password" class="block text-white font-medium mb-2 flex items-center">
+                    <i class="fas fa-check mr-2"></i>パスワード確認
+                </label>
+                <div class="relative">
+                    <input type="password" id="confirm_password" name="confirm_password" required
+                           class="w-full px-4 py-3 pr-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all"
+                           placeholder="パスワードを再入力">
+                    <button type="button" id="toggleConfirmPassword" 
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-white transition-colors">
+                        <i id="eyeIcon2" class="fas fa-eye"></i>
+                        <i id="eyeOffIcon2" class="fas fa-eye-slash hidden"></i>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" 
-                    class="w-full py-3 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-xl transition duration-300 border border-white/30">
-                アカウント作成
+                    class="w-full py-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold rounded-xl transition-all duration-300 btn-hover flex items-center justify-center">
+                <i class="fas fa-user-plus mr-2"></i>アカウント作成
             </button>
         </form>
 
-        <div class="text-center mt-6">
-            <p class="text-gray-200">既にアカウントをお持ちですか？</p>
-            <a href="{{ url_for('login') }}" class="text-white font-semibold hover:underline">
-                ログイン
+        <div class="text-center mt-8">
+            <p class="text-gray-200 mb-3">既にアカウントをお持ちですか？</p>
+            <a href="{{ url_for('login') }}" class="inline-flex items-center text-white font-semibold hover:text-blue-300 transition-colors">
+                <i class="fas fa-sign-in-alt mr-2"></i>ログイン
             </a>
         </div>
     </div>
+
+    <script>
+        // パスワード表示/非表示の切り替え
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            const eyeOffIcon = document.getElementById('eyeOffIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.add('hidden');
+                eyeOffIcon.classList.remove('hidden');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('hidden');
+                eyeOffIcon.classList.add('hidden');
+            }
+        });
+
+        // 確認パスワード表示/非表示の切り替え
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('confirm_password');
+            const eyeIcon = document.getElementById('eyeIcon2');
+            const eyeOffIcon = document.getElementById('eyeOffIcon2');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.add('hidden');
+                eyeOffIcon.classList.remove('hidden');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('hidden');
+                eyeOffIcon.classList.add('hidden');
+            }
+        });
+
+        // パスワード一致チェック
+        document.getElementById('confirm_password').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            
+            if (confirmPassword && password !== confirmPassword) {
+                this.style.borderColor = '#ef4444';
+            } else {
+                this.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }
+        });
+    </script>
 </body>
 </html>
