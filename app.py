@@ -1,45 +1,268 @@
 import os
-import psycopg2
+import logging
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 import json
-import sqlite3
-import logging
 from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
+
+# PostgreSQLの条件付きimport
+try:
+    import psycopg2
+    POSTGRESQL_AVAILABLE = True
+except ImportError:
+    POSTGRESQL_AVAILABLE = False
+    print("PostgreSQL driver not available - using SQLite only")
+
+import sqlite3
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'fe-exam-app-secret-key-change-in-production')
 
 # Database configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
+if DATABASE_URL and POSTGRESQL_AVAILABLE:
     app.config['DATABASE_TYPE'] = 'postgresql'
     app.config['DATABASE_URL'] = DATABASE_URL
+    print("Using PostgreSQL database")
 else:
     app.config['DATABASE_TYPE'] = 'sqlite'
     app.config['DATABASE'] = 'fe_exam.db'
+    print("Using SQLite database")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Import modules
-from auth import init_auth_routes, login_required, admin_required
-from database import DatabaseManager, QuestionManager
+# Database Manager
+class DatabaseManager:
+    def __init__(self, config):
+        self.db_type = config['DATABASE_TYPE']
+        self.config = config
+        
+    def get_connection(self):
+        if self.db_type == 'postgresql':
+            conn = psycopg2.connect(self.config['DATABASE_URL'])
+            conn.autocommit = False
+            return conn
+        else:
+            conn = sqlite3.connect(self.config['DATABASE'])
+            conn.row_factory = sqlite3.Row
+            return conn
+    
+    def execute_query(self, query, params=None):
+        conn = self.get_connection()
+        try:
+            if self.db_type == 'postgresql':
+                cur = conn.cursor()
+                cur.execute(query, params or ())
+                if query.strip().upper().startswith(('SELECT', 'WITH')):
+                    result = cur.fetchall()
+                    columns = [desc[0] for desc in cur.description]
+                    result = [dict(zip(columns, row)) for row in result]
+                else:
+                    result = cur.rowcount
+                    conn.commit()
+                cur.close()
+            else:
+                cur = conn.cursor()
+                cur.execute(query, params or ())
+                if query.strip().upper().startswith(('SELECT', 'WITH')):
+                    result = [dict(row) for row in cur.fetchall()]
+                else:
+                    result = cur.rowcount
+                    conn.commit()
+                cur.close()
+            return result
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            conn.close()
+    
+    def init_database(self):
+        if self.db_type == 'postgresql':
+            self._init_postgresql()
+        else:
+            self._init_sqlite()
+    
+    def _init_postgresql(self):
+        queries = [
+            """CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(80) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                is_admin BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
+            """CREATE TABLE IF NOT EXISTS questions (
+                id SERIAL PRIMARY KEY,
+                question_id VARCHAR(50) UNIQUE NOT NULL,
+                question_text TEXT NOT NULL,
+                choices JSON NOT NULL,
+                correct_answer VARCHAR(10) NOT NULL,
+                explanation TEXT,
+                genre VARCHAR(100),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
+            """CREATE TABLE IF NOT EXISTS user_answers (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                question_id INTEGER REFERENCES questions(id),
+                user_answer VARCHAR(10) NOT NULL,
+                is_correct BOOLEAN NOT NULL,
+                answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
+            "CREATE INDEX IF NOT EXISTS idx_questions_genre ON questions(genre)",
+            "CREATE INDEX IF NOT EXISTS idx_user_answers_user_id ON user_answers(user_id)"
+        ]
+        
+        for query in queries:
+            try:
+                self.execute_query(query)
+            except Exception as e:
+                logger.error(f"PostgreSQL init error: {e}")
+    
+    def _init_sqlite(self):
+        queries = [
+            """CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                is_admin INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )""",
+            """CREATE TABLE IF NOT EXISTS questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                question_id TEXT UNIQUE NOT NULL,
+                question_text TEXT NOT NULL,
+                choices TEXT NOT NULL,
+                correct_answer TEXT NOT NULL,
+                explanation TEXT,
+                genre TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )""",
+            """CREATE TABLE IF NOT EXISTS user_answers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                question_id INTEGER,
+                user_answer TEXT NOT NULL,
+                is_correct INTEGER NOT NULL,
+                answered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (question_id) REFERENCES questions (id)
+            )"""
+        ]
+        
+        for query in queries:
+            try:
+                self.execute_query(query)
+            except Exception as e:
+                logger.error(f"SQLite init error: {e}")
+
+# Question Manager
+class QuestionManager:
+    def __init__(self, db_manager):
+        self.db = db_manager
+    
+    def load_json_files(self):
+        json_folder = 'json_questions'
+        if not os.path.exists(json_folder):
+            return {'total_files': 0, 'total_questions': 0, 'errors': []}
+        
+        total_files = 0
+        total_questions = 0
+        errors = []
+        
+        for filename in os.listdir(json_folder):
+            if filename.endswith('.json'):
+                filepath = os.path.join(json_folder, filename)
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        questions = json.load(f)
+                    
+                    result = self.save_questions(questions, filename)
+                    total_files += 1
+                    total_questions += result['saved_count']
+                    
+                except Exception as e:
+                    errors.append(f"{filename}: {str(e)}")
+        
+        return {'total_files': total_files, 'total_questions': total_questions, 'errors': errors}
+    
+    def save_questions(self, questions, source_file=''):
+        saved_count = 0
+        errors = []
+        
+        for i, question in enumerate(questions):
+            try:
+                required_fields = ['question_text', 'choices', 'correct_answer']
+                if not all(field in question for field in required_fields):
+                    errors.append(f"Question {i+1}: Missing required fields")
+                    continue
+                
+                question_id = question.get('question_id', f"Q{i+1:03d}_{source_file}")
+                choices_data = json.dumps(question['choices'], ensure_ascii=False)
+                
+                existing = self.db.execute_query(
+                    'SELECT id FROM questions WHERE question_id = %s' if self.db.db_type == 'postgresql' else 'SELECT id FROM questions WHERE question_id = ?',
+                    (question_id,)
+                )
+                
+                if not existing:
+                    if self.db.db_type == 'postgresql':
+                        self.db.execute_query("""
+                            INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre) 
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                        """, (
+                            question_id, question['question_text'], choices_data,
+                            question['correct_answer'], question.get('explanation', ''),
+                            question.get('genre', 'その他')
+                        ))
+                    else:
+                        self.db.execute_query("""
+                            INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre) 
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, (
+                            question_id, question['question_text'], choices_data,
+                            question['correct_answer'], question.get('explanation', ''),
+                            question.get('genre', 'その他')
+                        ))
+                
+                saved_count += 1
+                
+            except Exception as e:
+                errors.append(f"Question {i+1}: {str(e)}")
+        
+        return {'saved_count': saved_count, 'total_count': len(questions), 'errors': errors}
 
 # Initialize components
 db_manager = DatabaseManager(app.config)
 question_manager = QuestionManager(db_manager)
 
-# Initialize authentication routes
-init_auth_routes(app, db_manager)
+# Authentication decorators
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('ログインが必要です。', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('is_admin'):
+            flash('管理者権限が必要です。', 'danger')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.before_first_request
 def initialize_app():
     try:
         db_manager.init_database()
         
-        # Create default admin
         existing_admin = db_manager.execute_query(
             'SELECT id FROM users WHERE is_admin = %s' if db_manager.db_type == 'postgresql' else 'SELECT id FROM users WHERE is_admin = ?',
             (True,) if db_manager.db_type == 'postgresql' else (1,)
@@ -58,13 +281,92 @@ def initialize_app():
     except Exception as e:
         logger.error(f"Init error: {e}")
 
-# Main routes
+# Authentication routes
 @app.route('/')
 def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return render_template('auth/login.html')
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password']
+        
+        if not username or not password:
+            flash('ユーザー名とパスワードを入力してください。', 'error')
+            return redirect(url_for('login'))
+        
+        user = db_manager.execute_query(
+            'SELECT * FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT * FROM users WHERE username = ?',
+            (username,)
+        )
+        
+        if user and check_password_hash(user[0]['password_hash'], password):
+            session.clear()
+            session['user_id'] = user[0]['id']
+            session['username'] = user[0]['username']
+            session['is_admin'] = user[0]['is_admin']
+            flash('ログインしました。', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('ユーザー名またはパスワードが正しくありません。', 'error')
+            
+    return render_template('auth/login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password']
+        confirm_password = request.form.get('confirm_password', '')
+        
+        if not username or not password:
+            flash('ユーザー名とパスワードを入力してください。', 'error')
+            return redirect(url_for('register'))
+        
+        if len(username) < 3:
+            flash('ユーザー名は3文字以上で入力してください。', 'error')
+            return redirect(url_for('register'))
+        
+        if len(password) < 6:
+            flash('パスワードは6文字以上で入力してください。', 'error')
+            return redirect(url_for('register'))
+            
+        if password != confirm_password:
+            flash('パスワードが一致しません。', 'error')
+            return redirect(url_for('register'))
+
+        existing_user = db_manager.execute_query(
+            'SELECT id FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id FROM users WHERE username = ?',
+            (username,)
+        )
+        if existing_user:
+            flash('このユーザー名は既に使用されています。', 'error')
+            return redirect(url_for('register'))
+
+        password_hash = generate_password_hash(password)
+        try:
+            db_manager.execute_query(
+                'INSERT INTO users (username, password_hash) VALUES (%s, %s)' if db_manager.db_type == 'postgresql' else 'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+                (username, password_hash)
+            )
+            flash('登録が完了しました。ログインしてください。', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            flash(f'登録エラー: {e}', 'error')
+            return redirect(url_for('register'))
+
+    return render_template('auth/register.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('ログアウトしました。', 'info')
+    return redirect(url_for('login'))
+
+# Main application routes
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -163,129 +465,6 @@ def history():
     query = "SELECT q.question_text, ua.user_answer, ua.is_correct, ua.answered_at FROM user_answers ua JOIN questions q ON ua.question_id = q.id WHERE ua.user_id = %s ORDER BY ua.answered_at DESC LIMIT 50" if db_manager.db_type == 'postgresql' else "SELECT q.question_text, ua.user_answer, ua.is_correct, ua.answered_at FROM user_answers ua JOIN questions q ON ua.question_id = q.id WHERE ua.user_id = ? ORDER BY ua.answered_at DESC LIMIT 50"
     answers = db_manager.execute_query(query, (user_id,))
     return render_template('history.html', answers=answers)
-
-@app.route('/mock_exam')
-@login_required
-def mock_exam():
-    json_folder = 'json_questions'
-    exam_files = []
-    if os.path.exists(json_folder):
-        for filename in os.listdir(json_folder):
-            if filename.endswith('.json'):
-                exam_files.append(filename)
-    return render_template('mock_exam_select.html', exam_files=exam_files)
-
-@app.route('/mock_exam/<path:filename>')
-@login_required
-def mock_exam_start(filename):
-    try:
-        json_folder = 'json_questions'
-        json_filepath = os.path.join(json_folder, filename)
-        
-        if not os.path.exists(json_filepath):
-            flash('試験ファイルが見つかりません', 'error')
-            return redirect(url_for('mock_exam'))
-        
-        with open(json_filepath, 'r', encoding='utf-8') as f:
-            questions = json.load(f)
-        
-        session['current_exam'] = {
-            'filename': filename,
-            'questions': questions,
-            'start_time': datetime.now().isoformat()
-        }
-        
-        return render_template('mock_exam_practice.html', 
-                             questions=questions, 
-                             exam_filename=filename)
-        
-    except Exception as e:
-        logger.error(f"Mock exam start error: {e}")
-        flash(f'試験ファイルの読み込みに失敗しました: {str(e)}', 'error')
-        return redirect(url_for('mock_exam'))
-
-@app.route('/mock_exam/submit', methods=['POST'])
-@login_required
-def submit_mock_exam():
-    try:
-        data = request.get_json()
-        answers = data.get('answers', {})
-        user_id = session['user_id']
-        
-        if 'current_exam' not in session:
-            return jsonify({'error': '試験セッションが見つかりません'}), 400
-        
-        exam_questions = session['current_exam']['questions']
-        results = []
-        correct_count = 0
-        
-        for i, question_data in enumerate(exam_questions):
-            question_id_str = f"q{i}"
-            user_answer = answers.get(question_id_str, '')
-            is_correct = user_answer == question_data['correct_answer']
-            
-            if is_correct:
-                correct_count += 1
-            
-            db_question = db_manager.execute_query(
-                "SELECT id FROM questions WHERE question_text = %s" if db_manager.db_type == 'postgresql' else "SELECT id FROM questions WHERE question_text = ?", 
-                (question_data['question_text'],)
-            )
-            if db_question:
-                persistent_question_id = db_question[0]['id']
-                db_manager.execute_query(
-                    "INSERT INTO user_answers (user_id, question_id, user_answer, is_correct) VALUES (%s, %s, %s, %s)" if db_manager.db_type == 'postgresql' else "INSERT INTO user_answers (user_id, question_id, user_answer, is_correct) VALUES (?, ?, ?, ?)",
-                    (user_id, persistent_question_id, user_answer, is_correct)
-                )
-
-            results.append({
-                'question_text': question_data['question_text'],
-                'user_answer': user_answer,
-                'correct_answer': question_data['correct_answer'],
-                'is_correct': is_correct,
-                'explanation': question_data.get('explanation', '')
-            })
-        
-        score = round((correct_count / len(exam_questions)) * 100, 1) if exam_questions else 0
-        session.pop('current_exam', None)
-        
-        return jsonify({
-            'score': score,
-            'correct_count': correct_count,
-            'total_count': len(exam_questions),
-            'results': results
-        })
-        
-    except Exception as e:
-        logger.error(f"Submit mock exam error: {e}")
-        return jsonify({'error': '採点処理中にエラーが発生しました'}), 500
-
-@app.route('/admin')
-@admin_required
-def admin_dashboard():
-    total_questions = db_manager.execute_query("SELECT COUNT(*) as count FROM questions")[0]['count']
-    total_users = db_manager.execute_query("SELECT COUNT(*) as count FROM users")[0]['count']
-    
-    json_folder = 'json_questions'
-    json_files_info = []
-    if os.path.exists(json_folder):
-        for filename in os.listdir(json_folder):
-            if filename.endswith('.json'):
-                filepath = os.path.join(json_folder, filename)
-                try:
-                    mtime = os.path.getmtime(filepath)
-                    last_modified = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
-                    json_files_info.append({
-                        'name': filename,
-                        'last_modified': last_modified
-                    })
-                except OSError:
-                    continue
-    
-    return render_template('admin.html', 
-                           total_questions=total_questions,
-                           total_users=total_users,
-                           json_files=json_files_info)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
