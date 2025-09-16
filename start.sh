@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# FE-Master 簡単起動スクリプト
+# FE-Master (ログイン機能付き) 起動スクリプト
 
 set -e
 
-echo "🚀 FE-Master を起動しています..."
-echo "=============================="
+echo "🚀 FE-Master (ログイン機能付き) を起動しています..."
+echo "============================================="
 
 # Pythonの確認
 if ! command -v python3 &> /dev/null; then
@@ -28,7 +28,7 @@ if [ -f "requirements.txt" ]; then
     pip3 install -r requirements.txt --quiet
 else
     echo "⚠️  requirements.txtが見つかりません。基本ライブラリをインストールします..."
-    pip3 install fastapi uvicorn pydantic python-multipart requests --quiet
+    pip3 install Flask Flask-Login Werkzeug --quiet
 fi
 
 echo "✅ ライブラリのインストールが完了しました"
@@ -40,14 +40,23 @@ if [ ! -f "app.py" ]; then
     exit 1
 fi
 
-echo "🎓 FE-Masterを起動中..."
+echo "🎓 FE-Master (ログイン機能付き) を起動中..."
 echo ""
 echo "🌐 アプリケーションのURL:"
-echo "   メインページ: http://localhost:8000"
-echo "   APIドキュメント: http://localhost:8000/docs"
+echo "   ログイン画面: http://localhost:5000/login"
+echo "   ダッシュボード: http://localhost:5000 (ログイン後)"
+echo ""
+echo "🔐 デフォルトアカウント:"
+echo "   管理者: admin / admin123"
+echo ""
+echo "💡 新規ユーザー登録: http://localhost:5000/register"
 echo ""
 echo "停止するには Ctrl+C を押してください"
-echo "=============================="
+echo "============================================="
+
+# 環境変数の設定 (開発環境用)
+export FLASK_ENV=development
+export SECRET_KEY=dev-secret-key
 
 # アプリケーションを起動
 python3 app.py
