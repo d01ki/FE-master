@@ -16,6 +16,7 @@ except ImportError:
     print("❌ PostgreSQL driver not available - using SQLite only")
 
 import sqlite3
+import random
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'fe-exam-app-secret-key-change-in-production')
@@ -240,8 +241,7 @@ def login():
             logger.info(f"✅ Login successful for {username}, redirecting to dashboard")
             
             # Use 302 redirect to dashboard
-            response = redirect(url_for('dashboard'))
-            return response
+            return redirect(url_for('dashboard'))
         else:
             logger.warning(f"❌ Login failed for {username}")
             flash('ユーザー名またはパスワードが正しくありません。', 'error')
@@ -370,7 +370,17 @@ def dashboard():
 def random_question():
     """ランダム問題"""
     try:
-        result = db_manager.execute_query("SELECT id FROM questions ORDER BY RANDOM() LIMIT 1")
+        # データベース種別に応じたランダム取得クエリ
+        if db_manager.db_type == 'postgresql':
+            result = db_manager.execute_query("SELECT id FROM questions ORDER BY RANDOM() LIMIT 1")
+        else:
+            # SQLiteの場合、全問題を取得してPythonでランダム選択
+            all_questions = db_manager.execute_query("SELECT id FROM questions")
+            if all_questions:
+                result = [random.choice(all_questions)]
+            else:
+                result = []
+        
         if not result:
             flash('問題が見つかりません。', 'warning')
             return redirect(url_for('dashboard'))
@@ -594,6 +604,9 @@ def debug():
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
+    logger.warning(f"404 error: {error}")
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
 @app.errorhandler(500)
