@@ -258,7 +258,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@app.before_first_request
+# Initialize database and admin user
 def initialize_app():
     try:
         db_manager.init_database()
@@ -280,6 +280,9 @@ def initialize_app():
         logger.info(f"Loaded {result['total_questions']} questions")
     except Exception as e:
         logger.error(f"Init error: {e}")
+
+# Call initialization
+initialize_app()
 
 # Authentication routes
 @app.route('/')
@@ -465,6 +468,11 @@ def history():
     query = "SELECT q.question_text, ua.user_answer, ua.is_correct, ua.answered_at FROM user_answers ua JOIN questions q ON ua.question_id = q.id WHERE ua.user_id = %s ORDER BY ua.answered_at DESC LIMIT 50" if db_manager.db_type == 'postgresql' else "SELECT q.question_text, ua.user_answer, ua.is_correct, ua.answered_at FROM user_answers ua JOIN questions q ON ua.question_id = q.id WHERE ua.user_id = ? ORDER BY ua.answered_at DESC LIMIT 50"
     answers = db_manager.execute_query(query, (user_id,))
     return render_template('history.html', answers=answers)
+
+# Health check endpoint
+@app.route('/health')
+def health():
+    return {'status': 'healthy', 'database': db_manager.db_type}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
