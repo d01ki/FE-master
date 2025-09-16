@@ -86,7 +86,7 @@ class DatabaseManager:
         except Exception as e:
             if conn:
                 conn.rollback()
-            logger.error(f"Query execution error: {e} | Query: {query} | Params: {params}")
+            logger.error(f"Query execution error: {e} | Query: {query}")
             raise
         finally:
             if conn:
@@ -201,16 +201,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('is_admin'):
-            logger.warning("Admin access attempt without privileges")
-            flash('管理者権限が必要です。', 'danger')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
 # Initialize database and create admin user
 def initialize_app():
     try:
@@ -243,20 +233,6 @@ def initialize_app():
         else:
             logger.info(f"✅ Admin user exists: {existing_admin[0]}")
         
-        # Load questions (with safe error handling)
-        try:
-            json_folder = 'json_questions'
-            if os.path.exists(json_folder):
-                total_files = 0
-                for filename in os.listdir(json_folder):
-                    if filename.endswith('.json'):
-                        total_files += 1
-                logger.info(f"Found {total_files} JSON files")
-            else:
-                logger.info("No json_questions folder found")
-        except Exception as e:
-            logger.warning(f"Question loading error (non-critical): {e}")
-        
         logger.info("🎉 Application initialization completed successfully!")
         
     except Exception as e:
@@ -268,17 +244,15 @@ def initialize_app():
 # Initialize the application
 try:
     initialize_app()
+    logger.info("App initialization successful")
 except Exception as e:
     logger.error(f"Failed to initialize app: {e}")
-    # Continue anyway to allow debugging
 
 # Routes
 @app.route('/')
 def index():
     try:
-        logger.info("Index route accessed")
         if 'user_id' in session:
-            logger.info(f"User {session.get('username')} already logged in, redirecting to dashboard")
             return redirect(url_for('dashboard'))
         return render_template('auth/login.html')
     except Exception as e:
@@ -288,8 +262,6 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     try:
-        logger.info(f"Login route accessed - Method: {request.method}")
-        
         if request.method == 'POST':
             username = request.form.get('username', '').strip()
             password = request.form.get('password', '')
@@ -297,47 +269,37 @@ def login():
             logger.info(f"Login attempt for username: '{username}'")
             
             if not username or not password:
-                logger.warning("Empty username or password")
                 flash('ユーザー名とパスワードを入力してください。', 'error')
                 return render_template('auth/login.html')
             
-            try:
-                # Get user from database
-                user_query = 'SELECT id, username, password_hash, is_admin FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id, username, password_hash, is_admin FROM users WHERE username = ?'
-                user_result = db_manager.execute_query(user_query, (username,))
+            # Get user from database
+            user_query = 'SELECT id, username, password_hash, is_admin FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id, username, password_hash, is_admin FROM users WHERE username = ?'
+            user_result = db_manager.execute_query(user_query, (username,))
+            
+            if user_result and len(user_result) > 0:
+                user = user_result[0]
                 
-                logger.info(f"Database query result: {len(user_result) if user_result else 0} users found")
-                
-                if user_result and len(user_result) > 0:
-                    user = user_result[0]
-                    logger.info(f"User found: {user['username']}, is_admin: {user['is_admin']}")
+                if check_password_hash(user['password_hash'], password):
+                    # Login successful
+                    session.clear()
+                    session['user_id'] = user['id']
+                    session['username'] = user['username']
+                    session['is_admin'] = bool(user['is_admin'])
                     
-                    if check_password_hash(user['password_hash'], password):
-                        # Login successful
-                        session.clear()
-                        session['user_id'] = user['id']
-                        session['username'] = user['username']
-                        session['is_admin'] = bool(user['is_admin'])
-                        
-                        logger.info(f"✅ Login successful for {username} (ID: {user['id']})")
-                        flash('ログインしました。', 'success')
-                        return redirect(url_for('dashboard'))
-                    else:
-                        logger.warning(f"❌ Password incorrect for {username}")
-                        flash('ユーザー名またはパスワードが正しくありません。', 'error')
+                    logger.info(f"✅ Login successful for {username}")
+                    flash('ログインしました。', 'success')
+                    return redirect(url_for('dashboard'))
                 else:
-                    logger.warning(f"❌ User not found: {username}")
                     flash('ユーザー名またはパスワードが正しくありません。', 'error')
-                    
-            except Exception as e:
-                logger.error(f"Database error during login: {e}")
-                flash('ログイン処理中にエラーが発生しました。', 'error')
+            else:
+                flash('ユーザー名またはパスワードが正しくありません。', 'error')
         
         return render_template('auth/login.html')
         
     except Exception as e:
         logger.error(f"Login route error: {e}")
-        return f"Login Error: {e}", 500
+        flash('ログイン処理中にエラーが発生しました。', 'error')
+        return render_template('auth/login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -346,8 +308,6 @@ def register():
             username = request.form.get('username', '').strip()
             password = request.form.get('password', '')
             confirm_password = request.form.get('confirm_password', '')
-            
-            logger.info(f"Registration attempt for username: '{username}'")
             
             # Validation
             if not username or not password:
@@ -366,36 +326,32 @@ def register():
                 flash('パスワードが一致しません。', 'error')
                 return render_template('auth/register.html')
 
-            try:
-                # Check for existing user
-                existing_user = db_manager.execute_query(
-                    'SELECT id FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id FROM users WHERE username = ?',
-                    (username,)
-                )
-                if existing_user:
-                    flash('このユーザー名は既に使用されています。', 'error')
-                    return render_template('auth/register.html')
+            # Check for existing user
+            existing_user = db_manager.execute_query(
+                'SELECT id FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id FROM users WHERE username = ?',
+                (username,)
+            )
+            if existing_user:
+                flash('このユーザー名は既に使用されています。', 'error')
+                return render_template('auth/register.html')
 
-                # Create new user
-                password_hash = generate_password_hash(password)
-                db_manager.execute_query(
-                    'INSERT INTO users (username, password_hash) VALUES (%s, %s)' if db_manager.db_type == 'postgresql' else 'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-                    (username, password_hash)
-                )
-                
-                logger.info(f"✅ New user registered: {username}")
-                flash('登録が完了しました。ログインしてください。', 'success')
-                return redirect(url_for('login'))
-                
-            except Exception as e:
-                logger.error(f"Registration database error: {e}")
-                flash('登録中にエラーが発生しました。', 'error')
+            # Create new user
+            password_hash = generate_password_hash(password)
+            db_manager.execute_query(
+                'INSERT INTO users (username, password_hash) VALUES (%s, %s)' if db_manager.db_type == 'postgresql' else 'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+                (username, password_hash)
+            )
+            
+            logger.info(f"✅ New user registered: {username}")
+            flash('登録が完了しました。ログインしてください。', 'success')
+            return redirect(url_for('login'))
 
         return render_template('auth/register.html')
         
     except Exception as e:
         logger.error(f"Register route error: {e}")
-        return f"Registration Error: {e}", 500
+        flash('登録中にエラーが発生しました。', 'error')
+        return render_template('auth/register.html')
 
 @app.route('/logout')
 def logout():
@@ -425,28 +381,34 @@ def dashboard():
             'accuracy_rate': 0
         }
         
+        # Get stats safely
         try:
-            # Get total questions
+            # Total questions
             total_questions_result = db_manager.execute_query("SELECT COUNT(*) as count FROM questions")
             if total_questions_result:
                 stats['total_questions'] = total_questions_result[0]['count']
-                
-            # Get user answers
+        except Exception as e:
+            logger.warning(f"Error getting total questions: {e}")
+        
+        try:
+            # User answers
             user_answers_query = "SELECT COUNT(*) as count FROM user_answers WHERE user_id = %s" if db_manager.db_type == 'postgresql' else "SELECT COUNT(*) as count FROM user_answers WHERE user_id = ?"
             total_answers_result = db_manager.execute_query(user_answers_query, (user_id,))
             if total_answers_result:
                 stats['total_answers'] = total_answers_result[0]['count']
-                
-            # Get correct answers
+        except Exception as e:
+            logger.warning(f"Error getting user answers: {e}")
+        
+        try:
+            # Correct answers
             if stats['total_answers'] > 0:
                 correct_query = "SELECT COUNT(*) as count FROM user_answers WHERE user_id = %s AND is_correct = %s" if db_manager.db_type == 'postgresql' else "SELECT COUNT(*) as count FROM user_answers WHERE user_id = ? AND is_correct = ?"
                 correct_result = db_manager.execute_query(correct_query, (user_id, True if db_manager.db_type == 'postgresql' else 1))
                 if correct_result:
                     stats['correct_answers'] = correct_result[0]['count']
                     stats['accuracy_rate'] = round((stats['correct_answers'] / stats['total_answers']) * 100, 1)
-                    
         except Exception as e:
-            logger.warning(f"Stats calculation error (using defaults): {e}")
+            logger.warning(f"Error getting correct answers: {e}")
         
         logger.info(f"Dashboard stats for {username}: {stats}")
         return render_template('dashboard.html', stats=stats)
@@ -455,7 +417,15 @@ def dashboard():
         logger.error(f"Dashboard error: {e}")
         import traceback
         traceback.print_exc()
-        return f"Dashboard Error: {e}", 500
+        
+        # Return a basic dashboard instead of error
+        stats = {
+            'total_questions': 0,
+            'total_answers': 0,
+            'correct_answers': 0,
+            'accuracy_rate': 0
+        }
+        return render_template('dashboard.html', stats=stats)
 
 @app.route('/health')
 def health():
@@ -465,29 +435,31 @@ def health():
         return {
             'status': 'healthy', 
             'database': db_manager.db_type,
-            'test_query': 'success' if test_result else 'failed'
+            'test_query': 'success' if test_result else 'failed',
+            'postgresql_available': POSTGRESQL_AVAILABLE
         }
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        return {'status': 'error', 'error': str(e)}, 500
+        return {'status': 'error', 'error': str(e), 'database': db_manager.db_type}, 500
 
 @app.route('/debug')
 def debug_info():
     try:
         info = {
             'database_type': db_manager.db_type,
-            'session': dict(session),
+            'session_keys': list(session.keys()),
             'postgresql_available': POSTGRESQL_AVAILABLE,
-            'database_url_set': bool(os.environ.get('DATABASE_URL'))
+            'database_url_set': bool(os.environ.get('DATABASE_URL')),
+            'user_logged_in': 'user_id' in session
         }
         
         if session.get('is_admin'):
             try:
                 users = db_manager.execute_query('SELECT id, username, is_admin, created_at FROM users')
                 info['users'] = users
-            except:
-                info['users'] = 'Error retrieving users'
-                
+            except Exception as e:
+                info['users_error'] = str(e)
+        
         return info
     except Exception as e:
         return {'error': str(e)}, 500
@@ -495,12 +467,13 @@ def debug_info():
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
-    return render_template('auth/login.html'), 404
+    logger.warning(f"404 error: {error}")
+    return redirect(url_for('login'))
 
 @app.errorhandler(500)
 def internal_error(error):
-    logger.error(f"Internal server error: {error}")
-    return f"Internal Server Error: {error}", 500
+    logger.error(f"500 error: {error}")
+    return f"Internal Server Error. Please check logs.", 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
