@@ -1,165 +1,115 @@
 {% extends "base.html" %}
 
-{% block title %}学習履歴 - {{ super() }}{% endblock %}
+{% block title %}学習履歴 - 基本情報技術者試験 学習プラットフォーム{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-    <div class="container mx-auto px-6 py-8">
-        <!-- Header -->
-        <div class="mb-8">
-            <div class="text-center">
-                <h1 class="text-4xl font-bold text-white mb-4 flex items-center justify-center">
-                    <span class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mr-4">
-                        <i class="fas fa-history text-white text-xl"></i>
-                    </span>
-                    学習履歴
-                </h1>
-                <p class="text-xl text-gray-300">あなたの学習の進捗と解答履歴を確認できます</p>
-            </div>
-        </div>
+<div class="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">学習履歴</h1>
+        <p class="text-gray-600">あなたの学習の進捗と成果を確認できます。</p>
+    </div>
 
-        <!-- Daily Stats Summary -->
-        {% if history.daily_stats %}
-        <div class="mb-8">
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
-                <div class="bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-6 border-b border-white/10">
-                    <h2 class="text-xl font-semibold text-white flex items-center">
-                        <span class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-chart-line text-blue-400"></i>
+    {% if history.daily_stats %}
+    <!-- 日別統計 -->
+    <div class="card p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">📊 日別学習統計</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for stat in history.daily_stats[:7] %}
+            <div class="bg-gray-50 rounded-lg p-4">
+                <div class="text-sm text-gray-600">{{ stat.date }}</div>
+                <div class="text-lg font-semibold text-gray-900">{{ stat.total }}問</div>
+                <div class="text-sm {{ 'text-green-600' if (stat.correct / stat.total * 100) >= 70 else 'text-orange-600' if (stat.correct / stat.total * 100) >= 50 else 'text-red-600' }}">
+                    正答率 {{ "%.1f"|format(stat.correct / stat.total * 100) }}%
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 詳細履歴 -->
+    <div class="card p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">📝 詳細履歴</h2>
+        
+        {% if history.detailed_history %}
+        <div class="space-y-4">
+            {% for entry in history.detailed_history %}
+            <div class="border border-gray-200 rounded-lg p-4 {{ 'bg-green-50 border-green-200' if entry.is_correct else 'bg-red-50 border-red-200' }}">
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">{{ '✅' if entry.is_correct else '❌' }}</span>
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {{ entry.genre or '未分類' }}
                         </span>
-                        日別学習統計
-                    </h2>
-                </div>
-                <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {% for day in history.daily_stats[:4] %}
-                        <div class="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-6 border border-blue-500/20">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-blue-300 font-medium mb-2">{{ day.date }}</p>
-                                    <p class="text-3xl font-bold text-blue-300 mb-1">{{ day.total }}</p>
-                                    <p class="text-xs text-gray-400">問題解答</p>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-xl font-semibold text-green-400 mb-1">
-                                        {{ "%.1f"|format((day.correct / day.total * 100) if day.total > 0 else 0) }}%
-                                    </div>
-                                    <p class="text-xs text-gray-400">正答率</p>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
                     </div>
+                    <span class="text-sm text-gray-500">
+                        {{ entry.answered_at[:10] }} {{ entry.answered_at[11:19] }}
+                    </span>
                 </div>
+                
+                <div class="mb-2">
+                    <p class="text-gray-800 font-medium">{{ entry.question_text[:100] }}{{ '...' if entry.question_text|length > 100 else '' }}</p>
+                </div>
+                
+                <div class="text-sm text-gray-600 space-y-1">
+                    <div>
+                        <span class="font-medium">あなたの解答:</span> 
+                        <span class="{{ 'text-green-600' if entry.is_correct else 'text-red-600' }}">{{ entry.user_answer }}</span>
+                    </div>
+                    {% if not entry.is_correct %}
+                    <div>
+                        <span class="font-medium">正解:</span> 
+                        <span class="text-green-600">{{ entry.correct_answer }}</span>
+                    </div>
+                    {% endif %}
+                    {% if entry.explanation %}
+                    <div class="mt-2 p-3 bg-blue-50 rounded border-l-4 border-blue-200">
+                        <span class="font-medium text-blue-800">解説:</span>
+                        <p class="text-blue-700 mt-1">{{ entry.explanation }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if history.detailed_history|length == 50 %}
+        <div class="mt-6 text-center">
+            <p class="text-gray-600 text-sm">最新50件の履歴を表示しています。</p>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-12">
+            <div class="text-6xl mb-4">📊</div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">学習履歴がありません</h3>
+            <p class="text-gray-600 mb-6">問題を解いて学習履歴を作成しましょう！</p>
+            <div class="space-x-4">
+                <a href="{{ url_for('random') }}" class="btn-primary">
+                    ランダム問題に挑戦
+                </a>
+                <a href="{{ url_for('genre_practice') }}" class="btn-secondary">
+                    ジャンル別演習
+                </a>
             </div>
         </div>
         {% endif %}
-
-        <!-- Detailed History -->
-        <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
-            <div class="bg-gradient-to-r from-purple-600/20 to-pink-600/20 p-6 border-b border-white/10">
-                <h2 class="text-xl font-semibold text-white flex items-center">
-                    <span class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-list text-purple-400"></i>
-                    </span>
-                    詳細な解答履歴
-                </h2>
-            </div>
-            <div class="p-6">
-                {% if history.detailed_history %}
-                    <div class="space-y-4">
-                        {% for item in history.detailed_history %}
-                        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 hover:border-white/20 transition-all duration-200">
-                            <div class="flex items-start justify-between mb-4">
-                                <div class="flex-1 pr-4">
-                                    <p class="text-white font-medium mb-3 leading-relaxed">{{ item.question_text[:150] }}{% if item.question_text|length > 150 %}...{% endif %}</p>
-                                    <div class="flex items-center space-x-4 flex-wrap">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                                            <i class="fas fa-tag mr-1"></i>{{ item.genre }}
-                                        </span>
-                                        <span class="text-sm text-gray-400 flex items-center">
-                                            <i class="fas fa-clock mr-2"></i>{{ item.answered_at }}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center space-x-2 flex-shrink-0">
-                                    {% if item.is_correct %}
-                                        <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-500/20 text-green-300 border border-green-500/30">
-                                            <i class="fas fa-check mr-2"></i>正解
-                                        </span>
-                                    {% else %}
-                                        <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-500/20 text-red-300 border border-red-500/30">
-                                            <i class="fas fa-times mr-2"></i>不正解
-                                        </span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
-                                <div class="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <span class="font-medium text-gray-300 block mb-1">あなたの解答:</span>
-                                    <span class="{% if item.is_correct %}text-green-400{% else %}text-red-400{% endif %} font-semibold text-base">
-                                        {{ item.user_answer }}
-                                    </span>
-                                </div>
-                                <div class="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <span class="font-medium text-gray-300 block mb-1">正解:</span>
-                                    <span class="text-green-400 font-semibold text-base">{{ item.correct_answer }}</span>
-                                </div>
-                            </div>
-                            
-                            {% if item.explanation %}
-                            <div class="pt-4 border-t border-white/10">
-                                <div class="bg-blue-500/10 rounded-lg p-4 border border-blue-500/20">
-                                    <span class="font-medium text-blue-300 text-sm flex items-center mb-2">
-                                        <i class="fas fa-info-circle mr-2"></i>解説:
-                                    </span>
-                                    <p class="text-sm text-gray-300 leading-relaxed">{{ item.explanation }}</p>
-                                </div>
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-                    
-                    <!-- Pagination hint -->
-                    <div class="mt-8 text-center">
-                        <p class="text-sm text-gray-400 bg-white/5 px-4 py-2 rounded-lg border border-white/10 inline-block">
-                            <i class="fas fa-info-circle mr-2"></i>最新の50件の解答履歴を表示しています
-                        </p>
-                    </div>
-                {% else %}
-                    <div class="text-center py-16">
-                        <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8 border border-white/10">
-                            <i class="fas fa-clipboard-list text-4xl text-gray-400"></i>
-                        </div>
-                        <h3 class="text-2xl font-medium text-white mb-4">学習履歴がありません</h3>
-                        <p class="text-gray-300 mb-8 max-w-md mx-auto leading-relaxed">問題を解答すると、ここに履歴が表示されます。</p>
-                        <a href="{{ url_for('random_question') }}" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-200 font-semibold">
-                            <i class="fas fa-play mr-2"></i>問題を始める
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="mt-8 text-center">
-            <div class="flex flex-wrap justify-center gap-4">
-                <a href="{{ url_for('index') }}" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
-                    <i class="fas fa-home mr-2"></i>ダッシュボードに戻る
-                </a>
-                <a href="{{ url_for('random_question') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
-                    <i class="fas fa-random mr-2"></i>ランダム練習
-                </a>
-                <a href="{{ url_for('mock_exam') }}" class="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
-                    <i class="fas fa-clipboard-list mr-2"></i>模擬試験
-                </a>
-                <a href="{{ url_for('genre_practice') }}" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
-                    <i class="fas fa-dumbbell mr-2"></i>ジャンル別演習
-                </a>
-            </div>
-        </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 履歴項目のアニメーション
+    const historyItems = document.querySelectorAll('.space-y-4 > div');
+    historyItems.forEach((item, index) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+            item.style.transition = 'all 0.3s ease';
+            item.style.opacity = '1';
+            item.style.transform = 'translateX(0)';
+        }, index * 50);
+    });
+});
+</script>
 {% endblock %}
