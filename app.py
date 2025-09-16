@@ -6,14 +6,21 @@ Flask + Flask-Login + PostgreSQL を使用した学習プラットフォーム
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-import psycopg2
-import psycopg2.extras
 import sqlite3
 import json
 import os
 import re
 from datetime import datetime
 import random
+
+# PostgreSQL オプショナルインポート
+try:
+    import psycopg2
+    import psycopg2.extras
+    HAS_POSTGRESQL = True
+except ImportError:
+    HAS_POSTGRESQL = False
+    print("PostgreSQL support not available. Using SQLite fallback.")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
@@ -47,27 +54,35 @@ class User(UserMixin):
 def get_db_connection():
     database_url = app.config.get('DATABASE_URL')
     
-    if database_url and database_url.startswith('postgresql://'):
-        # PostgreSQL接続
+    # PostgreSQL接続を試行
+    if (HAS_POSTGRESQL and database_url and 
+        (database_url.startswith('postgresql://') or database_url.startswith('postgres://'))):
         try:
+            # postgres://をpostgresql://に変換（Heroku対応）
+            if database_url.startswith('postgres://'):
+                database_url = database_url.replace('postgres://', 'postgresql://', 1)
+            
             conn = psycopg2.connect(database_url)
             conn.cursor_factory = psycopg2.extras.RealDictCursor
             return conn
         except Exception as e:
             print(f"PostgreSQL接続エラー: {e}")
-            # フォールバックでSQLite
-            pass
+            print("SQLiteにフォールバック中...")
     
     # SQLite接続（フォールバック）
     conn = sqlite3.connect('fe_exam.db')
     conn.row_factory = sqlite3.Row
     return conn
 
+def is_postgresql():
+    """現在PostgreSQLを使用しているかどうかを判定"""
+    database_url = app.config.get('DATABASE_URL')
+    return (HAS_POSTGRESQL and database_url and 
+            (database_url.startswith('postgresql://') or database_url.startswith('postgres://')))
+
 def init_db():
     """データベース初期化"""
-    database_url = app.config.get('DATABASE_URL')
-    
-    if database_url and database_url.startswith('postgresql://'):
+    if is_postgresql():
         # PostgreSQL用テーブル作成
         try:
             with get_db_connection() as conn:
@@ -158,7 +173,7 @@ def init_db():
 def load_user(user_id):
     try:
         with get_db_connection() as conn:
-            if hasattr(conn, 'cursor'):
+            if is_postgresql():
                 # PostgreSQL
                 with conn.cursor() as cur:
                     cur.execute('SELECT id, username, email, is_admin FROM users WHERE id = %s', (user_id,))
@@ -204,7 +219,7 @@ def login():
         
         try:
             with get_db_connection() as conn:
-                if hasattr(conn, 'cursor'):
+                if is_postgresql():
                     # PostgreSQL
                     with conn.cursor() as cur:
                         cur.execute('''
@@ -266,7 +281,7 @@ def register():
             password_hash = generate_password_hash(password)
             with get_db_connection() as conn:
                 # 既存ユーザーチェック
-                if hasattr(conn, 'cursor'):
+                if is_postgresql():
                     # PostgreSQL
                     with conn.cursor() as cur:
                         cur.execute('''
@@ -324,7 +339,7 @@ def index():
     """ダッシュボード"""
     try:
         with get_db_connection() as conn:
-            if hasattr(conn, 'cursor'):
+            if is_postgresql():
                 # PostgreSQL
                 with conn.cursor() as cur:
                     cur.execute('SELECT COUNT(*) as count FROM questions')
@@ -378,8 +393,8 @@ def index():
                 'total_answers': total_answers,
                 'correct_answers': correct_answers,
                 'accuracy_rate': round((correct_answers / total_answers * 100), 1) if total_answers > 0 else 0,
-                'recent_history': recent_history if hasattr(conn, 'cursor') else recent_history,
-                'genre_stats': genre_stats if hasattr(conn, 'cursor') else genre_stats
+                'recent_history': recent_history if is_postgresql() else recent_history,
+                'genre_stats': genre_stats if is_postgresql() else genre_stats
             }
         
         return render_template('dashboard.html', stats=stats)
@@ -395,7 +410,7 @@ class QuestionManager:
     def get_random_question(self):
         try:
             with get_db_connection() as conn:
-                if hasattr(conn, 'cursor'):
+                if is_postgresql():
                     # PostgreSQL
                     with conn.cursor() as cur:
                         cur.execute('SELECT * FROM questions ORDER BY RANDOM() LIMIT 1')
@@ -421,7 +436,7 @@ class QuestionManager:
     def get_question(self, question_id):
         try:
             with get_db_connection() as conn:
-                if hasattr(conn, 'cursor'):
+                if is_postgresql():
                     # PostgreSQL
                     with conn.cursor() as cur:
                         cur.execute('SELECT * FROM questions WHERE id = %s', (question_id,))
@@ -458,7 +473,7 @@ class QuestionManager:
     def save_answer_history(self, question_id, user_answer, is_correct):
         try:
             with get_db_connection() as conn:
-                if hasattr(conn, 'cursor'):
+                if is_postgresql():
                     # PostgreSQL
                     with conn.cursor() as cur:
                         cur.execute('''
@@ -510,7 +525,7 @@ def initialize_app():
     try:
         with get_db_connection() as conn:
             for question in sample_questions:
-                if hasattr(conn, 'cursor'):
+                if is_postgresql():
                     # PostgreSQL
                     with conn.cursor() as cur:
                         cur.execute('SELECT id FROM questions WHERE question_text = %s', (question['question_text'],))
@@ -557,18 +572,19 @@ def initialize_app():
     try:
         admin_hash = generate_password_hash('admin123')
         with get_db_connection() as conn:
-            if hasattr(conn, 'cursor'):
+            if is_postgresql():
                 # PostgreSQL
-                with conn.cursor() as cur:
-                    try:
+                try:
+                    with conn.cursor() as cur:
                         cur.execute('''
                             INSERT INTO users (username, password_hash, is_admin) 
                             VALUES (%s, %s, %s)
                         ''', ('admin', admin_hash, True))
-                        conn.commit()
-                        print("✅ デフォルト管理者ユーザー（admin/admin123）を作成しました")
-                    except psycopg2.IntegrityError:
-                        pass  # 既に存在する場合
+                    conn.commit()
+                    print("✅ デフォルト管理者ユーザー（admin/admin123）を作成しました")
+                except psycopg2.IntegrityError:
+                    conn.rollback()
+                    pass  # 既に存在する場合
             else:
                 # SQLite
                 try:
@@ -622,7 +638,6 @@ def random_question():
         return redirect(url_for('index'))
     return redirect(url_for('show_question', question_id=question['id']))
 
-# その他必要なルートは元のコードから継承
 @app.route('/mock_exam')
 @login_required
 def mock_exam():
@@ -646,7 +661,7 @@ def history():
 def admin():
     try:
         with get_db_connection() as conn:
-            if hasattr(conn, 'cursor'):
+            if is_postgresql():
                 # PostgreSQL
                 with conn.cursor() as cur:
                     cur.execute('SELECT COUNT(*) as count FROM questions')
