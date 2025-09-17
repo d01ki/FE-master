@@ -66,19 +66,10 @@ def init_auth_routes(app, db_manager):
                 password_hash = generate_password_hash(password)
                 db_manager.execute_query(
                     'INSERT INTO users (username, password_hash, is_admin) VALUES (%s, %s, %s)' if db_manager.db_type == 'postgresql' else 'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)',
-                    (username, password_hash, False)
+                    (username, password_hash, False if db_manager.db_type == 'postgresql' else 0)
                 )
                 
-                # Check if this is the first user and make them admin
-                user_count = db_manager.execute_query('SELECT COUNT(*) as count FROM users')
-                if user_count and user_count[0]['count'] == 1:
-                    if db_manager.db_type == 'postgresql':
-                        db_manager.execute_query('UPDATE users SET is_admin = true WHERE username = %s', (username,))
-                    else:
-                        db_manager.execute_query('UPDATE users SET is_admin = 1 WHERE username = ?', (username,))
-                    flash('登録が完了しました。最初のユーザーとして管理者権限が付与されました。ログインしてください。', 'success')
-                else:
-                    flash('登録が完了しました。ログインしてください。', 'success')
+                flash('登録が完了しました。ログインしてください。', 'success')
                 
                 return redirect(url_for('login'))
             except Exception as e:

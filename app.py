@@ -84,22 +84,37 @@ def load_json_questions_on_startup():
     except Exception as e:
         print(f"JSON自動読み込み中にエラー: {e}")
 
-def ensure_first_user_admin():
-    """最初のユーザーを管理者として設定"""
+def ensure_admin_user():
+    """特定の管理者アカウントを作成"""
     try:
-        user_count = db_manager.execute_query('SELECT COUNT(*) as count FROM users')
-        if user_count and user_count[0]['count'] == 1:
-            if db_manager.db_type == 'postgresql':
-                db_manager.execute_query('UPDATE users SET is_admin = true WHERE id = 1')
-            else:
-                db_manager.execute_query('UPDATE users SET is_admin = 1 WHERE id = 1')
-            print("最初のユーザーを管理者に設定しました")
+        from werkzeug.security import generate_password_hash
+        
+        admin_username = 'admin'
+        admin_password = app.config['ADMIN_PASSWORD']
+        
+        # 管理者アカウントが存在するかチェック
+        existing_admin = db_manager.execute_query(
+            'SELECT id FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id FROM users WHERE username = ?',
+            (admin_username,)
+        )
+        
+        if not existing_admin:
+            # 管理者アカウントを作成
+            password_hash = generate_password_hash(admin_password)
+            db_manager.execute_query(
+                'INSERT INTO users (username, password_hash, is_admin) VALUES (%s, %s, %s)' if db_manager.db_type == 'postgresql' else 'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)',
+                (admin_username, password_hash, True if db_manager.db_type == 'postgresql' else 1)
+            )
+            print(f"管理者アカウントを作成しました: {admin_username}")
+        else:
+            print(f"管理者アカウントは既に存在します: {admin_username}")
+        
     except Exception as e:
-        print(f"管理者設定エラー: {e}")
+        print(f"管理者アカウント作成エラー: {e}")
 
 # アプリ起動時の処理
 load_json_questions_on_startup()
-ensure_first_user_admin()
+ensure_admin_user()
 
 # ========== ルート定義 ==========
 
@@ -115,11 +130,15 @@ def index():
 def dashboard():
     """メインページ - ダッシュボード表示（ログイン後）"""
     try:
-        user_id = session['user_id']
+    user_id = session['user_id']
         
         # 基本統計を取得
-        total_questions = db_manager.execute_query('SELECT COUNT(*) as count FROM questions')
-        total_q_count = total_questions[0]['count'] if total_questions else 0
+        try:
+            total_questions = db_manager.execute_query('SELECT COUNT(*) as count FROM questions')
+            total_q_count = total_questions[0]['count'] if total_questions and len(total_questions) > 0 else 0
+        except Exception as e:
+            print(f"Total questions query error: {e}")
+            total_q_count = 0
         
         user_answers = db_manager.execute_query(
             'SELECT COUNT(*) as count FROM user_answers WHERE user_id = %s' if db_manager.db_type == 'postgresql' else 'SELECT COUNT(*) as count FROM user_answers WHERE user_id = ?',
@@ -170,17 +189,17 @@ def dashboard():
             WHERE ua.user_id = ? AND q.genre IS NOT NULL
             GROUP BY q.genre
         ''', (True if db_manager.db_type == 'postgresql' else 1, user_id))
-        
-        stats = {
+    
+    stats = {
             'total_questions': total_q_count,
             'total_answers': answered_count,
-            'correct_answers': correct_count,
+        'correct_answers': correct_count,
             'accuracy_rate': accuracy_rate,
             'recent_history': recent_history or [],
             'genre_stats': genre_stats or []
-        }
-        
-        return render_template('dashboard.html', stats=stats)
+    }
+    
+    return render_template('dashboard.html', stats=stats)
     except Exception as e:
         app.logger.error(f"Dashboard error: {e}")
         stats = {
@@ -291,7 +310,7 @@ def genre_practice():
         app.logger.error(f"Genre practice error: {e}")
         flash('ジャンル別演習の準備中にエラーが発生しました', 'error')
         return redirect(url_for('dashboard'))
-
+    
 @app.route('/practice/<genre>')
 @login_required
 def practice_by_genre(genre):
@@ -390,7 +409,7 @@ def submit_mock_exam():
                 correct_count += 1
         
         score = round((correct_count / total_count) * 100, 1) if total_count > 0 else 0
-        
+
         return jsonify({
             'score': score,
             'correct_count': correct_count,
@@ -406,7 +425,7 @@ def submit_mock_exam():
 def history():
     """学習履歴の表示"""
     try:
-        user_id = session['user_id']
+    user_id = session['user_id']
         
         # 詳細履歴
         detailed_history = db_manager.execute_query('''
