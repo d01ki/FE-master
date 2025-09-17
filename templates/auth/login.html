@@ -58,11 +58,11 @@
             <form class="space-y-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8" method="POST">
                 <div>
                     <label for="username" class="block text-sm font-medium text-white mb-2">
-                        <i class="fas fa-user mr-2"></i>ユーザー名またはメールアドレス
+                        <i class="fas fa-user mr-2"></i>ユーザー名
                     </label>
                     <input id="username" name="username" type="text" required
                            class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                           placeholder="ユーザー名またはメールアドレス">
+                           placeholder="ユーザー名を入力してください">
                 </div>
 
                 <div>
@@ -72,7 +72,7 @@
                     <div class="relative">
                         <input id="password" name="password" type="password" required
                                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                               placeholder="パスワード">
+                               placeholder="パスワードを入力してください">
                         <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors">
                             <i id="password-icon" class="fas fa-eye"></i>
                         </button>
@@ -104,12 +104,14 @@
                 </p>
             </div>
 
-            <!-- Demo Account Info -->
+            <!-- App Info -->
             <div class="text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                <h3 class="text-lg font-semibold text-white mb-3">デモアカウント</h3>
+                <h3 class="text-lg font-semibold text-white mb-3">基本情報技術者試験 学習アプリ</h3>
                 <div class="space-y-2 text-sm text-gray-300">
-                    <p><strong>管理者:</strong> admin / admin123</p>
-                    <p class="text-xs text-gray-400">※管理機能をお試しいただけます</p>
+                    <p><i class="fas fa-check-circle text-green-400 mr-2"></i>ランダム問題で効率的学習</p>
+                    <p><i class="fas fa-check-circle text-green-400 mr-2"></i>ジャンル別演習で弱点克服</p>
+                    <p><i class="fas fa-check-circle text-green-400 mr-2"></i>模擬試験で実力確認</p>
+                    <p><i class="fas fa-check-circle text-green-400 mr-2"></i>学習履歴で進捗管理</p>
                 </div>
             </div>
         </div>
