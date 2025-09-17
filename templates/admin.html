@@ -28,7 +28,7 @@
                 <i class="fas fa-database text-white text-2xl"></i>
             </div>
             <h3 class="text-2xl font-bold text-gray-100 mb-1">{{ data.question_count }}</h3>
-            <p class="text-gray-400 text-sm">登録済み問題数</p>
+            <p class="text-gray-400 text-sm">DB登録済み問題数</p>
         </div>
     </div>
 
@@ -100,7 +100,7 @@
                 
                 <div class="space-y-3">
                     <button onclick="createSampleData()" class="btn btn-secondary w-full">
-                        <i class="fas fa-plus mr-2"></i>基本サンプル問題作成（5問）
+                        <i class="fas fa-plus mr-2"></i>基本サンプル問題作成（3問）
                     </button>
                 </div>
             </div>
@@ -138,6 +138,7 @@
                         <tr class="bg-gray-700/50">
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ファイル名</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">年度・期</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">問題数</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">サイズ</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">更新日時</th>
                         </tr>
@@ -169,6 +170,11 @@
                                     <span class="text-sm text-gray-400">年度情報なし</span>
                                 {% endif %}
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900/50 text-blue-300 border border-blue-500/30">
+                                    <i class="fas fa-question-circle mr-1"></i>{{ file.question_count }}問
+                                </span>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                                 {{ "%.1f"|format(file.size / 1024) }} KB
                             </td>
@@ -179,6 +185,17 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- Summary -->
+            <div class="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-400 mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-blue-300">合計: {{ data.json_files|sum(attribute='question_count') }}問のJSONファイルが保存されています</p>
+                        <p class="text-xs text-blue-400 mt-1">データベースには {{ data.question_count }}問が登録済みです</p>
+                    </div>
+                </div>
             </div>
         {% else %}
             <div class="text-center py-8">
@@ -304,65 +321,17 @@ async function createSampleData() {
     try {
         showResult('info', 'サンプルデータを作成中...');
         
-        // サンプルデータを作成する関数がないので、簡単なサンプル問題を直接アップロード
-        const sampleQuestions = [
-            {
-                "question_id": "SAMPLE001",
-                "question_text": "基本情報技術者試験について、正しい説明はどれか。",
-                "choices": {
-                    "ア": "年に1回実施される",
-                    "イ": "年に2回実施される", 
-                    "ウ": "年に3回実施される",
-                    "エ": "年に4回実施される"
-                },
-                "correct_answer": "イ",
-                "explanation": "基本情報技術者試験は春期（4月）と秋期（10月）の年2回実施されます。",
-                "genre": "試験制度"
-            },
-            {
-                "question_id": "SAMPLE002",
-                "question_text": "2進数1011を10進数に変換すると、いくつになるか。",
-                "choices": {
-                    "ア": "9",
-                    "イ": "10",
-                    "ウ": "11", 
-                    "エ": "12"
-                },
-                "correct_answer": "ウ",
-                "explanation": "2進数1011は、1×2³ + 0×2² + 1×2¹ + 1×2⁰ = 8 + 0 + 2 + 1 = 11です。",
-                "genre": "基礎理論"
-            },
-            {
-                "question_id": "SAMPLE003",
-                "question_text": "OSIモデルの第4層は何層か。",
-                "choices": {
-                    "ア": "ネットワーク層",
-                    "イ": "データリンク層",
-                    "ウ": "トランスポート層",
-                    "エ": "セッション層"
-                },
-                "correct_answer": "ウ",
-                "explanation": "OSIモデルの第4層はトランスポート層で、エンドツーエンドの通信制御を行います。",
-                "genre": "ネットワーク"
-            }
-        ];
-        
-        const response = await fetch('/admin/upload_json', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                questions: sampleQuestions,
-                filename: 'sample_questions.json'
-            })
+        const response = await fetch('/admin/create_sample', {
+            method: 'POST'
         });
         
-        if (response.ok) {
-            showResult('success', '3問のサンプル問題を作成しました');
+        const result = await response.json();
+        
+        if (result.success) {
+            showResult('success', result.message);
             setTimeout(() => location.reload(), 2000);
         } else {
-            showResult('error', 'サンプルデータの作成に失敗しました');
+            showResult('error', result.error || 'サンプルデータの作成に失敗しました');
         }
     } catch (error) {
         showResult('error', 'サンプルデータ作成中にエラーが発生しました。');
