@@ -130,7 +130,7 @@ def index():
 def dashboard():
     """メインページ - ダッシュボード表示（ログイン後）"""
     try:
-    user_id = session['user_id']
+        user_id = session['user_id']
         
         # 基本統計を取得
         try:
