@@ -56,7 +56,7 @@ def load_json_questions_on_startup():
             existing_total = existing_count[0]['count'] if existing_count else 0
             
             if existing_total == 0:
-                print("JSON問題ファイルを読み込み中...")
+                print("📚 JSON問題ファイルを読み込み中...")
                 
                 loaded_files = []
                 total_questions = 0
@@ -68,44 +68,33 @@ def load_json_questions_on_startup():
                             with open(json_filepath, 'r', encoding='utf-8') as json_file:
                                 questions = json.load(json_file)
                             
+                            print(f"   📄 {filename}: {len(questions)}問を読み込み中...")
                             result = question_manager.save_questions(questions, filename)
                             if result['saved_count'] > 0:
                                 loaded_files.append({
                                     'filename': filename,
-                                    'count': result['saved_count']
+                                    'file_questions': len(questions),
+                                    'saved_count': result['saved_count']
                                 })
                                 total_questions += result['saved_count']
                         except Exception as e:
-                            print(f"ファイル {filename} の読み込みでエラー: {e}")
+                            print(f"❌ ファイル {filename} の読み込みでエラー: {e}")
                             continue
                 
                 if loaded_files:
-                    print(f"✅ JSONフォルダから {len(loaded_files)}個のファイルを自動読み込み、{total_questions}問をデータベースに追加しました。")
+                    print(f"\n✅ JSONフォルダから {len(loaded_files)}個のファイルを自動読み込み完了")
                     for file_info in loaded_files:
-                        print(f"   📄 {file_info['filename']}: {file_info['count']}問")
+                        print(f"   📄 {file_info['filename']}: {file_info['file_questions']}問 → DB保存: {file_info['saved_count']}問")
+                    print(f"🎯 合計: {total_questions}問をデータベースに追加しました\n")
                 else:
-                    print("⚠️  JSONフォルダにファイルがないか、読み込み済みです。")
+                    print("⚠️  JSONフォルダにファイルがないか、読み込みに失敗しました。")
             else:
                 print(f"📊 データベースに既に {existing_total}問の問題が登録されています。")
     except Exception as e:
-        print(f"JSON自動読み込み中にエラー: {e}")
-
-def ensure_first_user_admin():
-    """最初のユーザーを管理者として設定"""
-    try:
-        user_count = db_manager.execute_query('SELECT COUNT(*) as count FROM users')
-        if user_count and user_count[0]['count'] == 1:
-            if db_manager.db_type == 'postgresql':
-                db_manager.execute_query('UPDATE users SET is_admin = true WHERE id = 1')
-            else:
-                db_manager.execute_query('UPDATE users SET is_admin = 1 WHERE id = 1')
-            print("✅ 最初のユーザーを管理者に設定しました")
-    except Exception as e:
-        print(f"管理者設定エラー: {e}")
+        print(f"❌ JSON自動読み込み中にエラー: {e}")
 
 # アプリ起動時の処理
 load_json_questions_on_startup()
-ensure_first_user_admin()
 
 # ========== ルート定義 ==========
 
@@ -502,9 +491,18 @@ def admin():
                         file_size = os.path.getsize(filepath)
                         file_info = parse_filename_info(filename)
                         
+                        # JSONファイルから問題数を取得
+                        try:
+                            with open(filepath, 'r', encoding='utf-8') as f:
+                                questions = json.load(f)
+                            file_question_count = len(questions)
+                        except:
+                            file_question_count = 0
+                        
                         json_files.append({
                             'filename': filename,
                             'size': file_size,
+                            'question_count': file_question_count,
                             'modified': datetime.fromtimestamp(os.path.getmtime(filepath)).strftime('%Y-%m-%d %H:%M'),
                             'info': file_info
                         })
