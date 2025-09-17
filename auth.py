@@ -92,6 +92,15 @@ def init_auth_routes(app, db_manager):
                 flash('ユーザー名とパスワードを入力してください。', 'error')
                 return redirect(url_for('login'))
             
+            # 管理者ログインの特別処理
+            if username == 'admin' and password == 'fe2025@adminPass':
+                session.clear()
+                session['user_id'] = 'admin'
+                session['username'] = 'admin'
+                session['is_admin'] = True
+                flash('管理者としてログインしました。', 'success')
+                return redirect(url_for('admin'))
+            
             try:
                 user = db_manager.execute_query(
                     'SELECT * FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT * FROM users WHERE username = ?',
@@ -120,9 +129,7 @@ def init_auth_routes(app, db_manager):
             password = request.form['password']
             
             # 管理者専用ログイン
-            admin_password = os.environ.get('ADMIN_PASSWORD', app.config.get('ADMIN_PASSWORD', 'fe2025admin'))
-            
-            if username == 'admin' and password == admin_password:
+            if username == 'admin' and password == 'fe2025@adminPass':
                 session.clear()
                 session['user_id'] = 'admin'
                 session['username'] = 'admin'
