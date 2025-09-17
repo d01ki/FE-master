@@ -189,17 +189,17 @@ def dashboard():
             WHERE ua.user_id = ? AND q.genre IS NOT NULL
             GROUP BY q.genre
         ''', (True if db_manager.db_type == 'postgresql' else 1, user_id))
-    
-    stats = {
+        
+        stats = {
             'total_questions': total_q_count,
             'total_answers': answered_count,
-        'correct_answers': correct_count,
+            'correct_answers': correct_count,
             'accuracy_rate': accuracy_rate,
             'recent_history': recent_history or [],
             'genre_stats': genre_stats or []
-    }
-    
-    return render_template('dashboard.html', stats=stats)
+        }
+        
+        return render_template('dashboard.html', stats=stats)
     except Exception as e:
         app.logger.error(f"Dashboard error: {e}")
         stats = {
@@ -425,7 +425,7 @@ def submit_mock_exam():
 def history():
     """学習履歴の表示"""
     try:
-    user_id = session['user_id']
+        user_id = session['user_id']
         
         # 詳細履歴
         detailed_history = db_manager.execute_query('''
