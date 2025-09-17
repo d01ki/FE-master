@@ -53,7 +53,9 @@ def load_json_questions_on_startup():
         if os.path.exists(app.config['JSON_FOLDER']):
             # 既存の問題数をチェック
             existing_count = db_manager.execute_query('SELECT COUNT(*) as count FROM questions')
-            if existing_count and existing_count[0]['count'] == 0:
+            existing_total = existing_count[0]['count'] if existing_count else 0
+            
+            if existing_total == 0:
                 print("JSON問題ファイルを読み込み中...")
                 
                 loaded_files = []
@@ -78,9 +80,13 @@ def load_json_questions_on_startup():
                             continue
                 
                 if loaded_files:
-                    print(f"JSONフォルダから {len(loaded_files)}個のファイルを自動読み込み、{total_questions}問をデータベースに追加しました。")
+                    print(f"✅ JSONフォルダから {len(loaded_files)}個のファイルを自動読み込み、{total_questions}問をデータベースに追加しました。")
+                    for file_info in loaded_files:
+                        print(f"   📄 {file_info['filename']}: {file_info['count']}問")
                 else:
-                    print("JSONフォルダにファイルがないか、読み込み済みです。")
+                    print("⚠️  JSONフォルダにファイルがないか、読み込み済みです。")
+            else:
+                print(f"📊 データベースに既に {existing_total}問の問題が登録されています。")
     except Exception as e:
         print(f"JSON自動読み込み中にエラー: {e}")
 
@@ -93,7 +99,7 @@ def ensure_first_user_admin():
                 db_manager.execute_query('UPDATE users SET is_admin = true WHERE id = 1')
             else:
                 db_manager.execute_query('UPDATE users SET is_admin = 1 WHERE id = 1')
-            print("最初のユーザーを管理者に設定しました")
+            print("✅ 最初のユーザーを管理者に設定しました")
     except Exception as e:
         print(f"管理者設定エラー: {e}")
 
