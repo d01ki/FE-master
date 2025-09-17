@@ -14,9 +14,12 @@ def login_required(f):
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not session.get('is_admin'):
-            flash('管理者権限が必要です。', 'danger')
+        if 'user_id' not in session:
+            flash('ログインが必要です。', 'warning')
             return redirect(url_for('login'))
+        if not session.get('is_admin'):
+            flash('管理者権限が必要です。', 'error')
+            return redirect(url_for('dashboard'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -24,6 +27,9 @@ def init_auth_routes(app, db_manager):
     
     @app.route('/register', methods=['GET', 'POST'])
     def register():
+        if 'user_id' in session:
+            return redirect(url_for('dashboard'))
+            
         if request.method == 'POST':
             username = request.form['username'].strip()
             password = request.form['password']
@@ -47,22 +53,33 @@ def init_auth_routes(app, db_manager):
                 return redirect(url_for('register'))
 
             # Check duplicate username
-            existing_user = db_manager.execute_query(
-                'SELECT id FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id FROM users WHERE username = ?',
-                (username,)
-            )
-            if existing_user:
-                flash('このユーザー名は既に使用されています。', 'error')
-                return redirect(url_for('register'))
-
-            # Create user
-            password_hash = generate_password_hash(password)
             try:
-                db_manager.execute_query(
-                    'INSERT INTO users (username, password_hash) VALUES (%s, %s)' if db_manager.db_type == 'postgresql' else 'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-                    (username, password_hash)
+                existing_user = db_manager.execute_query(
+                    'SELECT id FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id FROM users WHERE username = ?',
+                    (username,)
                 )
-                flash('登録が完了しました。ログインしてください。', 'success')
+                if existing_user:
+                    flash('このユーザー名は既に使用されています。', 'error')
+                    return redirect(url_for('register'))
+
+                # Create user
+                password_hash = generate_password_hash(password)
+                db_manager.execute_query(
+                    'INSERT INTO users (username, password_hash, is_admin) VALUES (%s, %s, %s)' if db_manager.db_type == 'postgresql' else 'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)',
+                    (username, password_hash, False)
+                )
+                
+                # Check if this is the first user and make them admin
+                user_count = db_manager.execute_query('SELECT COUNT(*) as count FROM users')
+                if user_count and user_count[0]['count'] == 1:
+                    if db_manager.db_type == 'postgresql':
+                        db_manager.execute_query('UPDATE users SET is_admin = true WHERE username = %s', (username,))
+                    else:
+                        db_manager.execute_query('UPDATE users SET is_admin = 1 WHERE username = ?', (username,))
+                    flash('登録が完了しました。最初のユーザーとして管理者権限が付与されました。ログインしてください。', 'success')
+                else:
+                    flash('登録が完了しました。ログインしてください。', 'success')
+                
                 return redirect(url_for('login'))
             except Exception as e:
                 flash(f'登録エラー: {e}', 'error')
@@ -72,6 +89,9 @@ def init_auth_routes(app, db_manager):
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
+        if 'user_id' in session:
+            return redirect(url_for('dashboard'))
+            
         if request.method == 'POST':
             username = request.form['username'].strip()
             password = request.form['password']
@@ -80,20 +100,24 @@ def init_auth_routes(app, db_manager):
                 flash('ユーザー名とパスワードを入力してください。', 'error')
                 return redirect(url_for('login'))
             
-            user = db_manager.execute_query(
-                'SELECT * FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT * FROM users WHERE username = ?',
-                (username,)
-            )
-            
-            if user and check_password_hash(user[0]['password_hash'], password):
-                session.clear()
-                session['user_id'] = user[0]['id']
-                session['username'] = user[0]['username']
-                session['is_admin'] = user[0]['is_admin']
-                flash('ログインしました。', 'success')
-                return redirect(url_for('dashboard'))
-            else:
-                flash('ユーザー名またはパスワードが正しくありません。', 'error')
+            try:
+                user = db_manager.execute_query(
+                    'SELECT * FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT * FROM users WHERE username = ?',
+                    (username,)
+                )
+                
+                if user and check_password_hash(user[0]['password_hash'], password):
+                    session.clear()
+                    session['user_id'] = user[0]['id']
+                    session['username'] = user[0]['username']
+                    session['is_admin'] = user[0]['is_admin']
+                    flash(f'ようこそ、{username}さん！', 'success')
+                    return redirect(url_for('dashboard'))
+                else:
+                    flash('ユーザー名またはパスワードが正しくありません。', 'error')
+            except Exception as e:
+                flash('ログイン処理中にエラーが発生しました。', 'error')
+                app.logger.error(f"Login error: {e}")
                 
         return render_template('auth/login.html')
 
