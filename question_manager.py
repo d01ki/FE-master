@@ -140,15 +140,15 @@ class QuestionManager:
     def save_answer_history(self, question_id, user_answer, is_correct, user_id):
         """解答履歴を保存（user_idを引数で受け取る）"""
         try:
-            if self.db.db_type == 'postgresql':
-                self.db.execute_query(
+            if self.db_manager.db_type == 'postgresql':
+                self.db_manager.execute_query(
                     '''INSERT INTO user_answers 
                        (user_id, question_id, user_answer, is_correct, answered_at) 
                        VALUES (%s, %s, %s, %s, %s)''',
                     (user_id, question_id, user_answer, is_correct, datetime.now())
                 )
             else:
-                self.db.execute_query(
+                self.db_manager.execute_query(
                     '''INSERT INTO user_answers 
                        (user_id, question_id, user_answer, is_correct, answered_at) 
                        VALUES (?, ?, ?, ?, ?)''',
