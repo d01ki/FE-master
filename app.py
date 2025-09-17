@@ -84,37 +84,22 @@ def load_json_questions_on_startup():
     except Exception as e:
         print(f"JSON自動読み込み中にエラー: {e}")
 
-def ensure_admin_user():
-    """特定の管理者アカウントを作成"""
+def ensure_first_user_admin():
+    """最初のユーザーを管理者として設定"""
     try:
-        from werkzeug.security import generate_password_hash
-        
-        admin_username = 'admin'
-        admin_password = app.config['ADMIN_PASSWORD']
-        
-        # 管理者アカウントが存在するかチェック
-        existing_admin = db_manager.execute_query(
-            'SELECT id FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id FROM users WHERE username = ?',
-            (admin_username,)
-        )
-        
-        if not existing_admin:
-            # 管理者アカウントを作成
-            password_hash = generate_password_hash(admin_password)
-            db_manager.execute_query(
-                'INSERT INTO users (username, password_hash, is_admin) VALUES (%s, %s, %s)' if db_manager.db_type == 'postgresql' else 'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)',
-                (admin_username, password_hash, True if db_manager.db_type == 'postgresql' else 1)
-            )
-            print(f"管理者アカウントを作成しました: {admin_username}")
-        else:
-            print(f"管理者アカウントは既に存在します: {admin_username}")
-        
+        user_count = db_manager.execute_query('SELECT COUNT(*) as count FROM users')
+        if user_count and user_count[0]['count'] == 1:
+            if db_manager.db_type == 'postgresql':
+                db_manager.execute_query('UPDATE users SET is_admin = true WHERE id = 1')
+            else:
+                db_manager.execute_query('UPDATE users SET is_admin = 1 WHERE id = 1')
+            print("最初のユーザーを管理者に設定しました")
     except Exception as e:
-        print(f"管理者アカウント作成エラー: {e}")
+        print(f"管理者設定エラー: {e}")
 
 # アプリ起動時の処理
 load_json_questions_on_startup()
-ensure_admin_user()
+ensure_first_user_admin()
 
 # ========== ルート定義 ==========
 
@@ -133,12 +118,8 @@ def dashboard():
         user_id = session['user_id']
         
         # 基本統計を取得
-        try:
-            total_questions = db_manager.execute_query('SELECT COUNT(*) as count FROM questions')
-            total_q_count = total_questions[0]['count'] if total_questions and len(total_questions) > 0 else 0
-        except Exception as e:
-            print(f"Total questions query error: {e}")
-            total_q_count = 0
+        total_questions = db_manager.execute_query('SELECT COUNT(*) as count FROM questions')
+        total_q_count = total_questions[0]['count'] if total_questions else 0
         
         user_answers = db_manager.execute_query(
             'SELECT COUNT(*) as count FROM user_answers WHERE user_id = %s' if db_manager.db_type == 'postgresql' else 'SELECT COUNT(*) as count FROM user_answers WHERE user_id = ?',
@@ -146,10 +127,17 @@ def dashboard():
         )
         answered_count = user_answers[0]['count'] if user_answers else 0
         
-        correct_answers = db_manager.execute_query(
-            'SELECT COUNT(*) as count FROM user_answers WHERE user_id = %s AND is_correct = %s' if db_manager.db_type == 'postgresql' else 'SELECT COUNT(*) as count FROM user_answers WHERE user_id = ? AND is_correct = 1',
-            (user_id, True if db_manager.db_type == 'postgresql' else 1)
-        )
+        # SQLiteとPostgreSQLで条件文を分ける
+        if db_manager.db_type == 'postgresql':
+            correct_answers = db_manager.execute_query(
+                'SELECT COUNT(*) as count FROM user_answers WHERE user_id = %s AND is_correct = %s',
+                (user_id, True)
+            )
+        else:
+            correct_answers = db_manager.execute_query(
+                'SELECT COUNT(*) as count FROM user_answers WHERE user_id = ? AND is_correct = 1',
+                (user_id,)
+            )
         correct_count = correct_answers[0]['count'] if correct_answers else 0
         
         accuracy_rate = round((correct_count / answered_count * 100), 1) if answered_count > 0 else 0
@@ -172,23 +160,26 @@ def dashboard():
         ''', (user_id,))
         
         # ジャンル別統計
-        genre_stats = db_manager.execute_query('''
-            SELECT q.genre, 
-                   COUNT(*) as total,
-                   SUM(CASE WHEN ua.is_correct = %s THEN 1 ELSE 0 END) as correct
-            FROM user_answers ua 
-            JOIN questions q ON ua.question_id = q.id 
-            WHERE ua.user_id = %s AND q.genre IS NOT NULL
-            GROUP BY q.genre
-        ''' if db_manager.db_type == 'postgresql' else '''
-            SELECT q.genre, 
-                   COUNT(*) as total,
-                   SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct
-            FROM user_answers ua 
-            JOIN questions q ON ua.question_id = q.id 
-            WHERE ua.user_id = ? AND q.genre IS NOT NULL
-            GROUP BY q.genre
-        ''', (True if db_manager.db_type == 'postgresql' else 1, user_id))
+        if db_manager.db_type == 'postgresql':
+            genre_stats = db_manager.execute_query('''
+                SELECT q.genre, 
+                       COUNT(*) as total,
+                       SUM(CASE WHEN ua.is_correct = %s THEN 1 ELSE 0 END) as correct
+                FROM user_answers ua 
+                JOIN questions q ON ua.question_id = q.id 
+                WHERE ua.user_id = %s AND q.genre IS NOT NULL
+                GROUP BY q.genre
+            ''', (True, user_id))
+        else:
+            genre_stats = db_manager.execute_query('''
+                SELECT q.genre, 
+                       COUNT(*) as total,
+                       SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct
+                FROM user_answers ua 
+                JOIN questions q ON ua.question_id = q.id 
+                WHERE ua.user_id = ? AND q.genre IS NOT NULL
+                GROUP BY q.genre
+            ''', (user_id,))
         
         stats = {
             'total_questions': total_q_count,
@@ -272,23 +263,26 @@ def genre_practice():
         genre_counts = question_manager.get_question_count_by_genre()
         
         user_id = session['user_id']
-        genre_stats = db_manager.execute_query('''
-            SELECT q.genre, 
-                   COUNT(*) as total,
-                   SUM(CASE WHEN ua.is_correct = %s THEN 1 ELSE 0 END) as correct
-            FROM user_answers ua 
-            JOIN questions q ON ua.question_id = q.id 
-            WHERE ua.user_id = %s AND q.genre IS NOT NULL
-            GROUP BY q.genre
-        ''' if db_manager.db_type == 'postgresql' else '''
-            SELECT q.genre, 
-                   COUNT(*) as total,
-                   SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct
-            FROM user_answers ua 
-            JOIN questions q ON ua.question_id = q.id 
-            WHERE ua.user_id = ? AND q.genre IS NOT NULL
-            GROUP BY q.genre
-        ''', (True if db_manager.db_type == 'postgresql' else 1, user_id))
+        if db_manager.db_type == 'postgresql':
+            genre_stats = db_manager.execute_query('''
+                SELECT q.genre, 
+                       COUNT(*) as total,
+                       SUM(CASE WHEN ua.is_correct = %s THEN 1 ELSE 0 END) as correct
+                FROM user_answers ua 
+                JOIN questions q ON ua.question_id = q.id 
+                WHERE ua.user_id = %s AND q.genre IS NOT NULL
+                GROUP BY q.genre
+            ''', (True, user_id))
+        else:
+            genre_stats = db_manager.execute_query('''
+                SELECT q.genre, 
+                       COUNT(*) as total,
+                       SUM(CASE WHEN ua.is_correct = 1 THEN 1 ELSE 0 END) as correct
+                FROM user_answers ua 
+                JOIN questions q ON ua.question_id = q.id 
+                WHERE ua.user_id = ? AND q.genre IS NOT NULL
+                GROUP BY q.genre
+            ''', (user_id,))
         
         stats_dict = {stat['genre']: {'total': stat['total'], 'correct': stat['correct']} for stat in genre_stats}
         
@@ -310,7 +304,7 @@ def genre_practice():
         app.logger.error(f"Genre practice error: {e}")
         flash('ジャンル別演習の準備中にエラーが発生しました', 'error')
         return redirect(url_for('dashboard'))
-    
+
 @app.route('/practice/<genre>')
 @login_required
 def practice_by_genre(genre):
@@ -409,7 +403,7 @@ def submit_mock_exam():
                 correct_count += 1
         
         score = round((correct_count / total_count) * 100, 1) if total_count > 0 else 0
-
+        
         return jsonify({
             'score': score,
             'correct_count': correct_count,
@@ -447,25 +441,28 @@ def history():
         ''', (user_id,))
         
         # 日別統計
-        daily_stats = db_manager.execute_query('''
-            SELECT DATE(answered_at) as date, 
-                   COUNT(*) as total,
-                   SUM(CASE WHEN is_correct = %s THEN 1 ELSE 0 END) as correct
-            FROM user_answers 
-            WHERE user_id = %s
-            GROUP BY DATE(answered_at) 
-            ORDER BY date DESC 
-            LIMIT 30
-        ''' if db_manager.db_type == 'postgresql' else '''
-            SELECT DATE(answered_at) as date, 
-                   COUNT(*) as total,
-                   SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct
-            FROM user_answers 
-            WHERE user_id = ?
-            GROUP BY DATE(answered_at) 
-            ORDER BY date DESC 
-            LIMIT 30
-        ''', (True if db_manager.db_type == 'postgresql' else 1, user_id))
+        if db_manager.db_type == 'postgresql':
+            daily_stats = db_manager.execute_query('''
+                SELECT DATE(answered_at) as date, 
+                       COUNT(*) as total,
+                       SUM(CASE WHEN is_correct = %s THEN 1 ELSE 0 END) as correct
+                FROM user_answers 
+                WHERE user_id = %s
+                GROUP BY DATE(answered_at) 
+                ORDER BY date DESC 
+                LIMIT 30
+            ''', (True, user_id))
+        else:
+            daily_stats = db_manager.execute_query('''
+                SELECT DATE(answered_at) as date, 
+                       COUNT(*) as total,
+                       SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct
+                FROM user_answers 
+                WHERE user_id = ?
+                GROUP BY DATE(answered_at) 
+                ORDER BY date DESC 
+                LIMIT 30
+            ''', (user_id,))
         
         history_data = {
             'detailed_history': detailed_history or [],
