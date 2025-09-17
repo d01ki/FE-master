@@ -93,7 +93,8 @@ def init_auth_routes(app, db_manager):
                 return redirect(url_for('login'))
             
             # 管理者ログインの特別処理
-            if username == 'admin' and password == 'fe2025@adminPass':
+            admin_password = os.environ.get('ADMIN_PASSWORD', app.config.get('ADMIN_PASSWORD', 'fe2025admin'))
+            if username == 'admin' and password == admin_password:
                 session.clear()
                 session['user_id'] = 'admin'
                 session['username'] = 'admin'
@@ -129,7 +130,8 @@ def init_auth_routes(app, db_manager):
             password = request.form['password']
             
             # 管理者専用ログイン
-            if username == 'admin' and password == 'fe2025@adminPass':
+            admin_password = os.environ.get('ADMIN_PASSWORD', app.config.get('ADMIN_PASSWORD', 'fe2025admin'))
+            if username == 'admin' and password == admin_password:
                 session.clear()
                 session['user_id'] = 'admin'
                 session['username'] = 'admin'
