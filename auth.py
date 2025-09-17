@@ -1,6 +1,7 @@
 from flask import render_template, request, redirect, url_for, session, flash
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
+import os
 
 def login_required(f):
     @wraps(f)
@@ -16,10 +17,10 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             flash('ログインが必要です。', 'warning')
-            return redirect(url_for('login'))
+            return redirect(url_for('admin_login'))
         if not session.get('is_admin'):
             flash('管理者権限が必要です。', 'error')
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -111,6 +112,27 @@ def init_auth_routes(app, db_manager):
                 app.logger.error(f"Login error: {e}")
                 
         return render_template('auth/login.html')
+
+    @app.route('/admin/login', methods=['GET', 'POST'])
+    def admin_login():
+        if request.method == 'POST':
+            username = request.form['username'].strip()
+            password = request.form['password']
+            
+            # 管理者専用ログイン
+            admin_password = os.environ.get('ADMIN_PASSWORD', app.config.get('ADMIN_PASSWORD', 'fe2025admin'))
+            
+            if username == 'admin' and password == admin_password:
+                session.clear()
+                session['user_id'] = 'admin'
+                session['username'] = 'admin'
+                session['is_admin'] = True
+                flash('管理者としてログインしました。', 'success')
+                return redirect(url_for('admin'))
+            else:
+                flash('管理者のユーザー名またはパスワードが正しくありません。', 'error')
+                
+        return render_template('admin_login.html')
 
     @app.route('/logout')
     def logout():
