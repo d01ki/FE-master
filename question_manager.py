@@ -5,6 +5,7 @@
 
 import json
 from datetime import datetime
+import re
 
 class QuestionManager:
     """問題管理クラス（PostgreSQL/SQLite対応）"""
@@ -145,12 +146,27 @@ class QuestionManager:
             print(f"解答履歴保存エラー: {e}")
             return False
     
+    def extract_year_from_filename(self, filename):
+        """ファイル名から年度を抽出"""
+        # 2025r07_kamoku_a_spring.json -> 2025
+        match = re.search(r'(\d{4})', filename)
+        return match.group(1) if match else None
+    
     def save_questions(self, questions, source_file=''):
         """問題リストをデータベースに保存"""
         saved_count = 0
         errors = []
         
         try:
+            # ファイル名から年度を抽出して、既にその年度の問題が登録されているかチェック
+            year = self.extract_year_from_filename(source_file)
+            if year and self.check_year_exists(year):
+                return {
+                    'saved_count': 0,
+                    'total_count': len(questions),
+                    'errors': [f'{year}年度の問題は既に登録されています。データを初期化してから再度アップロードしてください。']
+                }
+            
             for i, question in enumerate(questions):
                 try:
                     # 必須フィールドの確認
@@ -236,22 +252,22 @@ class QuestionManager:
             'errors': errors
         }
     
-    def check_file_exists(self, filename):
-        """ファイル名が既に登録されているかチェック"""
+    def check_year_exists(self, year):
+        """指定された年度の問題が既に登録されているかチェック"""
         try:
             if self.db_manager.db_type == 'postgresql':
                 result = self.db_manager.execute_query(
                     'SELECT COUNT(*) as count FROM questions WHERE question_id LIKE %s',
-                    (f'%{filename}%',)
+                    (f'{year}_%',)
                 )
             else:
                 result = self.db_manager.execute_query(
                     'SELECT COUNT(*) as count FROM questions WHERE question_id LIKE ?',
-                    (f'%{filename}%',)
+                    (f'{year}_%',)
                 )
             return result[0]['count'] > 0 if result else False
         except Exception as e:
-            print(f"Error checking file existence: {e}")
+            print(f"Error checking year existence: {e}")
             return False
     
     def delete_all_questions(self):
