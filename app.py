@@ -5,7 +5,6 @@ Flask + PostgreSQL/SQLite + ユーザー認証を使用した学習プラット�
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 import os
-import re
 import json
 import random
 from datetime import datetime
@@ -14,7 +13,7 @@ from datetime import datetime
 from database import DatabaseManager
 from auth import login_required, admin_required, init_auth_routes
 from question_manager import QuestionManager
-from utils import parse_filename_info, is_postgresql, get_db_connection
+from helper_functions import parse_filename_info
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
@@ -35,6 +34,7 @@ app.config.update({
 # フォルダ作成
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['JSON_FOLDER'], exist_ok=True)
+os.makedirs('static/images', exist_ok=True)
 
 # データベースマネージャーの初期化
 db_manager = DatabaseManager(app.config)
@@ -100,7 +100,7 @@ load_json_questions_on_startup()
 
 @app.route('/')
 def index():
-    """ルートアクセス - ログイン済みならダッシュボード、未ログインならログインページ"""
+    """ルートアクセス - ログインページへリダイレクト"""
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
@@ -370,6 +370,9 @@ def mock_exam_start(filename):
         if len(questions) > 20:
             questions = random.sample(questions, 20)
         
+        # セッションに問題を保存（採点用）
+        session['mock_exam_questions'] = questions
+        
         return render_template('mock_exam_practice.html', 
                              questions=questions, 
                              exam_info=file_info)
@@ -387,17 +390,27 @@ def submit_mock_exam():
         data = request.get_json()
         answers = data.get('answers', {})
         
-        # 簡単な採点（実際には提出された問題に対する正解データが必要）
-        total_count = len(answers)
+        # セッションから問題を取得
+        questions = session.get('mock_exam_questions', [])
+        
+        if not questions:
+            return jsonify({'error': '試験データが見つかりません'}), 400
+        
+        # 採点処理
+        total_count = len(questions)
         correct_count = 0
         
-        # 仮の採点処理
-        for answer in answers.values():
-            # 実際の実装では問題データとの照合が必要
-            if random.choice([True, False]):  # 仮の正解判定
+        for i, question in enumerate(questions):
+            question_index = str(i)
+            user_answer = answers.get(question_index)
+            
+            if user_answer and user_answer == question.get('correct_answer'):
                 correct_count += 1
         
         score = round((correct_count / total_count) * 100, 1) if total_count > 0 else 0
+        
+        # セッションをクリア
+        session.pop('mock_exam_questions', None)
         
         return jsonify({
             'score': score,
@@ -607,32 +620,6 @@ def create_sample_data():
                 "correct_answer": "イ",
                 "explanation": "基本情報技術者試験は春期（4月）と秋期（10月）の年2回実施されます。",
                 "genre": "試験制度"
-            },
-            {
-                "question_id": "SAMPLE002",
-                "question_text": "2進数1011を10進数に変換すると、いくつになるか。",
-                "choices": {
-                    "ア": "9",
-                    "イ": "10",
-                    "ウ": "11", 
-                    "エ": "12"
-                },
-                "correct_answer": "ウ",
-                "explanation": "2進数1011は、1×2³ + 0×2² + 1×2¹ + 1×2⁰ = 8 + 0 + 2 + 1 = 11です。",
-                "genre": "基礎理論"
-            },
-            {
-                "question_id": "SAMPLE003",
-                "question_text": "OSIモデルの第4層は何層か。",
-                "choices": {
-                    "ア": "ネットワーク層",
-                    "イ": "データリンク層",
-                    "ウ": "トランスポート層",
-                    "エ": "セッション層"
-                },
-                "correct_answer": "ウ",
-                "explanation": "OSIモデルの第4層はトランスポート層で、エンドツーエンドの通信制御を行います。",
-                "genre": "ネットワーク"
             }
         ]
         
@@ -660,5 +647,6 @@ def internal_error(error):
     return render_template('error.html', message='内部サーバーエラーが発生しました'), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(debug=False, host='0.0.0.0', port=port)
+    port = int(os.environ.get('PORT', 5002))
+    print(f"🚀 Starting Flask app on port {port}")
+    app.run(debug=True, host='0.0.0.0', port=port)
