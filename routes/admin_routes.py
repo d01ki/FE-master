@@ -57,6 +57,11 @@ def upload_questions():
         # ファイルを保存
         filename = secure_filename(file.filename)
         filepath = os.path.join(current_app.config['JSON_FOLDER'], filename)
+        
+        # 同じファイル名が既に登録されているかチェック
+        if current_app.question_manager.check_file_exists(filename):
+            return jsonify({'error': f'{filename}は既に登録されています。別のファイル名を使用してください。'}), 400
+        
         file.save(filepath)
         
         # JSONファイルを読み込んで検証
@@ -86,3 +91,25 @@ def upload_questions():
         if os.path.exists(filepath):
             os.remove(filepath)
         return jsonify({'error': f'アップロード処理中にエラーが発生しました: {str(e)}'}), 500
+
+@admin_bp.route('/admin/delete_all', methods=['POST'])
+@admin_required
+def delete_all_questions():
+    """すべての問題を削除"""
+    try:
+        result = current_app.question_manager.delete_all_questions()
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': result['message']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', '削除に失敗しました')
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'エラーが発生しました: {str(e)}'
+        }), 500
