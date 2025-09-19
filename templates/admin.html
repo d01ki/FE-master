@@ -48,13 +48,40 @@
     <div class="card">
         <div class="card-body text-center">
             <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-users text-white text-2xl"></i>
+                <i class="fas fa-file-code text-white text-2xl"></i>
             </div>
-            <h3 class="text-2xl font-bold text-gray-100 mb-1">{{ data.user_count }}</h3>
-            <p class="text-gray-400 text-sm">ユーザー数</p>
+            <h3 class="text-2xl font-bold text-gray-100 mb-1">{{ data.json_files|length }}</h3>
+            <p class="text-gray-400 text-sm">JSONファイル数</p>
         </div>
     </div>
 </div>
+
+<!-- JSON Files List -->
+{% if data.json_files %}
+<div class="card mb-8">
+    <div class="card-header bg-gray-750 border-gray-600">
+        <h2 class="text-xl font-bold text-gray-100 flex items-center">
+            <i class="fas fa-folder-open text-blue-400 mr-3"></i>
+            アップロード済みJSONファイル
+        </h2>
+    </div>
+    <div class="card-body">
+        <div class="space-y-3">
+            {% for file in data.json_files %}
+            <div class="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                <div class="flex items-center">
+                    <i class="fas fa-file-code text-blue-400 mr-3 text-xl"></i>
+                    <div>
+                        <p class="text-white font-medium">{{ file.filename }}</p>
+                        <p class="text-sm text-gray-400">{{ file.question_count }}問 ・ {{ "%.1f"|format(file.size / 1024) }} KB ・ {{ file.modified }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- File Upload Section -->
 <div class="card mb-8">
@@ -136,11 +163,11 @@
                 </h3>
                 <div class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
                     <p class="text-sm text-red-300 mb-4">
-                        この操作を実行すると、すべての問題データと学習履歴が削除されます。
+                        この操作を実行すると、すべての問題データが削除されます（学習履歴は保持）。
                     </p>
                     <button onclick="confirmDeleteAll()" 
                             class="btn btn-danger">
-                        <i class="fas fa-trash mr-2"></i>データを初期化
+                        <i class="fas fa-trash mr-2"></i>問題データを初期化
                     </button>
                 </div>
             </div>
@@ -153,16 +180,15 @@
     <div class="flex items-center justify-center min-h-screen px-4">
         <div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-600">
             <h3 class="text-lg font-semibold text-red-400 mb-4">
-                <i class="fas fa-exclamation-triangle mr-2"></i>データベース初期化の確認
+                <i class="fas fa-exclamation-triangle mr-2"></i>問題データ初期化の確認
             </h3>
             <p class="text-gray-300 mb-6">
-                この操作により以下のデータがすべて削除されます：
+                この操作により以下のデータが削除されます：
             </p>
             <ul class="text-sm text-gray-400 mb-6 space-y-1">
                 <li><i class="fas fa-times text-red-400 mr-2"></i>すべての問題データ</li>
-                <li><i class="fas fa-times text-red-400 mr-2"></i>すべての学習履歴</li>
-                <li><i class="fas fa-times text-red-400 mr-2"></i>ユーザーの解答記録</li>
             </ul>
+            <p class="text-sm text-blue-300 mb-4">※ 学習履歴は保持されます</p>
             <p class="text-red-400 font-medium mb-6">この操作は取り消せません。続行しますか？</p>
             <div class="flex justify-end space-x-3">
                 <button onclick="closeDeleteModal()" class="btn btn-secondary">
@@ -224,7 +250,7 @@ function closeDeleteModal() {
 
 async function deleteAllData() {
     try {
-        showResult('info', 'データベースを初期化中...');
+        showResult('info', '問題データを初期化中...');
         closeDeleteModal();
         
         const response = await fetch('/admin/delete_all', {
@@ -240,7 +266,7 @@ async function deleteAllData() {
             showResult('error', result.error || '削除に失敗しました');
         }
     } catch (error) {
-        showResult('error', 'データベース初期化中にエラーが発生しました。');
+        showResult('error', '問題データ初期化中にエラーが発生しました。');
         console.error('Delete error:', error);
     }
 }
