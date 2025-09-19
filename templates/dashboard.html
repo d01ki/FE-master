@@ -85,7 +85,7 @@
                     <p class="text-gray-300 mb-6 leading-relaxed">
                         アルゴリズム、データベース、ネットワークなど、分野別に問題を解いて弱点を克服しましょう。
                     </p>
-                    <a href="{{ url_for('genre_practice') }}" class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-6 rounded-lg transition-all duration-200 font-semibold flex items-center justify-center btn-hover">
+                    <a href="{{ url_for('practice.genre_practice') }}" class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-6 rounded-lg transition-all duration-200 font-semibold flex items-center justify-center btn-hover">
                         <i class="fas fa-play mr-2"></i>演習を開始
                     </a>
                 </div>
@@ -108,7 +108,7 @@
                     <p class="text-gray-300 mb-6 leading-relaxed">
                         ランダムに選ばれた問題で、気軽に学習を始めましょう。毎回異なる問題で飽きずに続けられます。
                     </p>
-                    <a href="{{ url_for('random_question') }}" class="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-3 px-6 rounded-lg transition-all duration-200 font-semibold flex items-center justify-center btn-hover">
+                    <a href="{{ url_for('practice.random_practice') }}" class="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-3 px-6 rounded-lg transition-all duration-200 font-semibold flex items-center justify-center btn-hover">
                         <i class="fas fa-play mr-2"></i>問題を解く
                     </a>
                 </div>
@@ -131,7 +131,7 @@
                     <p class="text-gray-300 mb-6 leading-relaxed">
                         本番と同じ形式で模擬試験を受けましょう。制限時間内で解いて実力を測定できます。
                     </p>
-                    <a href="{{ url_for('mock_exam') }}" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 px-6 rounded-lg transition-all duration-200 font-semibold flex items-center justify-center btn-hover">
+                    <a href="{{ url_for('exam.mock_exam') }}" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 px-6 rounded-lg transition-all duration-200 font-semibold flex items-center justify-center btn-hover">
                         <i class="fas fa-play mr-2"></i>試験開始
                     </a>
                 </div>
@@ -140,11 +140,11 @@
 
 
         <!-- Admin Section -->
-        {% if session.is_admin %}
+        {% if session.get('is_admin') %}
         <div class="text-center fade-in-up mb-12" style="animation-delay: 1.0s">
             <h3 class="text-2xl font-bold text-white mb-8">管理機能</h3>
             <div class="flex flex-wrap justify-center gap-4">
-                <a href="{{ url_for('admin') }}" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center btn-hover">
+                <a href="{{ url_for('admin.admin') }}" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center btn-hover">
                     <i class="fas fa-cog mr-2"></i>管理画面
                 </a>
             </div>
@@ -159,8 +159,8 @@
             </div>
             <h3 class="text-xl font-bold text-white mb-4">問題データがありません</h3>
             <p class="text-gray-300 mb-6">管理者に問題の登録を依頼してください。</p>
-            {% if session.is_admin %}
-            <a href="{{ url_for('admin') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-200 font-semibold inline-flex items-center">
+            {% if session.get('is_admin') %}
+            <a href="{{ url_for('admin.admin') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-200 font-semibold inline-flex items-center">
                 <i class="fas fa-cog mr-2"></i>管理画面で問題を追加
             </a>
             {% endif %}
