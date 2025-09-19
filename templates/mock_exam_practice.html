@@ -44,7 +44,8 @@
         <!-- Questions -->
         <div id="questions-container">
             {% for question in questions %}
-            <div class="question-card bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 mb-6 {% if not loop.first %}hidden{% endif %}" data-question-index="{{ loop.index0 }}">
+            {% set question_idx = loop.index0 %}
+            <div class="question-card bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 mb-6 {% if not loop.first %}hidden{% endif %}" data-question-index="{{ question_idx }}">
                 <div class="bg-gradient-to-r from-orange-600/20 to-red-600/20 p-6 border-b border-white/10">
                     <div class="flex justify-between items-center">
                         <h2 class="text-2xl font-semibold text-white">
@@ -81,9 +82,9 @@
                         {% for choice_key, choice_text in question.choices.items() %}
                             <label class="choice-option flex items-start p-6 border-2 border-white/20 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 hover:border-orange-500/50 transition-all duration-200 group">
                                 <input type="radio" 
-                                       name="question_{{ loop.index0 }}" 
+                                       name="question_{{ question_idx }}" 
                                        value="{{ choice_key }}" 
-                                       data-question-index="{{ loop.index0 }}"
+                                       data-question-index="{{ question_idx }}"
                                        class="answer-radio mt-2 mr-4 text-orange-500 focus:ring-orange-500 w-5 h-5 bg-white/10 border-white/30">
                                 <div class="flex-1">
                                     <span class="font-bold text-orange-400 mr-3 text-xl">{{ choice_key }}.</span>
@@ -152,36 +153,31 @@
 <script>
 let currentQuestionIndex = 0;
 let totalQuestions = {{ questions|length }};
-let timeLimit = 60 * 60; // 60分
+let timeLimit = 60 * 60;
 let timeRemaining = timeLimit;
 let timerInterval;
-let answers = {}; // 解答を保存 { "0": "ア", "1": "イ", ... }
+let answers = {};
 
 console.log('Mock exam initialized with', totalQuestions, 'questions');
 
 document.addEventListener('DOMContentLoaded', function() {
     startTimer();
     
-    // ラジオボタンのイベントリスナー設定
     document.querySelectorAll('.answer-radio').forEach(radio => {
         radio.addEventListener('change', function() {
             const questionIndex = this.getAttribute('data-question-index');
             const selectedValue = this.value;
             
-            // 解答を保存（1問につき1つの解答のみ）
             answers[questionIndex] = selectedValue;
-            
-            // 進捗を更新
             updateProgress();
             
-            // スタイル更新
             const allOptions = this.closest('.question-card').querySelectorAll('.choice-option');
             allOptions.forEach(opt => {
                 opt.classList.remove('border-orange-500', 'bg-orange-500/20');
             });
             this.closest('.choice-option').classList.add('border-orange-500', 'bg-orange-500/20');
             
-            console.log(`Question ${questionIndex}: Selected ${selectedValue}`, 'Total answers:', Object.keys(answers).length);
+            console.log(`Q${questionIndex}: Selected ${selectedValue}, Total: ${Object.keys(answers).length}`);
         });
     });
 });
@@ -259,34 +255,29 @@ function closeSubmitModal() {
 
 function confirmSubmit() {
     clearInterval(timerInterval);
-    
-    console.log('Submitting answers:', answers);
+    console.log('Submitting:', answers);
     
     fetch('/mock_exam/submit', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ answers: answers })
     })
     .then(response => {
         if (!response.ok) {
             return response.json().then(data => {
-                throw new Error(data.error || 'サーバーエラーが発生しました');
+                throw new Error(data.error || 'エラーが発生しました');
             });
         }
         return response.json();
     })
     .then(data => {
-        console.log('Exam result:', data);
+        console.log('Result:', data);
         showResults(data);
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('提出中にエラーが発生しました: ' + error.message);
-        if (timeRemaining > 0) {
-            startTimer();
-        }
+        alert('エラー: ' + error.message);
+        if (timeRemaining > 0) startTimer();
         closeSubmitModal();
     });
 }
@@ -330,11 +321,9 @@ function showResults(data) {
             </div>
         </div>
     `;
-    
     document.body.innerHTML = resultsHTML;
 }
 
-// キーボードショートカット
 document.addEventListener('keydown', function(e) {
     if (e.key >= '1' && e.key <= '4') {
         const choices = ['ア', 'イ', 'ウ', 'エ'];
