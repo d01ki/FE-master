@@ -57,11 +57,6 @@ def upload_questions():
         # ファイルを保存
         filename = secure_filename(file.filename)
         filepath = os.path.join(current_app.config['JSON_FOLDER'], filename)
-        
-        # 同じファイル名が既に登録されているかチェック
-        if current_app.question_manager.check_file_exists(filename):
-            return jsonify({'error': f'{filename}は既に登録されています。別のファイル名を使用してください。'}), 400
-        
         file.save(filepath)
         
         # JSONファイルを読み込んで検証
@@ -74,6 +69,15 @@ def upload_questions():
         
         # データベースに保存
         result = current_app.question_manager.save_questions(questions, filename)
+        
+        if result['saved_count'] == 0 and result.get('errors'):
+            # エラーがある場合（重複など）
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return jsonify({
+                'success': False,
+                'error': result['errors'][0] if result['errors'] else 'アップロードに失敗しました'
+            }), 400
         
         return jsonify({
             'success': True,
