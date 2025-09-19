@@ -25,7 +25,15 @@ def admin():
     genres = question_manager.get_available_genres()
     genre_stats = question_manager.get_question_count_by_genre()
     
+    # データオブジェクトを作成
+    data = {
+        'question_count': total_questions,
+        'user_count': total_users,
+        'genre_count': len(genres)
+    }
+    
     return render_template('admin.html',
+                         data=data,
                          total_questions=total_questions,
                          total_users=total_users,
                          genres=genres,
