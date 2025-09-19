@@ -271,11 +271,11 @@ class QuestionManager:
             return False
     
     def delete_all_questions(self):
-        """すべての問題を削除"""
+        """すべての問題を削除（学習履歴は保持）"""
         try:
             self.db_manager.execute_query('DELETE FROM questions')
-            self.db_manager.execute_query('DELETE FROM user_answers')
-            return {'success': True, 'message': 'すべての問題と解答履歴を削除しました'}
+            # 学習履歴は削除しない！
+            return {'success': True, 'message': 'すべての問題を削除しました（学習履歴は保持）'}
         except Exception as e:
             print(f"Error deleting all questions: {e}")
             return {'success': False, 'error': str(e)}
