@@ -24,10 +24,15 @@ def mock_exam():
     files = []
     for filename in os.listdir(json_folder):
         if filename.endswith('.json'):
+            print(f"Processing file: {filename}")
             file_info = parse_filename_info(filename)
+            print(f"File info: {file_info}")
             if file_info:
                 files.append(file_info)
+            else:
+                print(f"Warning: Could not parse filename: {filename}")
     
+    print(f"Total files found: {len(files)}")
     files.sort(key=lambda x: x['sort_key'], reverse=True)
     
     return render_template('mock_exam.html', files=files)
