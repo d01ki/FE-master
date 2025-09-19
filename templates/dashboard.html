@@ -3,195 +3,89 @@
 {% block title %}ダッシュボード - {{ super() }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        <!-- Hero Section -->
-        <div class="text-center mb-12 fade-in-up">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mb-6 animate-float">
-                <i class="fas fa-graduation-cap text-3xl text-white"></i>
-            </div>
-            <h1 class="text-5xl font-bold text-white mb-4 gradient-text">
-                基本情報技術者試験
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div class="container mx-auto px-6 py-8">
+        <!-- Welcome Section -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-white mb-4 fade-in-up">
+                ようこそ、{{ session.get('username') }}さん！
             </h1>
-            <p class="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
-                効率的な学習で合格を目指しましょう。あなたの学習進捗を確認して、次のステップを決めましょう。
+            <p class="text-xl text-gray-300 fade-in-up" style="animation-delay: 0.1s">
+                今日も学習を頑張りましょう
             </p>
         </div>
 
-        <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <div class="glass rounded-2xl p-6 fade-in-up" style="animation-delay: 0.1s">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-book text-blue-400 text-xl"></i>
-                    </div>
-                    <span class="text-3xl font-bold text-white">{{ stats.total_questions or 0 }}</span>
-                </div>
-                <h3 class="text-lg font-semibold text-white mb-1">総問題数</h3>
-                <p class="text-gray-400 text-sm">利用可能な問題</p>
-            </div>
-
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <div class="glass rounded-2xl p-6 fade-in-up" style="animation-delay: 0.2s">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-database text-white text-xl"></i>
                     </div>
-                    <span class="text-3xl font-bold text-white">{{ stats.correct_answers or 0 }}</span>
+                    <span class="text-3xl font-bold text-white">{{ stats.total_questions }}</span>
                 </div>
-                <h3 class="text-lg font-semibold text-white mb-1">正解数</h3>
-                <p class="text-gray-400 text-sm">累計正解問題</p>
+                <p class="text-gray-300 font-medium">登録済み問題数</p>
             </div>
 
             <div class="glass rounded-2xl p-6 fade-in-up" style="animation-delay: 0.3s">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-chart-line text-purple-400 text-xl"></i>
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-check-circle text-white text-xl"></i>
                     </div>
-                    <span class="text-3xl font-bold text-white">{{ stats.accuracy_rate or 0 }}%</span>
+                    <span class="text-3xl font-bold text-white">{{ stats.correct_answers }}</span>
                 </div>
-                <h3 class="text-lg font-semibold text-white mb-1">正答率</h3>
-                <p class="text-gray-400 text-sm">全体の成績</p>
+                <p class="text-gray-300 font-medium">正解数</p>
             </div>
 
             <div class="glass rounded-2xl p-6 fade-in-up" style="animation-delay: 0.4s">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-fire text-orange-400 text-xl"></i>
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-percentage text-white text-xl"></i>
                     </div>
-                    <span class="text-3xl font-bold text-white">{{ stats.total_answers or 0 }}</span>
+                    <span class="text-3xl font-bold text-white">{{ stats.accuracy_rate }}%</span>
                 </div>
-                <h3 class="text-lg font-semibold text-white mb-1">解答数</h3>
-                <p class="text-gray-400 text-sm">累計解答問題</p>
+                <p class="text-gray-300 font-medium">正答率</p>
             </div>
         </div>
 
         <!-- Action Cards -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-            <!-- Genre Practice -->
-            <div class="glass rounded-2xl overflow-hidden fade-in-up" style="animation-delay: 0.5s">
-                <div class="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 p-6 border-b border-white/10">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-2">ジャンル別演習</h3>
-                            <p class="text-gray-300 text-sm">分野ごとに集中学習</p>
-                        </div>
-                        <div class="w-12 h-12 bg-blue-500/30 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-dumbbell text-blue-400 text-xl"></i>
-                        </div>
-                    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Random Practice -->
+            <a href="{{ url_for('practice.random_practice') }}" class="glass rounded-2xl p-6 hover:bg-white/10 transition-all duration-300 group fade-in-up btn-hover" style="animation-delay: 0.5s">
+                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200">
+                    <i class="fas fa-random text-white text-2xl"></i>
                 </div>
-                <div class="p-6">
-                    <p class="text-gray-300 mb-6 leading-relaxed">
-                        アルゴリズム、データベース、ネットワークなど、分野別に問題を解いて弱点を克服しましょう。
-                    </p>
-                    <a href="{{ url_for('practice.genre_practice') }}" class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-6 rounded-lg transition-all duration-200 font-semibold flex items-center justify-center btn-hover">
-                        <i class="fas fa-play mr-2"></i>演習を開始
-                    </a>
-                </div>
-            </div>
+                <h3 class="text-xl font-bold text-white mb-2">ランダム問題</h3>
+                <p class="text-gray-400 text-sm">ランダムに問題を出題</p>
+            </a>
 
-            <!-- Random Question -->
-            <div class="glass rounded-2xl overflow-hidden fade-in-up" style="animation-delay: 0.6s">
-                <div class="bg-gradient-to-r from-orange-600/20 to-red-600/20 p-6 border-b border-white/10">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-2">ランダム問題</h3>
-                            <p class="text-gray-300 text-sm">手軽に問題練習</p>
-                        </div>
-                        <div class="w-12 h-12 bg-orange-500/30 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-random text-orange-400 text-xl"></i>
-                        </div>
-                    </div>
+            <!-- Genre Practice -->
+            <a href="{{ url_for('practice.genre_practice') }}" class="glass rounded-2xl p-6 hover:bg-white/10 transition-all duration-300 group fade-in-up btn-hover" style="animation-delay: 0.6s">
+                <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200">
+                    <i class="fas fa-dumbbell text-white text-2xl"></i>
                 </div>
-                <div class="p-6">
-                    <p class="text-gray-300 mb-6 leading-relaxed">
-                        ランダムに選ばれた問題で、気軽に学習を始めましょう。毎回異なる問題で飽きずに続けられます。
-                    </p>
-                    <a href="{{ url_for('practice.random_practice') }}" class="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-3 px-6 rounded-lg transition-all duration-200 font-semibold flex items-center justify-center btn-hover">
-                        <i class="fas fa-play mr-2"></i>問題を解く
-                    </a>
-                </div>
-            </div>
+                <h3 class="text-xl font-bold text-white mb-2">ジャンル別演習</h3>
+                <p class="text-gray-400 text-sm">苦手分野を集中的に学習</p>
+            </a>
 
             <!-- Mock Exam -->
-            <div class="glass rounded-2xl overflow-hidden fade-in-up" style="animation-delay: 0.7s">
-                <div class="bg-gradient-to-r from-purple-600/20 to-pink-600/20 p-6 border-b border-white/10">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-2">模擬試験</h3>
-                            <p class="text-gray-300 text-sm">本番形式で実力確認</p>
-                        </div>
-                        <div class="w-12 h-12 bg-purple-500/30 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-clipboard-list text-purple-400 text-xl"></i>
-                        </div>
-                    </div>
+            <a href="{{ url_for('exam.mock_exam') }}" class="glass rounded-2xl p-6 hover:bg-white/10 transition-all duration-300 group fade-in-up btn-hover" style="animation-delay: 0.7s">
+                <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200">
+                    <i class="fas fa-clipboard-list text-white text-2xl"></i>
                 </div>
-                <div class="p-6">
-                    <p class="text-gray-300 mb-6 leading-relaxed">
-                        本番と同じ形式で模擬試験を受けましょう。制限時間内で解いて実力を測定できます。
-                    </p>
-                    <a href="{{ url_for('exam.mock_exam') }}" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 px-6 rounded-lg transition-all duration-200 font-semibold flex items-center justify-center btn-hover">
-                        <i class="fas fa-play mr-2"></i>試験開始
-                    </a>
-                </div>
-            </div>
-        </div>
-
-
-        <!-- Admin Section -->
-        {% if session.get('is_admin') %}
-        <div class="text-center fade-in-up mb-12" style="animation-delay: 1.0s">
-            <h3 class="text-2xl font-bold text-white mb-8">管理機能</h3>
-            <div class="flex flex-wrap justify-center gap-4">
-                <a href="{{ url_for('admin.admin') }}" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center btn-hover">
-                    <i class="fas fa-cog mr-2"></i>管理画面
-                </a>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- No Questions Message -->
-        {% if stats.total_questions == 0 %}
-        <div class="text-center glass rounded-2xl p-8 fade-in-up">
-            <div class="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-exclamation-triangle text-yellow-400 text-2xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-white mb-4">問題データがありません</h3>
-            <p class="text-gray-300 mb-6">管理者に問題の登録を依頼してください。</p>
-            {% if session.get('is_admin') %}
-            <a href="{{ url_for('admin.admin') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-200 font-semibold inline-flex items-center">
-                <i class="fas fa-cog mr-2"></i>管理画面で問題を追加
+                <h3 class="text-xl font-bold text-white mb-2">模擬試験</h3>
+                <p class="text-gray-400 text-sm">本番形式で実力を確認</p>
             </a>
-            {% endif %}
+
+            <!-- Learning History -->
+            <a href="{{ url_for('main.history') }}" class="glass rounded-2xl p-6 hover:bg-white/10 transition-all duration-300 group fade-in-up btn-hover" style="animation-delay: 0.8s">
+                <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200">
+                    <i class="fas fa-history text-white text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">学習履歴</h3>
+                <p class="text-gray-400 text-sm">あなたの学習の軌跡</p>
+            </a>
         </div>
-        {% endif %}
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Smooth fade-in animation for elements
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -100px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, observerOptions);
-    
-    document.querySelectorAll('.fade-in-up').forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(el);
-    });
-</script>
 {% endblock %}
