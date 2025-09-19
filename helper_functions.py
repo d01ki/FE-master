@@ -23,12 +23,19 @@ def parse_filename_info(filename):
         era_year = int(match.group(2))
         season = match.group(3)
         season_jp = "春期" if season == "spring" else "秋期" if season == "autumn" else season
+        
+        # ソート用のキーを追加（年度と季節で並び替え）
+        season_order = 0 if season == "spring" else 1 if season == "autumn" else 2
+        sort_key = year * 10 + season_order
+        
         return {
+            'filename': filename,
             'year': year,
             'era_year': era_year,
             'season': season,
             'season_jp': season_jp,
-            'display_name': f'{year}年{season_jp}'
+            'display_name': f'{year}年{season_jp}',
+            'sort_key': sort_key
         }
     return None
 
