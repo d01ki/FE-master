@@ -53,114 +53,96 @@
             </div>
         </div>
 
-        <!-- Question Section -->
-        <div id="question-container" class="mb-8">
-            {% for question in questions %}
-            <div class="question-card {% if loop.index0 != 0 %}hidden{% endif %} bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden" data-question-index="{{ loop.index0 }}">
-                <div class="bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-6 border-b border-white/10">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-xl font-bold text-white">
-                            問題 {{ loop.index }} / {{ questions|length }}
-                        </h3>
-                        <div class="flex items-center space-x-2">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                                {{ genre }}
-                            </span>
-                        </div>
-                    </div>
+        <!-- Question Cards -->
+        {% for question in questions %}
+        {% set question_idx = loop.index0 %}
+        <div id="question-{{ question_idx }}" class="question-card {% if question_idx != 0 %}hidden{% endif %} bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-6 border-b border-white/10">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-white">問題 {{ loop.index }} / {{ questions|length }}</h3>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        {{ genre }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="p-8">
+                <!-- 問題文 -->
+                <div class="mb-8">
+                    <p class="text-white text-lg leading-relaxed font-medium whitespace-pre-line">{{ question.question_text }}</p>
                 </div>
                 
-                <div class="p-8">
-                    <!-- 問題文 -->
-                    <div class="mb-8">
-                        <p class="text-white text-lg leading-relaxed whitespace-pre-line font-medium">{{ question.question_text }}</p>
+                <!-- 画像表示 -->
+                {% if question.image_url and question.image_url != 'null' and question.image_url != 'None' %}
+                <div class="mb-8">
+                    <div class="bg-white/10 rounded-xl p-4 border border-white/20">
+                        <img src="{{ question.image_url }}" 
+                             alt="問題の図表" 
+                             class="max-w-full h-auto rounded-lg mx-auto"
+                             onerror="this.parentElement.innerHTML='<p class=\'text-gray-400 text-center py-4\'>画像を読み込めませんでした</p>'">
                     </div>
-                    
-                    <!-- 画像表示 -->
-                    {% if question.image_url and question.image_url != 'null' and question.image_url != 'None' %}
-                    <div class="mb-8">
-                        <div class="bg-white/10 rounded-xl p-4 border border-white/20">
-                            <img src="{{ question.image_url }}" 
-                                 alt="問題の図表" 
-                                 class="max-w-full h-auto rounded-lg mx-auto"
-                                 onerror="this.parentElement.innerHTML='<p class=\'text-gray-400 text-center py-4\'>画像を読み込めませんでした</p>'">
+                </div>
+                {% endif %}
+                
+                <!-- 選択肢 -->
+                <div class="space-y-4 mb-8">
+                    {% for choice_key, choice_text in question.choices.items() %}
+                    <button class="choice-option w-full text-left p-5 bg-white/5 rounded-xl border-2 border-white/10 hover:bg-white/10 hover:border-blue-500/50 transition-all duration-200 group"
+                            data-choice="{{ choice_key }}"
+                            onclick="selectAnswer({{ question_idx }}, '{{ choice_key }}')">
+                        <div class="flex items-start">
+                            <div class="flex items-center mr-4 mt-1">
+                                <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors">
+                                    <div class="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hidden choice-dot"></div>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <span class="font-bold text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
+                                <span class="text-white text-base leading-relaxed">{{ choice_text }}</span>
+                            </div>
                         </div>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Result Section (Initially Hidden) -->
+            <div id="result-{{ question_idx }}" class="result-section hidden border-t border-white/10">
+                <div class="bg-gradient-to-r from-green-600/20 to-blue-600/20 p-6 border-b border-white/10">
+                    <h3 class="text-lg font-semibold text-white result-title">解答結果</h3>
+                </div>
+                <div class="p-8">
+                    <div class="result-content"></div>
+                    
+                    {% if question.explanation %}
+                    <div class="mt-6 bg-white/5 rounded-xl p-6 border border-white/10">
+                        <h4 class="font-bold text-white mb-3 flex items-center">
+                            <span class="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-lightbulb text-yellow-400"></i>
+                            </span>
+                            解説
+                        </h4>
+                        <p class="text-gray-300 leading-relaxed whitespace-pre-line">{{ question.explanation }}</p>
                     </div>
                     {% endif %}
                     
-                    <!-- 選択肢 -->
-                    <div class="choices-container space-y-4 mb-8">
-                        {% for choice_key, choice_text in question.choices.items() %}
-                        <button class="choice-option w-full text-left cursor-pointer p-5 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-200 border-2 border-white/10 hover:border-blue-500/50 group" 
-                             data-choice="{{ choice_key }}" 
-                             data-question-index="{{ loop.index0 }}"
-                             onclick="handleChoiceClick(event, {{ loop.index0 }}, '{{ choice_key }}')">
-                            <div class="flex items-start">
-                                <div class="flex items-center mr-4 mt-1">
-                                    <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors">
-                                        <div class="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hidden choice-dot"></div>
-                                    </div>
-                                </div>
-                                <div class="flex-1">
-                                    <span class="font-bold text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
-                                    <span class="text-white text-base leading-relaxed">{{ choice_text }}</span>
-                                </div>
-                            </div>
+                    <div class="mt-6 text-center">
+                        {% if not loop.last %}
+                        <button onclick="nextQuestion()" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center mx-auto">
+                            次の問題へ
+                            <i class="fas fa-arrow-right ml-2"></i>
                         </button>
-                        {% endfor %}
-                    </div>
-                    
-                    <!-- Status & Navigation -->
-                    <div class="flex justify-between items-center">
-                        <button onclick="previousQuestion()" 
-                                class="{% if loop.index0 == 0 %}opacity-50 cursor-not-allowed{% endif %} bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20"
-                                {% if loop.index0 == 0 %}disabled{% endif %}>
-                            <i class="fas fa-chevron-left mr-2"></i>前の問題
+                        {% else %}
+                        <button onclick="showCompletion()" class="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center mx-auto">
+                            結果を見る
+                            <i class="fas fa-flag-checkered ml-2"></i>
                         </button>
-                        
-                        <div class="text-center">
-                            <span id="selection-status-{{ loop.index0 }}" class="text-gray-400 text-sm bg-white/5 px-4 py-2 rounded-lg border border-white/10">選択肢をクリックして解答してください</span>
-                        </div>
-                        
-                        <div class="w-24"></div> <!-- Spacer -->
-                    </div>
-                </div>
-                
-                <!-- Result Section (Initially Hidden) -->
-                <div class="result-section hidden border-t border-white/10 bg-white/5">
-                    <div class="p-8">
-                        <div class="result-content mb-6">
-                            <!-- Result will be populated by JavaScript -->
-                        </div>
-                        <div class="explanation-content">
-                            {% if question.explanation %}
-                                <div class="bg-white/5 rounded-xl p-6 border border-white/10">
-                                    <h4 class="font-bold text-white mb-3 flex items-center">
-                                        <span class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mr-3">
-                                            <i class="fas fa-info-circle text-blue-400"></i>
-                                        </span>
-                                        解説
-                                    </h4>
-                                    <p class="text-gray-300 leading-relaxed whitespace-pre-line">{{ question.explanation }}</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Next Button in Result Section -->
-                        <div class="mt-6 text-center">
-                            <button onclick="nextQuestionAfterResult()" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center mx-auto">
-                                {% if loop.last %}
-                                    <i class="fas fa-flag-checkered mr-2"></i>完了画面へ
-                                {% else %}
-                                    <i class="fas fa-arrow-right mr-2"></i>次の問題へ
-                                {% endif %}
-                            </button>
-                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
 
         <!-- Completion Section (Initially Hidden) -->
         <div id="completion-section" class="hidden">
@@ -194,7 +176,7 @@
                         <a href="{{ url_for('practice.practice_by_genre', genre=genre) }}" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
                             <i class="fas fa-redo mr-2"></i>もう一度挑戦
                         </a>
-                        <a href="{{ url_for('main.index') }}" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
+                        <a href="{{ url_for('main.dashboard') }}" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20">
                             <i class="fas fa-home mr-2"></i>ダッシュボードに戻る
                         </a>
                     </div>
@@ -207,81 +189,31 @@
 
 {% block scripts %}
 <script>
-// Global variables
 let currentQuestionIndex = 0;
 let questions = {{ questions | tojson }};
 let answers = {};
 let correctCount = 0;
 let totalAnswered = 0;
 
-console.log('Practice page loaded with questions:', questions);
-
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Practice initialized with', questions.length, 'questions');
-    
-    updateProgress();
-    showQuestion(currentQuestionIndex);
-});
-
-// Handle choice click with proper event handling
-function handleChoiceClick(event, questionIndex, choiceKey) {
-    event.preventDefault();
-    event.stopPropagation();
-    
-    console.log('Choice clicked:', questionIndex, choiceKey);
-    selectChoice(questionIndex, choiceKey);
-}
-
-// Show specific question
-function showQuestion(index) {
-    console.log('Showing question', index + 1, 'of', questions.length);
-    
-    // Hide all question cards
-    document.querySelectorAll('.question-card').forEach(card => {
-        card.classList.add('hidden');
-    });
-    
-    // Show target question card
-    const targetCard = document.querySelector(`[data-question-index="${index}"]`);
-    if (targetCard) {
-        targetCard.classList.remove('hidden');
-        currentQuestionIndex = index;
-        updateNavigationButtons();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        console.log('Successfully showed question', index + 1);
-    } else {
-        console.error('Could not find question card for index:', index);
-    }
-}
-
-// Select choice and automatically submit
-function selectChoice(questionIndex, choiceKey) {
-    console.log(`Question ${questionIndex + 1}: Selected choice ${choiceKey}`);
-    
-    // Check if this question is already answered
+// 解答選択
+function selectAnswer(questionIndex, selectedChoice) {
+    // 既に解答済みの場合は何もしない
     if (answers[questionIndex]) {
-        console.log('Question already answered, ignoring click');
         return;
     }
     
-    // Clear previous selections for this question
-    const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
-    if (!questionCard) {
-        console.error('Question card not found for index:', questionIndex);
-        return;
-    }
+    const questionCard = document.getElementById(`question-${questionIndex}`);
+    if (!questionCard) return;
     
+    // すべての選択肢を無効化
     questionCard.querySelectorAll('.choice-option').forEach(option => {
-        option.classList.remove('border-blue-500', 'bg-blue-500/20', 'border-green-500', 'bg-green-500/20', 'border-red-500', 'bg-red-500/20');
-        const dot = option.querySelector('.choice-dot');
-        const radio = option.querySelector('.choice-radio');
-        if (dot) dot.classList.add('hidden');
-        if (radio) radio.classList.remove('border-blue-500', 'border-green-500', 'border-red-500');
+        option.disabled = true;
+        option.style.pointerEvents = 'none';
+        option.classList.add('opacity-75');
     });
     
-    // Mark selected choice
-    const selectedOption = questionCard.querySelector(`[data-choice="${choiceKey}"]`);
+    // 選択された選択肢をハイライト
+    const selectedOption = questionCard.querySelector(`[data-choice="${selectedChoice}"]`);
     if (selectedOption) {
         selectedOption.classList.add('border-blue-500', 'bg-blue-500/20');
         const dot = selectedOption.querySelector('.choice-dot');
@@ -290,165 +222,105 @@ function selectChoice(questionIndex, choiceKey) {
         if (radio) radio.classList.add('border-blue-500');
     }
     
-    // Auto-submit answer
-    submitAnswer(questionIndex, choiceKey);
+    // 解答を送信
+    fetch(`/questions/${questions[questionIndex].id}/answer`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            answer: selectedChoice
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('エラー: ' + data.error);
+            return;
+        }
+        
+        answers[questionIndex] = data;
+        showResult(questionIndex, data);
+        
+        if (data.is_correct) {
+            correctCount++;
+        }
+        totalAnswered++;
+        updateProgress();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('解答送信中にエラーが発生しました。');
+    });
 }
 
-// Submit answer
-async function submitAnswer(questionIndex, userAnswer) {
-    const question = questions[questionIndex];
-    const statusEl = document.getElementById(`selection-status-${questionIndex}`);
+function showResult(questionIndex, data) {
+    const questionCard = document.getElementById(`question-${questionIndex}`);
+    const resultSection = document.getElementById(`result-${questionIndex}`);
+    const resultContent = resultSection.querySelector('.result-content');
+    const resultTitle = resultSection.querySelector('.result-title');
     
-    console.log(`Submitting answer for question ${questionIndex + 1}: ${userAnswer}`);
-    console.log('Question data:', question);
-
-    if (statusEl) {
-        statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>判定中...';
-        statusEl.className = 'text-blue-400 text-sm bg-white/5 px-4 py-2 rounded-lg border border-white/10';
-    }
+    const isCorrect = data.is_correct;
     
-    try {
-        const response = await fetch(`/questions/${question.id}/answer`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ answer: userAnswer })
-        });
-        
-        const result = await response.json();
-        console.log('Answer result:', result);
-        
-        if (response.ok) {
-            answers[questionIndex] = {
-                userAnswer: userAnswer,
-                isCorrect: result.is_correct,
-                correctAnswer: result.correct_answer
-            };
-            
-            if (result.is_correct) {
-                correctCount++;
-                if (statusEl) {
-                    statusEl.innerHTML = '<i class="fas fa-check-circle text-green-400 mr-2"></i>正解！';
-                    statusEl.className = 'text-green-400 text-sm font-semibold bg-green-500/20 px-4 py-2 rounded-lg border border-green-500/30';
-                }
-            } else {
-                if (statusEl) {
-                    statusEl.innerHTML = '<i class="fas fa-times-circle text-red-400 mr-2"></i>不正解';
-                    statusEl.className = 'text-red-400 text-sm font-semibold bg-red-500/20 px-4 py-2 rounded-lg border border-red-500/30';
-                }
-            }
-            totalAnswered++;
-            
-            showResult(questionIndex, result);
-            updateProgress();
-            
-            // Disable all choices for this question
-            const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
-            if (questionCard) {
-                questionCard.querySelectorAll('.choice-option').forEach(option => {
-                    option.disabled = true;
-                    option.style.pointerEvents = 'none';
-                    option.classList.add('opacity-75');
-                });
-            }
-            
-        } else {
-            console.error('Response not ok:', response.status, result);
-            if (statusEl) {
-                statusEl.innerHTML = '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i>エラーが発生しました';
-                statusEl.className = 'text-red-400 text-sm bg-red-500/20 px-4 py-2 rounded-lg border border-red-500/30';
-            }
-        }
-    } catch (error) {
-        console.error('Submit error:', error);
-        if (statusEl) {
-            statusEl.innerHTML = '<i class="fas fa-exclamation-circle text-red-400 mr-2"></i>通信エラー';
-            statusEl.className = 'text-red-400 text-sm bg-red-500/20 px-4 py-2 rounded-lg border border-red-500/30';
-        }
-    }
-}
-
-// Show result
-function showResult(questionIndex, result) {
-    const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
-    if (!questionCard) return;
+    // タイトル更新
+    resultTitle.innerHTML = isCorrect 
+        ? '<i class="fas fa-check-circle mr-2 text-green-400"></i>正解！'
+        : '<i class="fas fa-times-circle mr-2 text-red-400"></i>不正解';
     
-    const resultSection = questionCard.querySelector('.result-section');
-    const resultContent = questionCard.querySelector('.result-content');
-    
-    if (!resultSection || !resultContent) return;
-    
-    const isCorrect = result.is_correct;
-    const correctAnswer = result.correct_answer;
-    const userAnswer = result.user_answer;
-    
-    resultContent.innerHTML = `
-        <div class="flex items-center space-x-4 mb-4">
-            <div class="w-12 h-12 rounded-full flex items-center justify-center ${isCorrect ? 'bg-green-500' : 'bg-red-500'} shadow-lg">
-                <i class="fas ${isCorrect ? 'fa-check' : 'fa-times'} text-white text-xl"></i>
-            </div>
-            <div>
-                <span class="text-2xl font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}">
-                    ${isCorrect ? '正解！' : '不正解'}
-                </span>
-                <div class="text-gray-300 mt-1">
-                    <p><strong>あなたの解答:</strong> ${userAnswer}</p>
-                    ${!isCorrect ? `<p><strong>正解:</strong> ${correctAnswer}</p>` : ''}
+    // 結果内容
+    let resultHTML = `
+        <div class="space-y-4">
+            <div class="flex items-center justify-between p-6 rounded-xl ${isCorrect ? 'bg-green-500/20 border-2 border-green-500/50' : 'bg-red-500/20 border-2 border-red-500/50'}">
+                <div>
+                    <span class="font-medium text-lg ${isCorrect ? 'text-green-300' : 'text-red-300'}">
+                        あなたの解答: ${data.user_answer}
+                    </span>
                 </div>
+                ${isCorrect ? 
+                    '<i class="fas fa-check text-green-400 text-2xl"></i>' : 
+                    '<i class="fas fa-times text-red-400 text-2xl"></i>'
+                }
             </div>
-        </div>
     `;
     
-    resultSection.classList.remove('hidden');
+    if (!isCorrect) {
+        resultHTML += `
+            <div class="flex items-center justify-between p-6 bg-blue-500/20 border-2 border-blue-500/50 rounded-xl">
+                <div>
+                    <span class="font-medium text-lg text-blue-300">
+                        正解: ${data.correct_answer}
+                    </span>
+                </div>
+                <i class="fas fa-lightbulb text-blue-400 text-2xl"></i>
+            </div>
+        `;
+    }
     
-    // Highlight choices with correct/incorrect colors
-    const choices = questionCard.querySelectorAll('.choice-option');
-    choices.forEach(choice => {
-        const choiceKey = choice.getAttribute('data-choice');
-        if (choiceKey === userAnswer) {
-            if (isCorrect) {
-                choice.classList.add('border-green-500', 'bg-green-500/20');
-            } else {
-                choice.classList.add('border-red-500', 'bg-red-500/20');
-            }
-        } else if (choiceKey === correctAnswer && !isCorrect) {
-            choice.classList.add('border-green-500', 'bg-green-500/20');
-            choice.style.position = 'relative';
-            choice.innerHTML += '<div class="absolute top-2 right-2 text-green-400 font-bold">正解</div>';
+    resultHTML += '</div>';
+    resultContent.innerHTML = resultHTML;
+    
+    // 選択肢の色分け
+    questionCard.querySelectorAll('.choice-option').forEach(option => {
+        const choiceKey = option.getAttribute('data-choice');
+        if (choiceKey === data.correct_answer) {
+            option.classList.add('bg-green-500/20', 'border-green-500');
+        } else if (choiceKey === data.user_answer && !isCorrect) {
+            option.classList.add('bg-red-500/20', 'border-red-500');
         }
     });
+    
+    // 結果セクションを表示
+    resultSection.classList.remove('hidden');
+    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// Navigation functions
-function previousQuestion() {
-    if (currentQuestionIndex > 0) {
-        showQuestion(currentQuestionIndex - 1);
-    }
+function nextQuestion() {
+    document.getElementById(`question-${currentQuestionIndex}`).classList.add('hidden');
+    currentQuestionIndex++;
+    document.getElementById(`question-${currentQuestionIndex}`).classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function nextQuestionAfterResult() {
-    if (currentQuestionIndex < questions.length - 1) {
-        showQuestion(currentQuestionIndex + 1);
-    } else {
-        showCompletion();
-    }
-}
-
-function updateNavigationButtons() {
-    const prevBtns = document.querySelectorAll('button[onclick="previousQuestion()"]');
-    prevBtns.forEach(btn => {
-        if (currentQuestionIndex === 0) {
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-            btn.disabled = true;
-        } else {
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            btn.disabled = false;
-        }
-    });
-}
-
-// Update progress
 function updateProgress() {
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
@@ -467,9 +339,8 @@ function updateProgress() {
     if (accuracyRateEl) accuracyRateEl.textContent = accuracyRate + '%';
 }
 
-// Show completion
 function showCompletion() {
-    document.getElementById('question-container').classList.add('hidden');
+    document.querySelectorAll('.question-card').forEach(card => card.classList.add('hidden'));
     document.getElementById('completion-section').classList.remove('hidden');
     
     const accuracyRate = Math.round((correctCount / questions.length) * 100);
@@ -477,16 +348,7 @@ function showCompletion() {
     document.getElementById('final-total').textContent = questions.length;
     document.getElementById('final-accuracy').textContent = accuracyRate + '%';
     
-    document.getElementById('completion-section').scrollIntoView({ behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
-// Keyboard navigation
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowLeft') {
-        previousQuestion();
-    } else if (e.key === 'ArrowRight') {
-        nextQuestionAfterResult();
-    }
-});
 </script>
 {% endblock %}
