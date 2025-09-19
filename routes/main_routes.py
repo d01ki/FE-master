@@ -64,7 +64,7 @@ def history():
     db_manager = current_app.db_manager
     user_id = session.get('user_id')
     
-    # ユーザーの解答履歴を取得
+    # ユーザーの解答履歴を取得（解説も含む）
     if db_manager.db_type == 'postgresql':
         history_data = db_manager.execute_query('''
             SELECT 
@@ -74,6 +74,7 @@ def history():
                 q.genre,
                 ua.user_answer,
                 q.correct_answer,
+                q.explanation,
                 ua.is_correct,
                 ua.answered_at
             FROM user_answers ua
@@ -91,6 +92,7 @@ def history():
                 q.genre,
                 ua.user_answer,
                 q.correct_answer,
+                q.explanation,
                 ua.is_correct,
                 ua.answered_at
             FROM user_answers ua
@@ -100,39 +102,4 @@ def history():
             LIMIT 100
         ''', (user_id,))
     
-    # ジャンル別統計
-    if db_manager.db_type == 'postgresql':
-        genre_stats = db_manager.execute_query('''
-            SELECT 
-                q.genre,
-                COUNT(*) as total,
-                SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END) as correct
-            FROM user_answers ua
-            LEFT JOIN questions q ON ua.question_id = q.id
-            WHERE ua.user_id = %s AND q.genre IS NOT NULL
-            GROUP BY q.genre
-            ORDER BY q.genre
-        ''', (user_id,))
-    else:
-        genre_stats = db_manager.execute_query('''
-            SELECT 
-                q.genre,
-                COUNT(*) as total,
-                SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END) as correct
-            FROM user_answers ua
-            LEFT JOIN questions q ON ua.question_id = q.id
-            WHERE ua.user_id = ? AND q.genre IS NOT NULL
-            GROUP BY q.genre
-            ORDER BY q.genre
-        ''', (user_id,))
-    
-    # 正答率を計算
-    for stat in genre_stats:
-        if stat['total'] > 0:
-            stat['accuracy'] = round((stat['correct'] / stat['total']) * 100, 1)
-        else:
-            stat['accuracy'] = 0
-    
-    return render_template('history.html', 
-                         history=history_data, 
-                         genre_stats=genre_stats)
+    return render_template('history.html', history=history_data)
