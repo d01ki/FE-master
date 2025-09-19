@@ -11,8 +11,6 @@
 
 **効率的な学習で基本情報技術者試験の合格を目指す**
 
-[Demo](https://fe-master.onrender.com) ・ [GitHub](https://github.com/d01ki/FE-master) ・ [Wiki](https://github.com/d01ki/FE-master/wiki)
-
 </div>
 
 ---
@@ -48,7 +46,6 @@
 - **📊 学習履歴管理** - あなたの進捗を詳細に追跡
 - **🖼️ 画像対応** - 図表付き問題も完全サポート
 - **🔒 ユーザー認証** - 個人の学習データを安全に保管
-- **🛠️ 管理機能** - 簡単な問題管理インターフェース
 
 ---
 
@@ -62,15 +59,12 @@
 | **Database** | PostgreSQL, SQLite |
 | **Frontend** | HTML5, Tailwind CSS, JavaScript |
 | **Deployment** | Render.com |
-| **Auth** | Flask-Session, Werkzeug |
 
 </div>
 
 ---
 
 ## 🚀 クイックスタート
-
-### 💻 ローカル環境
 
 ```bash
 # リポジトリをクローン
@@ -90,65 +84,11 @@ python app.py
 
 🎉 http://localhost:5002 でアクセスできます！
 
-### 🔑 デフォルト管理者アカウント
-
-- **ユーザー名**: `admin`
-- **パスワード**: `admin123`
-
-⚠️ **本番環境では必ずパスワードを変更してください**
-
----
-
-## 📸 スクリーンショット
-
-<div align="center">
-
-### 🏠 ダッシュボード
-
-*学習進捗を一目で確認*
-
-### 📝 問題画面
-
-*直感的なインターフェースで学習*
-
-### 📈 学習履歴
-
-*詳細な統計と解説で復習も完璧*
-
-</div>
-
----
-
-## 🛡️ セキュリティ
-
-- **パスワードハッシュ化** - Werkzeugを使用した安全なパスワード管理
-- **セッション管理** - Flask-Sessionによる安全なセッション
-- **データ保護** - PostgreSQLでのデータ暗号化対応
-
 ---
 
 ## 🌐 デプロイ
 
-### Render.com へのデプロイ
-
-1. **環境変数を設定**
-   ```
-   DATABASE_TYPE=postgresql
-   DATABASE_URL=<PostgreSQL接続URL>
-   SECRET_KEY=<ランダムな文字列>
-   ```
-
-2. **自動デプロイが開始されます**
-
-詳しい手順は[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)をご覧ください。
-
----
-
-## 📚 ドキュメント
-
-- **[Wiki](https://github.com/d01ki/FE-master/wiki)** - 詳細な開発情報
-- **[Issues](https://github.com/d01ki/FE-master/issues)** - バグ報告・機能リクエスト
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - デプロイガイド
+詳しいデプロイ手順は [Wiki](https://github.com/d01ki/FE-master/wiki) をご覧ください。
 
 ---
 
@@ -166,7 +106,7 @@ python app.py
 
 ## 📝 ライセンス
 
-このプロジェクトはMITライセンスの下で公開されています。詳細は[LICENSE](LICENSE)をご覧ください。
+このプロジェクトはMITライセンスの下で公開されています。
 
 ---
 
