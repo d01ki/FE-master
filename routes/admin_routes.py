@@ -6,6 +6,7 @@ from auth import admin_required
 from werkzeug.utils import secure_filename
 import os
 import json
+from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -25,11 +26,35 @@ def admin():
     genres = question_manager.get_available_genres()
     genre_stats = question_manager.get_question_count_by_genre()
     
+    # JSONファイル一覧を取得
+    json_files = []
+    json_folder = current_app.config.get('JSON_FOLDER', 'json_questions')
+    if os.path.exists(json_folder):
+        for filename in os.listdir(json_folder):
+            if filename.endswith('.json'):
+                filepath = os.path.join(json_folder, filename)
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        questions = json.load(f)
+                    
+                    file_stat = os.stat(filepath)
+                    modified_time = datetime.fromtimestamp(file_stat.st_mtime).strftime('%Y-%m-%d %H:%M')
+                    
+                    json_files.append({
+                        'filename': filename,
+                        'question_count': len(questions),
+                        'size': file_stat.st_size,
+                        'modified': modified_time
+                    })
+                except Exception as e:
+                    print(f"Error reading {filename}: {e}")
+    
     # データオブジェクトを作成
     data = {
         'question_count': total_questions,
         'user_count': total_users,
-        'genre_count': len(genres)
+        'genre_count': len(genres),
+        'json_files': json_files
     }
     
     return render_template('admin.html',
