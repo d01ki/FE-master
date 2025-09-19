@@ -1,135 +1,203 @@
-# 🎓 基本情報技術者試験 学習アプリ
+# 基本情報技術者試験 学習アプリ - FE Master
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-2.3+-green.svg)](https://flask.palletsprojects.com/)
+## 🎯 概要
+基本情報技術者試験の学習を効率化するWebアプリケーション
 
-> **効率的な学習で基本情報技術者試験の合格を目指そう！**
+## ✨ 最新の変更 (feature/image-support)
 
-## ✨ 主な機能
+### 🔧 機能改善
 
-### 📚 学習機能
-- **ランダム問題練習** - 幅広い分野からランダムに出題
-- **ジャンル別演習** - 苦手分野を集中的に学習
-- **模擬試験** - 本番形式での実力確認
-- **学習履歴** - 進捗状況と成績の可視化
-- **図表問題対応** - 画像を含む問題にも完全対応 🆕
+#### 1. **アプリケーション構造の改善**
+- **app.pyのモジュール化**: 長大だったapp.pyを機能ごとに分割
+  - `routes/main_routes.py` - メインページ (ホーム、ダッシュボード)
+  - `routes/practice_routes.py` - 練習問題関連
+  - `routes/exam_routes.py` - 模擬試験関連
+  - `routes/admin_routes.py` - 管理者機能
+  - app.pyはシンプルなエントリーポイントとして維持
 
-### 🎯 特徴
-- **直感的なUI** - モダンで使いやすいインターフェース
-- **レスポンシブデザイン** - スマートフォンでも快適に学習
-- **詳細な解説** - 各問題に丁寧な説明付き
-- **進捗管理** - 個人の学習状況を詳細に追跡
+#### 2. **ジャンル別演習の修正** ✅
+- **問題**: ジャンル別演習で全問題が表示される不具合
+- **解決**: `question_manager.get_questions_by_genre(genre)`を正しく実装
+- **結果**: 指定されたジャンルの問題のみが表示されるように修正
 
-## 🚀 デモ
+#### 3. **画像表示機能の追加** 🖼️
+- **模擬試験**: 既に実装済み ✅
+- **ランダム問題**: 既に実装済み ✅  
+- **ジャンル別演習**: 画像表示コードを追加 ✅
 
-実際のアプリケーションを体験してみてください：
+### 📁 ファイル構成
 
-**[🔗 ライブデモを見る](https://fe-master.onrender.com)**
+```
+FE-master/
+├── app.py                      # メインアプリケーション（簡素化）
+├── routes/                     # ルーティングモジュール
+│   ├── __init__.py
+│   ├── main_routes.py         # メインページ
+│   ├── practice_routes.py     # 練習問題
+│   ├── exam_routes.py         # 模擬試験
+│   └── admin_routes.py        # 管理機能
+├── database.py                # データベース管理
+├── question_manager.py        # 問題管理
+├── auth.py                    # 認証機能
+├── helper_functions.py        # ヘルパー関数
+├── templates/                 # HTMLテンプレート
+│   ├── practice.html         # ジャンル別演習（画像対応）
+│   ├── question.html         # ランダム問題（画像対応）
+│   └── mock_exam_practice.html # 模擬試験（画像対応）
+└── static/
+    └── images/               # 画像ファイル格納
+```
 
-## 📱 スクリーンショット
+### 🔍 技術仕様
 
-### ダッシュボード
-美しく整理された学習進捗とクイックアクセス
+#### JSONデータフォーマット
+```json
+{
+  "question_id": "問5",
+  "question_text": "問題文...",
+  "choices": {
+    "ア": "選択肢1",
+    "イ": "選択肢2",
+    "ウ": "選択肢3",
+    "エ": "選択肢4"
+  },
+  "correct_answer": "ア",
+  "explanation": "解説文...",
+  "genre": "ソフトウェア",
+  "image_url": "/static/images/2025_s_q6.png"
+}
+```
 
-### 問題演習画面
-シンプルで集中しやすい問題解答環境
+#### 画像表示の実装
+- `image_url`が存在し、"null"や"None"でない場合に画像を表示
+- エラー時のフォールバック処理を実装
+- レスポンシブデザイン対応
 
-### 学習履歴
-詳細な統計とパフォーマンス分析
+### 🚀 デプロイ方法
 
-## 🛠️ 技術スタック
+```bash
+# 1. 依存関係のインストール
+pip install -r requirements.txt
 
-- **バックエンド**: Flask (Python)
-- **データベース**: PostgreSQL / SQLite
-- **フロントエンド**: Tailwind CSS
-- **アイコン**: Font Awesome
-- **デプロイ**: Render
+# 2. アプリケーション起動
+python app.py
+```
 
-## 📖 使用方法
+### 📝 開発者向け情報
 
-### 👤 一般ユーザー
+#### 新しいルートの追加方法
+1. `routes/`ディレクトリに新しいBlueprint作成
+2. `routes/__init__.py`でインポート
+3. `app.py`でBlueprint登録
 
-1. **アカウント作成**
-   - 新規登録ページでアカウントを作成
-   - 最低限の情報のみで簡単登録
+例:
+```python
+# routes/new_routes.py
+from flask import Blueprint
+new_bp = Blueprint('new', __name__)
 
-2. **学習開始**
-   - ダッシュボードから学習メニューを選択
-   - 自分のペースで問題に挑戦
+@new_bp.route('/new')
+def new_page():
+    return render_template('new.html')
+```
 
-3. **進捗確認**
-   - 学習履歴で成長を実感
-   - ジャンル別の得意・不得意を把握
+#### 画像付き問題の追加
+1. 画像を`static/images/`に配置
+2. JSONの`image_url`に相対パスを指定
+3. 管理画面からJSONをアップロード
 
-### 👑 管理者
+### 🐛 バグ修正
 
-- 問題データの管理
-- JSONファイルによる問題の一括登録
-- 画像を含む問題の追加対応
-- システム設定とメンテナンス
+- ✅ ジャンル別演習でジャンルフィルタリングが機能しない問題を修正
+- ✅ 画像がランダム問題とジャンル別演習で表示されない問題を修正
+- ✅ app.pyが長すぎる問題を解決（モジュール化）
 
-#### 画像付き問題の追加方法
+### 📊 テスト
 
-1. **画像ファイルの準備**
-   - 画像を `static/images/` ディレクトリに配置
-   - ファイル命名規則: `{年度}_{期}_{問題番号}.png`
-   - 例: `2025_s_q3.png` (2025年春期の問3)
+以下の動作確認を行ってください：
 
-2. **JSONファイルの作成**
-   ```json
-   {
-     "question_id": "問3",
-     "question_text": "次の図を参照して答えよ。",
-     "choices": {
-       "ア": "選択肢1",
-       "イ": "選択肢2",
-       "ウ": "選択肢3",
-       "エ": "選択肢4"
-     },
-     "correct_answer": "イ",
-     "explanation": "解説文...",
-     "genre": "基礎理論",
-     "image_url": "/static/images/2025_s_q3.png"
-   }
+1. **ジャンル別演習**
+   - ジャンルを選択して問題が正しく絞り込まれるか
+   - 画像付き問題で画像が表示されるか
+
+2. **ランダム問題**
+   - 画像付き問題で画像が表示されるか
+
+3. **模擬試験**
+   - 画像付き問題で画像が表示されるか
+
+### 🔄 マイグレーション注意事項
+
+既存のデプロイ環境では、以下の手順で更新してください：
+
+1. **バックアップ**
+   ```bash
+   # データベースのバックアップ
+   cp fe_exam.db fe_exam.db.backup
    ```
 
-3. **管理画面からアップロード**
-   - 管理画面にログイン
-   - JSONファイルをアップロード
-   - 画像が自動的に表示されます
+2. **コード更新**
+   ```bash
+   git pull origin feature/image-support
+   ```
 
-**注意**: 画像が不要な問題では `image_url` を省略するか `null` に設定してください。
+3. **依存関係更新**
+   ```bash
+   pip install -r requirements.txt --upgrade
+   ```
 
-## 🔒 セキュリティ
+4. **アプリケーション再起動**
+   ```bash
+   # Renderの場合は自動デプロイ
+   # 手動の場合
+   python app.py
+   ```
 
-- パスワードハッシュ化による安全な認証
-- セッション管理による不正アクセス防止
-- 管理者権限の適切な分離
+### 🎨 今後の改善案
 
-## 📈 開発の背景
-
-基本情報技術者試験の学習をより効率的に、そして楽しくするために開発されました。
-従来の問題集とは異なり、デジタルならではの機能を活用して学習体験を向上させています。
-
-## 🎯 今後の展望
-
-- AIを活用した個別学習プランの提案
-- より詳細な学習分析機能
-- ソーシャル機能による学習仲間との交流
-- モバイルアプリ版の開発
-
-## 🤝 貢献
-
-プロジェクトへの貢献を歓迎します！
-バグ報告、機能提案、プルリクエストなど、どんな形でもお気軽にご参加ください。
-
-## 📄 ライセンス
-
-このプロジェクトは [MIT License](LICENSE) の下で公開されています。
+- [ ] 画像のアップロード機能を管理画面に追加
+- [ ] 画像のリサイズ・最適化機能
+- [ ] 問題検索機能の強化
+- [ ] 学習履歴の可視化改善
 
 ---
 
-**🎯 基本情報技術者試験の合格を応援します！**
+## 📦 環境構築
 
-*効率的な学習で、確実にスキルアップしましょう。*
+### 必要な環境変数
+```bash
+# 本番環境
+DATABASE_URL=postgresql://...
+SECRET_KEY=your-secret-key
+ADMIN_PASSWORD=your-admin-password
+
+# 開発環境（SQLite使用）
+SECRET_KEY=dev-secret-key
+ADMIN_PASSWORD=admin123
+```
+
+### ローカル開発
+```bash
+# 仮想環境作成
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 依存関係インストール
+pip install -r requirements.txt
+
+# アプリケーション起動
+python app.py
+```
+
+### 本番環境 (Render.com)
+1. GitHubリポジトリ連携
+2. 環境変数設定
+3. 自動デプロイ
+
+---
+
+## 📄 ライセンス
+MIT License
+
+## 👨‍💻 開発者
+FE Master Team
