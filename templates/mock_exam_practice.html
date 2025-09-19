@@ -32,7 +32,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold text-white">進捗状況</h3>
                     <span class="text-sm text-gray-300 bg-white/10 px-3 py-1 rounded-full">
-                        <span id="current-question">0</span> / {{ questions|length }} 問完了
+                        <span id="answered-count">0</span> / {{ questions|length }} 問回答済み
                     </span>
                 </div>
                 <div class="w-full bg-gray-700/50 rounded-full h-3 overflow-hidden">
@@ -64,14 +64,14 @@
                         <p class="text-white text-xl leading-relaxed whitespace-pre-line font-medium">{{ question.question_text }}</p>
                     </div>
                     
-                    <!-- 画像表示エリア（image_urlが存在し、nullでない場合のみ表示） -->
+                    <!-- 画像表示 -->
                     {% if question.image_url and question.image_url != 'null' and question.image_url != 'None' %}
                     <div class="mb-8">
                         <div class="bg-white/10 rounded-xl p-4 border border-white/20">
                             <img src="{{ question.image_url }}" 
                                  alt="問題の図表" 
                                  class="max-w-full h-auto rounded-lg mx-auto"
-                                 onerror="this.parentElement.innerHTML='<p class=\'text-gray-400 text-center py-4\'>画像を読み込めませんでした</p>'">
+                                 onerror="this.parentElement.innerHTML='<p class=\\'text-gray-400 text-center py-4\\'>画像を読み込めませんでした</p>'">
                         </div>
                     </div>
                     {% endif %}
@@ -84,7 +84,7 @@
                                        name="question_{{ loop.index0 }}" 
                                        value="{{ choice_key }}" 
                                        data-question-index="{{ loop.index0 }}"
-                                       class="mt-2 mr-4 text-orange-500 focus:ring-orange-500 w-5 h-5 bg-white/10 border-white/30">
+                                       class="answer-radio mt-2 mr-4 text-orange-500 focus:ring-orange-500 w-5 h-5 bg-white/10 border-white/30">
                                 <div class="flex-1">
                                     <span class="font-bold text-orange-400 mr-3 text-xl">{{ choice_key }}.</span>
                                     <span class="text-white text-lg leading-relaxed">{{ choice_text }}</span>
@@ -155,31 +155,33 @@ let totalQuestions = {{ questions|length }};
 let timeLimit = 60 * 60; // 60分
 let timeRemaining = timeLimit;
 let timerInterval;
-let answers = {};
+let answers = {}; // 解答を保存 { "0": "ア", "1": "イ", ... }
 
 console.log('Mock exam initialized with', totalQuestions, 'questions');
 
 document.addEventListener('DOMContentLoaded', function() {
     startTimer();
-    updateProgress();
     
-    // 解答の保存
-    document.querySelectorAll('input[type="radio"]').forEach(input => {
-        input.addEventListener('change', function() {
-            const questionIndex = this.dataset.questionIndex;
-            answers[questionIndex] = this.value;
+    // ラジオボタンのイベントリスナー設定
+    document.querySelectorAll('.answer-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const questionIndex = this.getAttribute('data-question-index');
+            const selectedValue = this.value;
+            
+            // 解答を保存（1問につき1つの解答のみ）
+            answers[questionIndex] = selectedValue;
+            
+            // 進捗を更新
             updateProgress();
             
-            // 選択されたオプションのスタイルを更新
-            const choiceOption = this.closest('.choice-option');
-            const allOptions = document.querySelectorAll(`input[name="${this.name}"]`);
-            allOptions.forEach(option => {
-                const optionChoice = option.closest('.choice-option');
-                optionChoice.classList.remove('border-orange-500', 'bg-orange-500/20');
+            // スタイル更新
+            const allOptions = this.closest('.question-card').querySelectorAll('.choice-option');
+            allOptions.forEach(opt => {
+                opt.classList.remove('border-orange-500', 'bg-orange-500/20');
             });
-            choiceOption.classList.add('border-orange-500', 'bg-orange-500/20');
+            this.closest('.choice-option').classList.add('border-orange-500', 'bg-orange-500/20');
             
-            console.log(`Question ${questionIndex}: Selected ${this.value}`);
+            console.log(`Question ${questionIndex}: Selected ${selectedValue}`, 'Total answers:', Object.keys(answers).length);
         });
     });
 });
@@ -202,11 +204,10 @@ function updateTimerDisplay() {
     document.getElementById('timer').textContent = 
         `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
-    // 残り時間が少なくなったら色を変更
     const timerElement = document.getElementById('timer');
-    if (timeRemaining < 300) { // 5分未満
+    if (timeRemaining < 300) {
         timerElement.className = 'text-3xl font-bold text-red-400 mb-1';
-    } else if (timeRemaining < 600) { // 10分未満
+    } else if (timeRemaining < 600) {
         timerElement.className = 'text-3xl font-bold text-yellow-400 mb-1';
     }
 }
@@ -216,20 +217,14 @@ function updateProgress() {
     const progressPercent = (answeredCount / totalQuestions) * 100;
     
     document.getElementById('progress-bar').style.width = progressPercent + '%';
-    document.getElementById('current-question').textContent = answeredCount;
+    document.getElementById('answered-count').textContent = answeredCount;
 }
 
 function showQuestion(index) {
     document.querySelectorAll('.question-card').forEach((card, i) => {
-        if (i === index) {
-            card.classList.remove('hidden');
-        } else {
-            card.classList.add('hidden');
-        }
+        card.classList.toggle('hidden', i !== index);
     });
     currentQuestionIndex = index;
-    
-    // ページトップにスクロール
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -265,7 +260,8 @@ function closeSubmitModal() {
 function confirmSubmit() {
     clearInterval(timerInterval);
     
-    // 解答データを送信
+    console.log('Submitting answers:', answers);
+    
     fetch('/mock_exam/submit', {
         method: 'POST',
         headers: {
@@ -288,19 +284,14 @@ function confirmSubmit() {
     .catch(error => {
         console.error('Error:', error);
         alert('提出中にエラーが発生しました: ' + error.message);
-        
-        // タイマーを再開
         if (timeRemaining > 0) {
             startTimer();
         }
-        
-        // モーダルを閉じる
         closeSubmitModal();
     });
 }
 
 function showResults(data) {
-    // 結果画面を動的に作成
     const resultsHTML = `
         <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-8">
             <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden max-w-2xl w-full">
