@@ -47,10 +47,10 @@
                 {% endif %}
                 
                 <!-- 選択肢 -->
-                {% if question.choice_images %}
-                    <!-- 選択肢に画像がある場合: 2×2グリッドレイアウト -->
+                {% if question.has_image_choices %}
+                    <!-- 選択肢に画像URLがある場合: 2×2グリッドレイアウト -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                        {% for choice_key, choice_text in question.choices.items() %}
+                        {% for choice_key, choice_value in question.choices.items() %}
                             <button class="choice-option choice-image-option relative p-4 bg-white/5 rounded-xl border-2 border-white/10 hover:bg-white/10 hover:border-blue-500/50 transition-all duration-200 group"
                                     data-choice="{{ choice_key }}"
                                     onclick="selectAnswer('{{ choice_key }}')">
@@ -65,19 +65,12 @@
                                 </div>
                                 
                                 <!-- 選択肢の画像 -->
-                                {% if question.choice_images.get(choice_key) %}
-                                    <div class="bg-white/10 rounded-lg p-3 border border-white/20">
-                                        <img src="{{ question.choice_images[choice_key] }}" 
-                                             alt="選択肢 {{ choice_key }}" 
-                                             class="w-full h-auto rounded-lg"
-                                             onerror="this.parentElement.innerHTML='<p class=\'text-gray-400 text-center py-8\'>{{ choice_key }}. {{ choice_text }}</p>'">
-                                    </div>
-                                {% else %}
-                                    <!-- 画像がない選択肢はテキスト表示 -->
-                                    <div class="text-white text-center py-8">
-                                        <span class="text-base leading-relaxed">{{ choice_text }}</span>
-                                    </div>
-                                {% endif %}
+                                <div class="bg-white/10 rounded-lg p-3 border border-white/20">
+                                    <img src="{{ choice_value }}" 
+                                         alt="選択肢 {{ choice_key }}" 
+                                         class="w-full h-auto rounded-lg"
+                                         onerror="this.parentElement.innerHTML='<p class=\'text-gray-400 text-center py-8\'>{{ choice_key }}. 画像を読み込めませんでした</p>'">
+                                </div>
                             </button>
                         {% endfor %}
                     </div>
@@ -157,7 +150,7 @@
 {% block scripts %}
 <script>
 let answered = false;
-const hasChoiceImages = {{ 'true' if question.choice_images else 'false' }};
+const hasChoiceImages = {{ 'true' if question.has_image_choices else 'false' }};
 
 // 解答選択関数
 function selectAnswer(selectedChoice) {
