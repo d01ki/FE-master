@@ -33,7 +33,7 @@
                                 {% endif %}
                             </div>
                             <p class="text-white mb-4">{{ q.question_text[:150] }}{% if q.question_text|length > 150 %}...{% endif %}</p>
-                            <a href="{{ url_for('practice.random_practice') }}" 
+                            <a href="{{ url_for('ranking.achievement_practice', question_id=q.id) }}" 
                                class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-200 text-sm font-medium">
                                 <i class="fas fa-play mr-2"></i>この問題を解く
                             </a>

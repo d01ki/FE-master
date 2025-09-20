@@ -97,37 +97,50 @@
             </div>
         </div>
 
-        <!-- 網羅表 -->
+        <!-- コンパクトな網羅表 -->
         <div class="glass rounded-2xl p-6 fade-in-up">
-            <h3 class="text-xl font-semibold mb-6">年度別網羅表</h3>
+            <h3 class="text-xl font-semibold mb-6">網羅表</h3>
             
             {% if coverage_map %}
-                <div class="space-y-6">
-                    {% for year_season, questions in coverage_map.items()|sort(reverse=True) %}
-                    <div class="bg-white/5 rounded-xl p-4">
-                        <h4 class="text-lg font-semibold mb-4 text-blue-300">{{ year_season }}</h4>
-                        <div class="grid grid-cols-5 sm:grid-cols-10 md:grid-cols-15 lg:grid-cols-20 gap-2">
-                            {% for num in range(1, 81) %}
-                                {% if num in questions %}
-                                    {% set q = questions[num] %}
-                                    <div class="aspect-square rounded-lg flex items-center justify-center text-xs font-medium cursor-pointer transition-transform hover:scale-110
-                                        {% if q.achievement == 'gold' %}bg-gradient-to-br from-yellow-500 to-yellow-600 text-white
-                                        {% elif q.achievement == 'silver' %}bg-gradient-to-br from-gray-400 to-gray-500 text-white
-                                        {% else %}bg-gradient-to-br from-orange-700 to-orange-800 text-white{% endif %}"
-                                         title="問{{ num }}: {% if q.achievement == 'gold' %}金メダル
-                                                {% elif q.achievement == 'silver' %}シルバー
-                                                {% else %}銅{% endif %}">
-                                        {{ num }}
-                                    </div>
-                                {% else %}
-                                    <div class="aspect-square rounded-lg flex items-center justify-center text-xs font-medium bg-gray-700/50 text-gray-500">
-                                        {{ num }}
-                                    </div>
-                                {% endif %}
+                <!-- テーブル形式の網羅表 -->
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="sticky left-0 bg-slate-800 px-3 py-2 text-left text-sm font-medium text-gray-400 border-b border-white/10">年度</th>
+                                {% for num in range(1, 81) %}
+                                    <th class="px-1 py-2 text-xs font-medium text-gray-400 border-b border-white/10">{{ num }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for year_season in coverage_map.keys()|sort(reverse=True) %}
+                            <tr class="border-b border-white/5 hover:bg-white/5">
+                                <td class="sticky left-0 bg-slate-800 px-3 py-2 text-sm font-medium text-blue-300">{{ year_season }}</td>
+                                {% for num in range(1, 81) %}
+                                    <td class="px-1 py-1">
+                                        {% if num in coverage_map[year_season] %}
+                                            {% set q = coverage_map[year_season][num] %}
+                                            <div class="w-6 h-6 mx-auto rounded flex items-center justify-center text-xs cursor-pointer transition-transform hover:scale-125
+                                                {% if q.achievement == 'gold' %}bg-yellow-500
+                                                {% elif q.achievement == 'silver' %}bg-gray-400
+                                                {% else %}bg-orange-700{% endif %}"
+                                                 title="問{{ num }}: {% if q.achievement == 'gold' %}金
+                                                        {% elif q.achievement == 'silver' %}シルバー
+                                                        {% else %}銅{% endif %}">
+                                                {% if q.achievement == 'gold' %}🥇
+                                                {% elif q.achievement == 'silver' %}🥈
+                                                {% else %}🥉{% endif %}
+                                            </div>
+                                        {% else %}
+                                            <div class="w-6 h-6 mx-auto rounded bg-gray-700/30"></div>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
                             {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             {% else %}
                 <div class="text-center py-12 text-gray-400">
