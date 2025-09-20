@@ -66,7 +66,7 @@
                     </div>
                     
                     <!-- 画像表示 -->
-                    {% if question.image_url and question.image_url != 'null' and question.image_url != 'None' and question.image_url != '' %}
+                    {% if question.image_url %}
                     <div class="mb-8">
                         <div class="bg-white/10 rounded-xl p-4 border border-white/20">
                             <img src="{{ question.image_url }}" 
@@ -191,9 +191,10 @@ let timeLimit = 60 * 60;
 let timeRemaining = timeLimit;
 let timerInterval;
 let answers = {};
+const examSessionId = '{{ exam_session_id }}';
 
 console.log('Mock exam initialized with', totalQuestions, 'questions');
-console.log('Initial session data check');
+console.log('Exam session ID:', examSessionId);
 
 document.addEventListener('DOMContentLoaded', function() {
     startTimer();
@@ -307,13 +308,15 @@ function confirmSubmit() {
     clearInterval(timerInterval);
     console.log('Submitting answers:', answers);
     console.log('Total questions:', totalQuestions);
+    console.log('Exam session ID:', examSessionId);
     
     fetch('/mock_exam/submit', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ 
             answers: answers,
-            total_questions: totalQuestions  // 追加: 問題数も送信
+            total_questions: totalQuestions,
+            exam_session_id: examSessionId  // セッションIDを送信
         })
     })
     .then(response => {
