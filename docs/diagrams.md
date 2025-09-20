@@ -88,18 +88,23 @@ erDiagram
 flowchart LR
     User["👤 ユーザー<br/>ブラウザ"]
     
-    User -->|HTTPS| App
+    User ==>|HTTPS| App
     
     subgraph Render["☁️ Render Platform"]
         App["🚀 Web Service<br/>Flask + Gunicorn<br/>Python 3.12"]
         DB[("💾 PostgreSQL<br/>Database")]
         Env["🔐 環境変数<br/>SECRET_KEY<br/>DATABASE_URL<br/>ADMIN_PASSWORD"]
         
-        App -->|SQL接続| DB
+        App ==>|SQL接続| DB
         App -.->|設定読込| Env
     end
     
-    Repo["📦 GitHub<br/>Repository"] -->|自動デプロイ| App
+    Repo["📦 GitHub<br/>Repository"] ==>|自動デプロイ| App
+    
+    linkStyle 0 stroke:#1976D2,stroke-width:4px
+    linkStyle 1 stroke:#F57C00,stroke-width:4px
+    linkStyle 2 stroke:#7B1FA2,stroke-width:2px,stroke-dasharray:5
+    linkStyle 3 stroke:#C2185B,stroke-width:4px
     
     style User fill:#90CAF9,stroke:#1976D2,stroke-width:3px,color:#000
     style App fill:#A5D6A7,stroke:#388E3C,stroke-width:3px,color:#000
@@ -133,18 +138,29 @@ flowchart LR
         DB[("PostgreSQL/SQLite<br/>データベース")]
     end
     
-    Frontend --> Backend
-    Backend --> Data
+    Frontend ==>|HTTPリクエスト| Backend
+    Backend ==>|SQLクエリ| Data
     
-    HTML -.-> Flask
-    CSS -.-> HTML
-    JS -.-> HTML
+    HTML -.->|レンダリング| Flask
+    CSS -.->|スタイル適用| HTML
+    JS -.->|動的制御| HTML
     
-    Flask --> Auth
-    Flask --> Routes
-    Routes --> Business
-    Business --> DBMgr
-    DBMgr --> DB
+    Flask ==>|認証確認| Auth
+    Flask ==>|エンドポイント| Routes
+    Routes ==>|ビジネスロジック呼出| Business
+    Business ==>|データ操作| DBMgr
+    DBMgr ==>|CRUD操作| DB
+    
+    linkStyle 0 stroke:#1976D2,stroke-width:4px
+    linkStyle 1 stroke:#F57C00,stroke-width:4px
+    linkStyle 2 stroke:#7B1FA2,stroke-width:2px,stroke-dasharray:5
+    linkStyle 3 stroke:#388E3C,stroke-width:2px,stroke-dasharray:5
+    linkStyle 4 stroke:#0097A7,stroke-width:2px,stroke-dasharray:5
+    linkStyle 5 stroke:#D32F2F,stroke-width:3px
+    linkStyle 6 stroke:#303F9F,stroke-width:3px
+    linkStyle 7 stroke:#5D4037,stroke-width:3px
+    linkStyle 8 stroke:#7B1FA2,stroke-width:3px
+    linkStyle 9 stroke:#F57C00,stroke-width:3px
     
     style HTML fill:#90CAF9,stroke:#1976D2,stroke-width:2px,color:#000
     style CSS fill:#80DEEA,stroke:#0097A7,stroke-width:2px,color:#000
@@ -188,13 +204,20 @@ flowchart LR
         Ranking["ranking_routes<br/>順位・達成度"]
     end
     
-    App --> Config
-    App --> Auth
-    App --> Routes
+    App ==>|設定読込| Config
+    App ==>|認証初期化| Auth
+    App ==>|ルート登録| Routes
     
-    Routes --> Logic
-    Logic --> DB
-    Auth --> DB
+    Routes ==>|ロジック呼出| Logic
+    Logic ==>|データ永続化| DB
+    Auth ==>|ユーザー管理| DB
+    
+    linkStyle 0 stroke:#388E3C,stroke-width:3px
+    linkStyle 1 stroke:#D32F2F,stroke-width:3px
+    linkStyle 2 stroke:#388E3C,stroke-width:3px
+    linkStyle 3 stroke:#7B1FA2,stroke-width:3px
+    linkStyle 4 stroke:#F57C00,stroke-width:3px
+    linkStyle 5 stroke:#C62828,stroke-width:3px
     
     style App fill:#90CAF9,stroke:#1976D2,stroke-width:2px,color:#000
     style Config fill:#A5D6A7,stroke:#388E3C,stroke-width:2px,color:#000
@@ -254,3 +277,29 @@ flowchart LR
 - **Render**: ホスティングプラットフォーム
 - **GitHub**: ソースコード管理 & CI/CD
 - **環境変数**: 機密情報管理
+
+## 📁 問題データのセキュリティ
+
+### 現状の問題点
+
+⚠️ **JSONファイルが公開リポジトリに含まれている場合、問題と正解が誰でも閲覧可能**
+
+### 推奨対策
+
+1. **問題データをGitから除外**
+   ```bash
+   # .gitignoreに追加
+   json_questions/*.json
+   uploads/*.json
+   ```
+
+2. **プライベートリポジトリに移行**
+   - GitHubでリポジトリをPrivateに変更
+
+3. **環境変数で問題データURLを管理**
+   - S3などのプライベートストレージに問題を保存
+   - アクセストークンで保護
+
+4. **データベースに直接インポート**
+   - JSONファイルは開発時のみ使用
+   - 本番環境では直接DBに問題を登録
