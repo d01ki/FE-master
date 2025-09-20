@@ -66,15 +66,16 @@ def history():
     user_id = session.get('user_id')
     
     # ユーザーの解答履歴を取得（解説も含む）
+    # 問題が削除されている場合も考慮してINNER JOINに変更
     if db_manager.db_type == 'postgresql':
         history_data = db_manager.execute_query('''
             SELECT 
                 ua.id,
                 ua.question_id,
-                q.question_text,
-                q.genre,
+                COALESCE(q.question_text, '（削除された問題）') as question_text,
+                COALESCE(q.genre, '不明') as genre,
                 ua.user_answer,
-                q.correct_answer,
+                COALESCE(q.correct_answer, '不明') as correct_answer,
                 q.explanation,
                 ua.is_correct,
                 ua.answered_at
@@ -89,10 +90,10 @@ def history():
             SELECT 
                 ua.id,
                 ua.question_id,
-                q.question_text,
-                q.genre,
+                COALESCE(q.question_text, '（削除された問題）') as question_text,
+                COALESCE(q.genre, '不明') as genre,
                 ua.user_answer,
-                q.correct_answer,
+                COALESCE(q.correct_answer, '不明') as correct_answer,
                 q.explanation,
                 ua.is_correct,
                 ua.answered_at
@@ -103,4 +104,16 @@ def history():
             LIMIT 100
         ''', (user_id,))
     
-    return render_template('history.html', history=history_data)
+    # Noneチェック
+    safe_history = []
+    for item in history_data:
+        safe_item = dict(item)
+        if safe_item['question_text'] is None:
+            safe_item['question_text'] = '（削除された問題）'
+        if safe_item['genre'] is None:
+            safe_item['genre'] = '不明'
+        if safe_item['correct_answer'] is None:
+            safe_item['correct_answer'] = '不明'
+        safe_history.append(safe_item)
+    
+    return render_template('history.html', history=safe_history)
