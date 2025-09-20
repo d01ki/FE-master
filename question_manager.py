@@ -14,6 +14,25 @@ class QuestionManager:
         self.db_manager = db_manager
         self.last_question_id = None  # 前回出題した問題ID
     
+    def is_image_url(self, text):
+        """テキストが画像URLかどうかを判定"""
+        if not text or not isinstance(text, str):
+            return False
+        
+        # 画像URLのパターン
+        image_patterns = [
+            r'/static/images/',
+            r'\.png$',
+            r'\.jpg$',
+            r'\.jpeg$',
+            r'\.gif$',
+            r'\.svg$',
+            r'\.webp$'
+        ]
+        
+        text_lower = text.lower()
+        return any(re.search(pattern, text_lower) for pattern in image_patterns)
+    
     def get_question(self, question_id):
         """指定されたIDの問題を取得"""
         try:
@@ -31,11 +50,21 @@ class QuestionManager:
                 # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
-                # choice_imagesをJSONパース
-                if question.get('choice_images') and isinstance(question['choice_images'], str):
-                    question['choice_images'] = json.loads(question['choice_images'])
+                
+                # 選択肢が画像URLかどうかを判定
+                question['has_image_choices'] = False
+                if question['choices']:
+                    # 最初の選択肢をチェック（すべて同じ形式と仮定）
+                    first_choice = list(question['choices'].values())[0]
+                    question['has_image_choices'] = self.is_image_url(first_choice)
+                
+                # 後方互換性: choice_imagesがあれば処理（廃止予定）
+                if question.get('choice_images'):
+                    if isinstance(question['choice_images'], str):
+                        question['choice_images'] = json.loads(question['choice_images'])
                 else:
                     question['choice_images'] = None
+                
                 return question
             return None
         except Exception as e:
@@ -60,11 +89,19 @@ class QuestionManager:
                 # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
-                # choice_imagesをJSONパース
+                
+                # 選択肢が画像URLかどうかを判定
+                question['has_image_choices'] = False
+                if question['choices']:
+                    first_choice = list(question['choices'].values())[0]
+                    question['has_image_choices'] = self.is_image_url(first_choice)
+                
+                # choice_imagesがあれば処理
                 if question.get('choice_images') and isinstance(question['choice_images'], str):
                     question['choice_images'] = json.loads(question['choice_images'])
                 else:
                     question['choice_images'] = None
+                
                 questions.append(question)
             
             return questions
@@ -102,11 +139,19 @@ class QuestionManager:
                 # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
-                # choice_imagesをJSONパース
+                
+                # 選択肢が画像URLかどうかを判定
+                question['has_image_choices'] = False
+                if question['choices']:
+                    first_choice = list(question['choices'].values())[0]
+                    question['has_image_choices'] = self.is_image_url(first_choice)
+                
+                # choice_imagesがあれば処理
                 if question.get('choice_images') and isinstance(question['choice_images'], str):
                     question['choice_images'] = json.loads(question['choice_images'])
                 else:
                     question['choice_images'] = None
+                
                 self.last_question_id = question['id']  # 今回の問題IDを記録
                 return question
             return None
@@ -203,11 +248,10 @@ class QuestionManager:
                     if image_url == 'null' or image_url == 'None':
                         image_url = ''
                     
-                    # choice_imagesの処理
+                    # choice_images（後方互換性のため保持）
                     choice_images = question.get('choice_images')
                     choice_images_json = None
                     if choice_images and isinstance(choice_images, dict):
-                        # 各選択肢の画像URLを検証
                         valid_choice_images = {}
                         for key, url in choice_images.items():
                             if url and url != 'null' and url != 'None':
