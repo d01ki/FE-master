@@ -123,8 +123,7 @@ def achievement_review(achievement_level):
         db_manager = current_app.db_manager
         achievement_system = AchievementSystem(db_manager)
         
-        user_id = session.get('user_id')
-        
+        user_id = session.get('user_id')\n        
         # 指定された達成度の問題を取得
         questions = achievement_system.get_questions_by_achievement(user_id, achievement_level)
         
@@ -144,18 +143,17 @@ def achievement_review(achievement_level):
         flash('問題の取得に失敗しました', 'error')
         return redirect(url_for('ranking.achievement_page'))
 
-@ranking_bp.route('/achievement/start/<int:question_id>')
+@ranking_bp.route('/achievement/practice/<int:question_id>')
 @login_required
-def achievement_start_practice(question_id):
+def achievement_practice(question_id):
     """達成度から特定の問題演習を開始"""
     try:
         from flask import current_app
         
-        db_manager = current_app.db_manager
         question_manager = current_app.question_manager
         
         # 問題を取得
-        question = question_manager.get_question_by_id(question_id)
+        question = question_manager.get_question(question_id)
         
         if not question:
             flash('問題が見つかりません', 'error')
