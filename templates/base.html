@@ -109,44 +109,44 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <!-- Logo -->
-                <a href="{{ url_for('main.dashboard') }}" class="flex items-center space-x-3 group">
+                <a href="{{ url_for('main.dashboard') }}" class="flex items-center space-x-3 group flex-shrink-0">
                     <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                         <i class="fas fa-graduation-cap text-white text-xl"></i>
                     </div>
-                    <span class="text-xl font-bold text-white hidden sm:block">FE学習アプリ</span>
+                    <span class="text-xl font-bold text-white hidden sm:block whitespace-nowrap">FE学習アプリ</span>
                 </a>
                 
                 <!-- Navigation Links -->
-                <div class="hidden md:flex items-center space-x-2">
-                    <a href="{{ url_for('main.dashboard') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 {% if request.endpoint == 'main.dashboard' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                <div class="hidden md:flex items-center space-x-2 flex-shrink-0">
+                    <a href="{{ url_for('main.dashboard') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap {% if request.endpoint == 'main.dashboard' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-home mr-2"></i>ダッシュボード
                     </a>
-                    <a href="{{ url_for('practice.random_practice') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 text-gray-300 hover:text-white hover:bg-white/5">
+                    <a href="{{ url_for('practice.random_practice') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/5">
                         <i class="fas fa-random mr-2"></i>ランダム問題
                     </a>
-                    <a href="{{ url_for('practice.genre_practice') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 {% if request.endpoint in ['practice.genre_practice', 'practice.practice_by_genre'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('practice.genre_practice') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap {% if request.endpoint in ['practice.genre_practice', 'practice.practice_by_genre'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-dumbbell mr-2"></i>ジャンル別演習
                     </a>
-                    <a href="{{ url_for('exam.mock_exam') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 {% if request.endpoint in ['exam.mock_exam', 'exam.mock_exam_start'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
-                        <i class="fas fa-clipboard-list mr-2"></i>模擬試験
+                    <a href="{{ url_for('exam.mock_exam') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap {% if request.endpoint in ['exam.mock_exam', 'exam.mock_exam_start'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-clipboard-list mr-2"></i>過去問試験
                     </a>
-                    <a href="{{ url_for('ranking.achievement_page') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 {% if request.endpoint in ['ranking.achievement_page', 'ranking.achievement_review'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('ranking.achievement_page') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap {% if request.endpoint in ['ranking.achievement_page', 'ranking.achievement_review'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-trophy mr-2"></i>達成度
                     </a>
-                    <a href="{{ url_for('ranking.ranking_page') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 {% if request.endpoint == 'ranking.ranking_page' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('ranking.ranking_page') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap {% if request.endpoint == 'ranking.ranking_page' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-ranking-star mr-2"></i>ランキング
                     </a>
-                    <a href="{{ url_for('main.history') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 {% if request.endpoint == 'main.history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('main.history') }}" class="nav-link px-4 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap {% if request.endpoint == 'main.history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-history mr-2"></i>学習履歴
                     </a>
                 </div>
                 
                 <!-- User Info and Admin Link -->
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-300 hidden sm:block">{{ session.get('username') }}</span>
+                <div class="flex items-center space-x-4 flex-shrink-0">
+                    <span class="text-sm text-gray-300 hidden sm:block whitespace-nowrap">{{ session.get('username') }}</span>
                     
                     {% if session.get('is_admin') %}
-                        <a href="{{ url_for('admin.admin') }}" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2.5 rounded-lg transition-all duration-200 font-medium flex items-center">
+                        <a href="{{ url_for('admin.admin') }}" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2.5 rounded-lg transition-all duration-200 font-medium flex items-center whitespace-nowrap">
                             <i class="fas fa-cog mr-2"></i>管理
                         </a>
                     {% endif %}
@@ -175,7 +175,7 @@
                         <i class="fas fa-dumbbell mr-2"></i>ジャンル別演習
                     </a>
                     <a href="{{ url_for('exam.mock_exam') }}" class="block px-4 py-2.5 rounded-lg transition-all duration-200 {% if request.endpoint in ['exam.mock_exam', 'exam.mock_exam_start'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
-                        <i class="fas fa-clipboard-list mr-2"></i>模擬試験
+                        <i class="fas fa-clipboard-list mr-2"></i>過去問試験
                     </a>
                     <a href="{{ url_for('ranking.achievement_page') }}" class="block px-4 py-2.5 rounded-lg transition-all duration-200 {% if request.endpoint in ['ranking.achievement_page', 'ranking.achievement_review'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-trophy mr-2"></i>達成度
