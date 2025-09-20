@@ -52,6 +52,17 @@ class QuestionManager:
             
             if result:
                 question = dict(result[0])
+                
+                # image_urlの正規化（空やnullを None に統一）
+                if question.get('image_url'):
+                    img_url = question['image_url']
+                    if img_url in ['null', 'None', '', 'undefined']:
+                        question['image_url'] = None
+                else:
+                    question['image_url'] = None
+                
+                print(f"[DEBUG] Question image_url after normalization: {question.get('image_url')}")
+                
                 # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
@@ -99,6 +110,15 @@ class QuestionManager:
             questions = []
             for row in result:
                 question = dict(row)
+                
+                # image_urlの正規化
+                if question.get('image_url'):
+                    img_url = question['image_url']
+                    if img_url in ['null', 'None', '', 'undefined']:
+                        question['image_url'] = None
+                else:
+                    question['image_url'] = None
+                
                 # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
@@ -149,6 +169,15 @@ class QuestionManager:
             
             if result:
                 question = dict(result[0])
+                
+                # image_urlの正規化
+                if question.get('image_url'):
+                    img_url = question['image_url']
+                    if img_url in ['null', 'None', '', 'undefined']:
+                        question['image_url'] = None
+                else:
+                    question['image_url'] = None
+                
                 # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
@@ -256,10 +285,10 @@ class QuestionManager:
                     # question_idの取得
                     question_id = question.get('question_id', f"Q{i+1:03d}_{source_file}")
                     
-                    # image_urlの処理（nullを空文字に変換）
-                    image_url = question.get('image_url', '')
-                    if image_url == 'null' or image_url == 'None':
-                        image_url = ''
+                    # image_urlの処理（nullや空文字をNoneに統一）
+                    image_url = question.get('image_url')
+                    if not image_url or image_url in ['null', 'None', 'undefined', '']:
+                        image_url = None
                     
                     # choice_images（後方互換性のため保持）
                     choice_images = question.get('choice_images')
@@ -267,7 +296,7 @@ class QuestionManager:
                     if choice_images and isinstance(choice_images, dict):
                         valid_choice_images = {}
                         for key, url in choice_images.items():
-                            if url and url != 'null' and url != 'None':
+                            if url and url not in ['null', 'None', 'undefined', '']:
                                 valid_choice_images[key] = url
                         
                         if valid_choice_images:
@@ -364,6 +393,7 @@ class QuestionManager:
         """すべての問題を削除（学習履歴は保持）"""
         try:
             self.db_manager.execute_query('DELETE FROM questions')
+            print("✅ すべての問題を削除しました")
             # 学習履歴は削除しない！
             return {'success': True, 'message': 'すべての問題を削除しました（学習履歴は保持）'}
         except Exception as e:
