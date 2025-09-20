@@ -9,10 +9,11 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 @main_bp.route('/index')
 def index():
-    """トップページ"""
+    """トップページ - 未ログインユーザーはログインページへリダイレクト"""
     if 'user_id' in session:
         return redirect(url_for('main.dashboard'))
-    return render_template('index.html')
+    # 未ログインユーザーは直接ログインページへ
+    return redirect(url_for('login'))
 
 @main_bp.route('/dashboard')
 @login_required
