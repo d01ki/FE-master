@@ -1,119 +1,146 @@
-<div align="center">
+# 🎓 基本情報技術者試験 学習アプリ
 
-# 🎓 FE Master
+基本情報技術者試験の学習をサポートするWebアプリケーションです。
 
-### 基本情報技術者試験 学習アプリケーション
+## ✨ 機能
 
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-2.0+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+- 🎲 **ランダム問題練習**: ランダムに問題を出題
+- 📚 **ジャンル別演習**: 苦手分野を集中的に学習
+- 📋 **過去問試験**: 本番形式で実力確認
+- 👑 **達成度管理**: 習得状況を視覚化
+- 🏆 **ランキング機能**: 他のユーザーと競い合う
+- 📈 **学習履歴**: 学習進捗を追跡
 
-**効率的な学習で基本情報技術者試験の合格を目指す**
+## 🚀 Renderへのデプロイ手順
 
-</div>
+### 1. PostgreSQLデータベースの作成
 
----
+1. Renderダッシュボードで **New +** → **PostgreSQL** を選択
+2. データベース名を入力（例: `fe-exam-db`）
+3. **Create Database** をクリック
+4. **Internal Database URL** をコピー（後で使用）
 
-## ✨ 特徴
+### 2. Webサービスの作成
 
-<table>
-<tr>
-<td width="33%" align="center">
+1. Renderダッシュボードで **New +** → **Web Service** を選択
+2. GitHubリポジトリを連携
+3. 以下の設定を入力:
 
-### 🎯 ランダム問題
-毎日異なる問題で<br>飽きずに学習
+   - **Name**: `fe-exam-app`（任意）
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `python app.py`
 
-</td>
-<td width="33%" align="center">
+### 3. 環境変数の設定
 
-### 📊 ジャンル別演習
-苦手分野を<br>集中的に克服
-
-</td>
-<td width="33%" align="center">
-
-### 📝 模擬試験
-本番形式で<br>実力を確認
-
-</td>
-</tr>
-</table>
-
-### 🚀 主な機能
-
-- **📱 レスポンシブデザイン** - PC・スマホどちらでも快適に学習
-- **📊 学習履歴管理** - あなたの進捗を詳細に追跡
-- **🖼️ 画像対応** - 図表付き問題も完全サポート
-- **🔒 ユーザー認証** - 個人の学習データを安全に保管
-
----
-
-## 🛠️ 技術スタック
-
-<div align="center">
-
-| カテゴリ | 技術 |
-|:---:|:---|
-| **Backend** | Python, Flask |
-| **Database** | PostgreSQL, SQLite |
-| **Frontend** | HTML5, Tailwind CSS, JavaScript |
-| **Deployment** | Render.com |
-
-</div>
-
----
-
-## 🚀 クイックスタート
+RenderのWebサービス設定で、**Environment** タブに移動し、以下の環境変数を追加:
 
 ```bash
-# リポジトリをクローン
-git clone https://github.com/d01ki/FE-master.git
-cd FE-master
+# 必須設定
+DATABASE_URL=<PostgreSQLのInternal Database URL>
+SECRET_KEY=<ランダムな長い文字列>
 
-# 仮想環境を作成
+# 初回起動時のみ（管理者アカウント作成後は削除可）
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=<安全なパスワード>
+
+# その他の設定
+FLASK_ENV=production
+DEBUG=False
+PORT=10000
+```
+
+### 4. デプロイ
+
+1. **Create Web Service** をクリック
+2. デプロイが完了するまで待つ
+3. アプリケーションURLにアクセス
+
+### 5. 初回セットアップ
+
+1. アプリケーシャンにアクセス
+2. 管理者アカウントでログイン（`ADMIN_USERNAME`と`ADMIN_PASSWORD`）
+3. 管理画面から問題データをアップロード
+4. **セキュリティのため**: セットアップ完了後、`ADMIN_PASSWORD`環境変数を削除
+
+## 🔒 セキュリティ機能
+
+- ✅ パスワードはハッシュ化されて保存
+- ✅ 環境変数で機密情報を管理
+- ✅ "admin"ユーザー名の新規登録をブロック
+- ✅ セッションベースの認証
+
+## 🛠️ ローカル開発
+
+### 前提条件
+
+- Python 3.8+
+- PostgreSQL（本番環境）またはSQLite（開発環境）
+
+### セットアップ
+
+1. リポジトリをクローン:
+```bash
+git clone https://github.com/yourusername/FE-master.git
+cd FE-master
+```
+
+2. 仮想環境を作成:
+```bash
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
+```
 
-# 依存パッケージをインストール
+3. 依存パッケージをインストール:
+```bash
 pip install -r requirements.txt
+```
 
-# アプリケーションを起動
+4. `.env`ファイルを作成（`.env.example`をコピー）:
+```bash
+cp .env.example .env
+```
+
+5. `.env`を編集して設定を更新
+
+6. アプリケーションを起動:
+```bash
 python app.py
 ```
 
-🎉 http://localhost:5002 でアクセスできます！
+7. ブラウザで `http://localhost:5002` にアクセス
 
----
+## 📝 環境変数の詳細
 
-## 🌐 デプロイ
+| 変数名 | 説明 | 必須 |
+|---------|------|------|
+| `DATABASE_URL` | データベース接続URL | ◯ |
+| `SECRET_KEY` | Flaskのsecret key | ◯ |
+| `ADMIN_USERNAME` | 管理者ユーザー名 | 初回のみ |
+| `ADMIN_PASSWORD` | 管理者パスワード | 初回のみ |
+| `FLASK_ENV` | 環境（production/development） | - |
+| `DEBUG` | デバッグモード | - |
+| `PORT` | ポート番号 | - |
 
-詳しいデプロイ手順は [Wiki](https://github.com/d01ki/FE-master/wiki) をご覧ください。
+## 💡 使い方
 
----
+1. **ユーザー登録**: 新規アカウントを作成
+2. **問題演習**: ランダムまたはジャンル別で問題を解く
+3. **過去問試験**: 本番形式で試験を受ける
+4. **達成度確認**: 習得状況をチェック
+5. **ランキング**: 他の学習者と比較
 
-## 🤝 貢献
+## 👥 貢献
 
-プルリクエストを歓迎します！
-
-1. フォークする
-2. ブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. プッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
-
----
+Pull Requestを歓迎します！大きな変更の場合は、まずIssueで討論してください。
 
 ## 📝 ライセンス
 
-このプロジェクトはMITライセンスの下で公開されています。
+MIT License
 
----
+## 🚀 技術スタック
 
-<div align="center">
-
-**Made with ❤️ by FE Master Team**
-
-⭐ このプロジェクトが役に立ったら、スターをお願いします！
-
-</div>
+- **Backend**: Flask (Python)
+- **Database**: PostgreSQL / SQLite
+- **Frontend**: Tailwind CSS, Alpine.js
+- **Deployment**: Render
