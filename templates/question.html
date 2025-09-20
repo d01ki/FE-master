@@ -35,13 +35,13 @@
                 </div>
                 
                 <!-- 問題の画像表示エリア -->
-                {% if question.image_url and question.image_url != 'null' and question.image_url != 'None' %}
+                {% if question.image_url and question.image_url != 'null' and question.image_url != 'None' and question.image_url != '' %}
                 <div class="mb-8">
                     <div class="bg-white/10 rounded-xl p-4 border border-white/20">
                         <img src="{{ question.image_url }}" 
                              alt="問題の図表" 
                              class="max-w-full h-auto rounded-lg mx-auto"
-                             onerror="this.parentElement.innerHTML='<p class=\'text-gray-400 text-center py-4\'>画像を読み込めませんでした</p>'">
+                             onerror="this.parentElement.innerHTML='<p class=\\'text-gray-400 text-center py-4\\'>画像を読み込めませんでした: {{ question.image_url }}</p>'">
                     </div>
                 </div>
                 {% endif %}
@@ -69,7 +69,7 @@
                                     <img src="{{ choice_value }}" 
                                          alt="選択肢 {{ choice_key }}" 
                                          class="w-full h-auto rounded-lg"
-                                         onerror="this.parentElement.innerHTML='<p class=\'text-gray-400 text-center py-8\'>{{ choice_key }}. 画像を読み込めませんでした</p>'">
+                                         onerror="this.parentElement.innerHTML='<p class=\\'text-gray-400 text-center py-8\\'>{{ choice_key }}. 画像を読み込めませんでした</p>'">
                                 </div>
                             </button>
                         {% endfor %}
@@ -151,6 +151,12 @@
 <script>
 let answered = false;
 const hasChoiceImages = {{ 'true' if question.has_image_choices else 'false' }};
+
+console.log('Question loaded:', {
+    id: '{{ question.id }}',
+    has_image_choices: {{ 'true' if question.has_image_choices else 'false' }},
+    image_url: '{{ question.image_url }}'
+});
 
 // 解答選択関数
 function selectAnswer(selectedChoice) {
