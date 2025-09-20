@@ -7,8 +7,39 @@ from helper_functions import parse_filename_info
 import os
 import json
 import random
+import re
 
-exam_bp = Blueprint('exam', __name__)
+exam_bp = Blueprint('exam', __name__
+
+)
+
+def is_image_url(text):
+    """テキストが画像URLかどうかを判定"""
+    if not text or not isinstance(text, str):
+        return False
+    
+    image_patterns = [
+        r'/static/images/',
+        r'\.png$',
+        r'\.jpg$',
+        r'\.jpeg$',
+        r'\.gif$',
+        r'\.svg$',
+        r'\.webp$'
+    ]
+    
+    text_lower = text.lower()
+    return any(re.search(pattern, text_lower) for pattern in image_patterns)
+
+def add_image_choice_flags(questions):
+    """問題リストに has_image_choices フラグを追加"""
+    for question in questions:
+        question['has_image_choices'] = False
+        if question.get('choices'):
+            # 最初の選択肢をチェック
+            first_choice = list(question['choices'].values())[0]
+            question['has_image_choices'] = is_image_url(first_choice)
+    return questions
 
 @exam_bp.route('/mock_exam')
 @login_required
@@ -59,6 +90,9 @@ def mock_exam_start(filename):
         if len(questions) > 20:
             questions = random.sample(questions, 20)
         
+        # 画像選択肢フラグを追加
+        questions = add_image_choice_flags(questions)
+        
         # セッションに問題を保存
         session['mock_exam_questions'] = questions
         session.modified = True
@@ -71,6 +105,8 @@ def mock_exam_start(filename):
         
     except Exception as e:
         print(f"❌ Mock exam start error: {e}")
+        import traceback
+        traceback.print_exc()
         flash(f'試験ファイルの読み込みに失敗しました: {str(e)}', 'error')
         return redirect(url_for('exam.mock_exam'))
 
