@@ -164,4 +164,160 @@ class DatabaseManager:
             try:
                 self.execute_query(query)
             except Exception as e:
-                logger.error(f"SQLite init error: {e}\")\n        \n        # 既存のテーブルにimage_urlカラムを追加（存在しない場合のみ）\n        try:\n            table_info = self.execute_query(\"PRAGMA table_info(questions)\")\n            column_names = [col['name'] for col in table_info]\n            \n            if 'image_url' not in column_names:\n                self.execute_query(\"ALTER TABLE questions ADD COLUMN image_url TEXT\")\n                logger.info(\"Added image_url column to questions table\")\n            \n            # choice_imagesカラムを追加\n            if 'choice_images' not in column_names:\n                self.execute_query(\"ALTER TABLE questions ADD COLUMN choice_images TEXT\")\n                logger.info(\"Added choice_images column to questions table\")\n        except Exception as e:\n            logger.error(f\"SQLite alter table error: {e}\")\n\nclass QuestionManager:\n    def __init__(self, db_manager):\n        self.db = db_manager\n    \n    def load_json_files(self):\n        json_folder = 'json_questions'\n        if not os.path.exists(json_folder):\n            return {'total_files': 0, 'total_questions': 0, 'errors': []}\n        \n        total_files = 0\n        total_questions = 0\n        errors = []\n        \n        for filename in os.listdir(json_folder):\n            if filename.endswith('.json'):\n                filepath = os.path.join(json_folder, filename)\n                try:\n                    with open(filepath, 'r', encoding='utf-8') as f:\n                        questions = json.load(f)\n                    \n                    result = self.save_questions(questions, filename)\n                    total_files += 1\n                    total_questions += result['saved_count']\n                    \n                except Exception as e:\n                    errors.append(f\"{filename}: {str(e)}\")\n        \n        return {'total_files': total_files, 'total_questions': total_questions, 'errors': errors}\n    \n    def save_questions(self, questions, source_file=''):\n        saved_count = 0\n        errors = []\n        warnings = []\n        \n        for i, question in enumerate(questions):\n            try:\n                required_fields = ['question_text', 'choices', 'correct_answer']\n                if not all(field in question for field in required_fields):\n                    errors.append(f\"Question {i+1}: Missing required fields\")\n                    continue\n                \n                question_id = question.get('question_id', f\"Q{i+1:03d}_{source_file}\")\n                choices_data = json.dumps(question['choices'], ensure_ascii=False)\n                \n                # 画像URLの処理とバリデーション\n                image_url = question.get('image_url')\n                image_url = sanitize_image_url(image_url)\n                \n                if image_url:\n                    is_valid, error_message = validate_image_url(image_url)\n                    if not is_valid:\n                        logger.warning(f\"Question {question_id}: 画像URL検証失敗 - {error_message}\")\n                        warnings.append(f\"Question {i+1}: 画像URL検証失敗 - {error_message}\")\n                        image_url = None\n                    elif error_message:\n                        logger.info(f\"Question {question_id}: {error_message}\")\n                \n                # 選択肢画像の処理\n                choice_images = question.get('choice_images')\n                choice_images_json = None\n                \n                if choice_images and isinstance(choice_images, dict):\n                    # 各選択肢の画像URLをサニタイズ\n                    sanitized_choice_images = {}\n                    for key, url in choice_images.items():\n                        sanitized_url = sanitize_image_url(url)\n                        if sanitized_url:\n                            is_valid, error_message = validate_image_url(sanitized_url)\n                            if is_valid:\n                                sanitized_choice_images[key] = sanitized_url\n                            else:\n                                logger.warning(f\"Question {question_id}, Choice {key}: 画像URL検証失敗 - {error_message}\")\n                    \n                    if sanitized_choice_images:\n                        choice_images_json = json.dumps(sanitized_choice_images, ensure_ascii=False)\n                \n                # Check if exists\n                existing = self.db.execute_query(\n                    'SELECT id FROM questions WHERE question_id = %s' if self.db.db_type == 'postgresql' else 'SELECT id FROM questions WHERE question_id = ?',\n                    (question_id,)\n                )\n                \n                if not existing:\n                    # Insert new\n                    if self.db.db_type == 'postgresql':\n                        self.db.execute_query(\"\"\"\n                            INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre, image_url, choice_images) \n                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)\n                        \"\"\", (\n                            question_id, question['question_text'], choices_data,\n                            question['correct_answer'], question.get('explanation', ''),\n                            question.get('genre', 'その他'), image_url, choice_images_json\n                        ))\n                    else:\n                        self.db.execute_query(\"\"\"\n                            INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre, image_url, choice_images) \n                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)\n                        \"\"\", (\n                            question_id, question['question_text'], choices_data,\n                            question['correct_answer'], question.get('explanation', ''),\n                            question.get('genre', 'その他'), image_url, choice_images_json\n                        ))\n                else:\n                    # Update existing question\n                    if self.db.db_type == 'postgresql':\n                        self.db.execute_query(\"\"\"\n                            UPDATE questions \n                            SET question_text = %s, choices = %s, correct_answer = %s, \n                                explanation = %s, genre = %s, image_url = %s, choice_images = %s\n                            WHERE question_id = %s\n                        \"\"\", (\n                            question['question_text'], choices_data,\n                            question['correct_answer'], question.get('explanation', ''),\n                            question.get('genre', 'その他'), image_url, choice_images_json, question_id\n                        ))\n                    else:\n                        self.db.execute_query(\"\"\"\n                            UPDATE questions \n                            SET question_text = ?, choices = ?, correct_answer = ?, \n                                explanation = ?, genre = ?, image_url = ?, choice_images = ?\n                            WHERE question_id = ?\n                        \"\"\", (\n                            question['question_text'], choices_data,\n                            question['correct_answer'], question.get('explanation', ''),\n                            question.get('genre', 'その他'), image_url, choice_images_json, question_id\n                        ))\n                \n                saved_count += 1\n                \n            except Exception as e:\n                errors.append(f\"Question {i+1}: {str(e)}\")\n                logger.error(f\"Error saving question {i+1}: {str(e)}\")\n        \n        return {\n            'saved_count': saved_count, \n            'total_count': len(questions), \n            'errors': errors,\n            'warnings': warnings\n        }
+                logger.error(f"SQLite init error: {e}")
+        
+        # 既存のテーブルにimage_urlカラムを追加（存在しない場合のみ）
+        try:
+            table_info = self.execute_query("PRAGMA table_info(questions)")
+            column_names = [col['name'] for col in table_info]
+            
+            if 'image_url' not in column_names:
+                self.execute_query("ALTER TABLE questions ADD COLUMN image_url TEXT")
+                logger.info("Added image_url column to questions table")
+            
+            # choice_imagesカラムを追加
+            if 'choice_images' not in column_names:
+                self.execute_query("ALTER TABLE questions ADD COLUMN choice_images TEXT")
+                logger.info("Added choice_images column to questions table")
+        except Exception as e:
+            logger.error(f"SQLite alter table error: {e}")
+
+class QuestionManager:
+    def __init__(self, db_manager):
+        self.db = db_manager
+    
+    def load_json_files(self):
+        json_folder = 'json_questions'
+        if not os.path.exists(json_folder):
+            return {'total_files': 0, 'total_questions': 0, 'errors': []}
+        
+        total_files = 0
+        total_questions = 0
+        errors = []
+        
+        for filename in os.listdir(json_folder):
+            if filename.endswith('.json'):
+                filepath = os.path.join(json_folder, filename)
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        questions = json.load(f)
+                    
+                    result = self.save_questions(questions, filename)
+                    total_files += 1
+                    total_questions += result['saved_count']
+                    
+                except Exception as e:
+                    errors.append(f"{filename}: {str(e)}")
+        
+        return {'total_files': total_files, 'total_questions': total_questions, 'errors': errors}
+    
+    def save_questions(self, questions, source_file=''):
+        saved_count = 0
+        errors = []
+        warnings = []
+        
+        for i, question in enumerate(questions):
+            try:
+                required_fields = ['question_text', 'choices', 'correct_answer']
+                if not all(field in question for field in required_fields):
+                    errors.append(f"Question {i+1}: Missing required fields")
+                    continue
+                
+                question_id = question.get('question_id', f"Q{i+1:03d}_{source_file}")
+                choices_data = json.dumps(question['choices'], ensure_ascii=False)
+                
+                # 画像URLの処理とバリデーション
+                image_url = question.get('image_url')
+                image_url = sanitize_image_url(image_url)
+                
+                if image_url:
+                    is_valid, error_message = validate_image_url(image_url)
+                    if not is_valid:
+                        logger.warning(f"Question {question_id}: 画像URL検証失敗 - {error_message}")
+                        warnings.append(f"Question {i+1}: 画像URL検証失敗 - {error_message}")
+                        image_url = None
+                    elif error_message:
+                        logger.info(f"Question {question_id}: {error_message}")
+                
+                # 選択肢画像の処理
+                choice_images = question.get('choice_images')
+                choice_images_json = None
+                
+                if choice_images and isinstance(choice_images, dict):
+                    # 各選択肢の画像URLをサニタイズ
+                    sanitized_choice_images = {}
+                    for key, url in choice_images.items():
+                        sanitized_url = sanitize_image_url(url)
+                        if sanitized_url:
+                            is_valid, error_message = validate_image_url(sanitized_url)
+                            if is_valid:
+                                sanitized_choice_images[key] = sanitized_url
+                            else:
+                                logger.warning(f"Question {question_id}, Choice {key}: 画像URL検証失敗 - {error_message}")
+                    
+                    if sanitized_choice_images:
+                        choice_images_json = json.dumps(sanitized_choice_images, ensure_ascii=False)
+                
+                # Check if exists
+                existing = self.db.execute_query(
+                    'SELECT id FROM questions WHERE question_id = %s' if self.db.db_type == 'postgresql' else 'SELECT id FROM questions WHERE question_id = ?',
+                    (question_id,)
+                )
+                
+                if not existing:
+                    # Insert new
+                    if self.db.db_type == 'postgresql':
+                        self.db.execute_query("""
+                            INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre, image_url, choice_images) 
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (
+                            question_id, question['question_text'], choices_data,
+                            question['correct_answer'], question.get('explanation', ''),
+                            question.get('genre', 'その他'), image_url, choice_images_json
+                        ))
+                    else:
+                        self.db.execute_query("""
+                            INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre, image_url, choice_images) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            question_id, question['question_text'], choices_data,
+                            question['correct_answer'], question.get('explanation', ''),
+                            question.get('genre', 'その他'), image_url, choice_images_json
+                        ))
+                else:
+                    # Update existing question
+                    if self.db.db_type == 'postgresql':
+                        self.db.execute_query("""
+                            UPDATE questions 
+                            SET question_text = %s, choices = %s, correct_answer = %s, 
+                                explanation = %s, genre = %s, image_url = %s, choice_images = %s
+                            WHERE question_id = %s
+                        """, (
+                            question['question_text'], choices_data,
+                            question['correct_answer'], question.get('explanation', ''),
+                            question.get('genre', 'その他'), image_url, choice_images_json, question_id
+                        ))
+                    else:
+                        self.db.execute_query("""
+                            UPDATE questions 
+                            SET question_text = ?, choices = ?, correct_answer = ?, 
+                                explanation = ?, genre = ?, image_url = ?, choice_images = ?
+                            WHERE question_id = ?
+                        """, (
+                            question['question_text'], choices_data,
+                            question['correct_answer'], question.get('explanation', ''),
+                            question.get('genre', 'その他'), image_url, choice_images_json, question_id
+                        ))
+                
+                saved_count += 1
+                
+            except Exception as e:
+                errors.append(f"Question {i+1}: {str(e)}")
+                logger.error(f"Error saving question {i+1}: {str(e)}")
+        
+        return {
+            'saved_count': saved_count, 
+            'total_count': len(questions), 
+            'errors': errors,
+            'warnings': warnings
+        }
