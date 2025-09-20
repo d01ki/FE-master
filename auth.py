@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, session, flash
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
-import os
+from config import Config
 
 def login_required(f):
     @wraps(f)
@@ -39,6 +39,11 @@ def init_auth_routes(app, db_manager):
             # Validation
             if not username or not password:
                 flash('ユーザー名とパスワードを入力してください。', 'error')
+                return redirect(url_for('register'))
+            
+            # Security: Block "admin" username registration
+            if username.lower() == 'admin':
+                flash('このユーザー名は使用できません。別のユーザー名を選択してください。', 'error')
                 return redirect(url_for('register'))
             
             if len(username) < 3:
@@ -92,15 +97,18 @@ def init_auth_routes(app, db_manager):
                 flash('ユーザー名とパスワードを入力してください。', 'error')
                 return redirect(url_for('login'))
             
-            # 管理者ログインの特別処理
-            admin_password = os.environ.get('ADMIN_PASSWORD', app.config.get('ADMIN_PASSWORD', 'fe2025admin'))
-            if username == 'admin' and password == admin_password:
-                session.clear()
-                session['user_id'] = 'admin'
-                session['username'] = 'admin'
-                session['is_admin'] = True
-                flash('管理者としてログインしました。', 'success')
-                return redirect(url_for('admin.admin'))
+            # Admin login via environment variable (if set)
+            if username == 'admin' and Config.ADMIN_PASSWORD:
+                if password == Config.ADMIN_PASSWORD:
+                    session.clear()
+                    session['user_id'] = 'admin'
+                    session['username'] = 'admin'
+                    session['is_admin'] = True
+                    flash('管理者としてログインしました。', 'success')
+                    return redirect(url_for('admin.admin'))
+                else:
+                    flash('ユーザー名またはパスワードが正しくありません。', 'error')
+                    return redirect(url_for('login'))
             
             try:
                 user = db_manager.execute_query(
@@ -129,9 +137,8 @@ def init_auth_routes(app, db_manager):
             username = request.form['username'].strip()
             password = request.form['password']
             
-            # 管理者専用ログイン
-            admin_password = os.environ.get('ADMIN_PASSWORD', app.config.get('ADMIN_PASSWORD', 'fe2025admin'))
-            if username == 'admin' and password == admin_password:
+            # Admin login via environment variable only
+            if username == 'admin' and Config.ADMIN_PASSWORD and password == Config.ADMIN_PASSWORD:
                 session.clear()
                 session['user_id'] = 'admin'
                 session['username'] = 'admin'
