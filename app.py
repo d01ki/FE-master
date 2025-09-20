@@ -17,7 +17,16 @@ from helper_functions import parse_filename_info
 from routes import main_bp, practice_bp, exam_bp, admin_bp
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
+
+# セキュリティ強化: SECRET_KEYを環境変数から取得（必須）
+app.secret_key = os.environ.get('SECRET_KEY')
+if not app.secret_key:
+    # 開発環境用のフォールバック（本番では必ず環境変数を設定）
+    if os.environ.get('FLASK_ENV') == 'development':
+        app.secret_key = 'dev-secret-key-change-in-production'
+        print("⚠️  警告: 開発用のSECRET_KEYを使用しています。本番環境では必ず環境変数を設定してください。")
+    else:
+        raise ValueError("❌ セキュリティエラー: SECRET_KEY環境変数が設定されていません。本番環境では必須です。")
 
 # セッション設定
 app.config.update(
@@ -31,13 +40,18 @@ app.config.update(
 DATABASE_URL = os.environ.get('DATABASE_URL')
 DATABASE_TYPE = 'postgresql' if DATABASE_URL else 'sqlite'
 
+# 管理者パスワードの設定（環境変数から取得、デフォルトあり）
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'fe2025admin')
+if ADMIN_PASSWORD == 'fe2025admin':
+    print("⚠️  警告: デフォルトの管理者パスワードを使用しています。セキュリティのため変更を推奨します。")
+
 app.config.update({
     'DATABASE_URL': DATABASE_URL,
     'DATABASE': 'fe_exam.db',
     'DATABASE_TYPE': DATABASE_TYPE,
     'UPLOAD_FOLDER': 'uploads',
     'JSON_FOLDER': 'json_questions',
-    'ADMIN_PASSWORD': os.environ.get('ADMIN_PASSWORD', 'fe2025admin')
+    'ADMIN_PASSWORD': ADMIN_PASSWORD
 })
 
 # フォルダ作成
@@ -117,5 +131,11 @@ load_json_questions_on_startup()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5002))
+    # デバッグモードは開発環境のみ有効化（本番環境では自動的に無効）
+    debug_mode = os.environ.get('FLASK_ENV') == 'development'
+    
     print(f"🚀 Starting Flask app on port {port}")
-    app.run(debug=True, host='0.0.0.0', port=port)
+    print(f"🔧 Debug mode: {'ON (開発環境)' if debug_mode else 'OFF (本番環境)'}")
+    print(f"💾 Database: {DATABASE_TYPE.upper()}")
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
