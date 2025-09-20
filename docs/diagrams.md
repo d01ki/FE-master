@@ -85,112 +85,98 @@ erDiagram
 ### Renderデプロイ構成
 
 ```mermaid
-graph TB
-    subgraph "ユーザー"
-        User["👤 ユーザー<br/>ブラウザ"]
-    end
-
-    subgraph "Render Platform"
-        subgraph "Web Service"
-            App["🚀 Flask App<br/>Python 3.12<br/>Gunicorn"]
-            Static["📸 Static Files<br/>CSS/JS/Images"]
-        end
-
-        subgraph "Database Service"
-            DB[("💾 PostgreSQL<br/>Database")]
-        end
-
-        subgraph "Environment"
-            Env["🔑 Environment Variables<br/>SECRET_KEY<br/>ADMIN_PASSWORD<br/>DATABASE_URL"]
-        end
-    end
-
-    subgraph "GitHub"
-        Repo["📁 GitHub Repository<br/>Source Code"]
-    end
-
-    User -->|HTTPS| App
-    App -->|SQL Query| DB
-    App -->|Load Config| Env
-    App -->|Serve| Static
-    Repo -->|Auto Deploy| App
+flowchart TB
+    User["👤 ユーザー<br/>ブラウザ"]
     
-    style User fill:#e1f5fe
-    style App fill:#c8e6c9
-    style DB fill:#fff9c4
-    style Env fill:#ffe0b2
-    style Repo fill:#f3e5f5
+    subgraph Render["☁️ Render Platform"]
+        App["🚀 Flask App<br/>Gunicorn"]
+        DB[("💾 PostgreSQL")]
+        Env["🔐 環境変数<br/>SECRET_KEY<br/>ADMIN_PASSWORD"]
+    end
+    
+    Repo["📦 GitHub<br/>Repository"]
+    
+    User -->|HTTPS| App
+    App -->|SQL| DB
+    App -.->|読み込み| Env
+    Repo -->|自動デプロイ| App
+    
+    style User fill:#90CAF9,stroke:#1976D2,stroke-width:3px,color:#000
+    style App fill:#A5D6A7,stroke:#388E3C,stroke-width:3px,color:#000
+    style DB fill:#FFE082,stroke:#F57C00,stroke-width:3px,color:#000
+    style Env fill:#CE93D8,stroke:#7B1FA2,stroke-width:3px,color:#fff
+    style Repo fill:#F48FB1,stroke:#C2185B,stroke-width:3px,color:#000
+    style Render fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#000
 ```
 
 ## システムアーキテクチャ
 
 ```mermaid
-graph TB
-    subgraph "Frontend Layer"
-        HTML["📝 HTML5<br/>Jinja2 Templates"]
-        CSS["🎨 Tailwind CSS<br/>Responsive Design"]
-        JS["⚡ JavaScript<br/>Alpine.js"]
+flowchart TB
+    subgraph Frontend["🎨 フロントエンド"]
+        HTML["HTML5<br/>Jinja2"]
+        CSS["Tailwind CSS"]
+        JS["JavaScript"]
     end
-
-    subgraph "Application Layer"
-        Flask["🐍 Flask Framework"]
-        Auth["🔐 Authentication<br/>Session Management"]
-        Routes["🛤️ Routes & Blueprints"]
-        Business["🧠 Business Logic"]
+    
+    subgraph Backend["⚙️ バックエンド"]
+        Flask["Flask"]
+        Auth["認証システム"]
+        Routes["ルーティング"]
     end
-
-    subgraph "Data Layer"
-        DBManager["🔗 Database Manager"]
-        DB[("💾 PostgreSQL/SQLite")]
+    
+    subgraph Data["💾 データ層"]
+        DBMgr["DB Manager"]
+        PG[("PostgreSQL")]
     end
-
+    
     HTML --> Flask
     CSS --> HTML
     JS --> HTML
     Flask --> Auth
     Flask --> Routes
-    Routes --> Business
-    Business --> DBManager
-    DBManager --> DB
-
-    style HTML fill:#e3f2fd
-    style CSS fill:#f3e5f5
-    style JS fill:#fff3e0
-    style Flask fill:#c8e6c9
-    style Auth fill:#ffcdd2
-    style Routes fill:#b2dfdb
-    style Business fill:#d1c4e9
-    style DBManager fill:#ffecb3
-    style DB fill:#fff9c4
+    Routes --> DBMgr
+    DBMgr --> PG
+    
+    style HTML fill:#90CAF9,stroke:#1976D2,stroke-width:2px,color:#000
+    style CSS fill:#80DEEA,stroke:#0097A7,stroke-width:2px,color:#000
+    style JS fill:#FFD54F,stroke:#FFA000,stroke-width:2px,color:#000
+    style Flask fill:#A5D6A7,stroke:#388E3C,stroke-width:2px,color:#000
+    style Auth fill:#EF9A9A,stroke:#D32F2F,stroke-width:2px,color:#000
+    style Routes fill:#9FA8DA,stroke:#303F9F,stroke-width:2px,color:#fff
+    style DBMgr fill:#CE93D8,stroke:#7B1FA2,stroke-width:2px,color:#fff
+    style PG fill:#FFE082,stroke:#F57C00,stroke-width:2px,color:#000
+    style Frontend fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#000
+    style Backend fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#000
+    style Data fill:#FFF3E0,stroke:#F57C00,stroke-width:2px,color:#000
 ```
 
 ## データフロー図
 
-### ユーザー登録・ログインフロー
+### ユーザー登録フロー
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Browser
-    participant Flask
-    participant Auth
-    participant DB
+    actor User as 👤 ユーザー
+    participant Browser as 🌐 ブラウザ
+    participant Flask as 🚀 Flask
+    participant Auth as 🔐 認証
+    participant DB as 💾 DB
 
     User->>Browser: 登録情報入力
     Browser->>Flask: POST /register
     Flask->>Auth: ユーザー名検証
     Auth->>DB: 重複チェック
-    DB-->>Auth: 結果
     
     alt ユーザー名が利用可能
         Auth->>Auth: パスワードハッシュ化
         Auth->>DB: ユーザー作成
-        DB-->>Auth: 成功
+        DB-->>Auth: ✅ 成功
         Auth-->>Flask: 登録完了
-        Flask-->>Browser: リダイレクト(ログイン)
-        Browser-->>User: ログイン画面表示
+        Flask-->>Browser: ログイン画面へ
+        Browser-->>User: ログインページ表示
     else ユーザー名が既に存在
-        Auth-->>Flask: エラー
+        Auth-->>Flask: ❌ エラー
         Flask-->>Browser: エラーメッセージ
         Browser-->>User: 再入力要求
     end
@@ -200,19 +186,19 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Browser
-    participant Flask
-    participant QM as Question Manager
-    participant DB
+    actor User as 👤 ユーザー
+    participant Browser as 🌐 ブラウザ
+    participant Flask as 🚀 Flask
+    participant QM as 📚 問題管理
+    participant DB as 💾 DB
 
-    User->>Browser: 問題画面アクセス
-    Browser->>Flask: GET /practice/random
-    Flask->>QM: ランダム問題取得
-    QM->>DB: SELECT問題
+    User->>Browser: 問題ページ
+    Browser->>Flask: GET /practice
+    Flask->>QM: 問題取得
+    QM->>DB: SELECT
     DB-->>QM: 問題データ
     QM-->>Flask: 問題
-    Flask-->>Browser: 問題HTML
+    Flask-->>Browser: HTML
     Browser-->>User: 問題表示
 
     User->>Browser: 解答選択
@@ -220,9 +206,7 @@ sequenceDiagram
     Flask->>QM: 解答チェック
     QM->>DB: 正解確認
     DB-->>QM: 正解データ
-    QM->>QM: 正誤判定
-    QM->>DB: 解答履歴保存
-    DB-->>QM: 保存完了
+    QM->>DB: 履歴保存
     QM-->>Flask: 判定結果
     Flask-->>Browser: 結果JSON
     Browser-->>User: 正誤表示
@@ -232,11 +216,11 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Browser
-    participant Flask
-    participant RS as Ranking System
-    participant DB
+    actor User as 👤 ユーザー
+    participant Browser as 🌐 ブラウザ
+    participant Flask as 🚀 Flask
+    participant RS as 🏆 ランキング
+    participant DB as 💾 DB
 
     User->>Browser: ランキングアクセス
     Browser->>Flask: GET /ranking
@@ -250,153 +234,96 @@ sequenceDiagram
     Browser-->>User: ランキング表示
 ```
 
-## デプロイメントフロー
-
-```mermaid
-graph LR
-    A["💻 Git Commit"] --> B["📤 Git Push"]
-    B --> C["🐙 GitHub"]
-    C --> D["🔔 Webhook"]
-    D --> E["🔧 Render Build"]
-    E --> F["📦 Install Dependencies"]
-    F --> G["🗄️ Database Migration"]
-    G --> H["🚀 Deploy"]
-    H --> I["✅ Live Service"]
-
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style C fill:#fff3e0
-    style D fill:#ffccbc
-    style E fill:#c8e6c9
-    style F fill:#b2dfdb
-    style G fill:#ffecb3
-    style H fill:#a5d6a7
-    style I fill:#81c784
-```
-
-## セキュリティ層
-
-```mermaid
-graph TB
-    subgraph "セキュリティ対策"
-        HTTPS["🔒 HTTPS通信"]
-        Session["🎫 Session管理"]
-        Hash["🔐 パスワードハッシュ化"]
-        Env["📦 環境変数分離"]
-        Validation["✅ 入力検証"]
-        CSRF["🛡️ CSRF対策"]
-    end
-
-    User["👤 ユーザー"] --> HTTPS
-    HTTPS --> Session
-    Session --> Hash
-    Hash --> Validation
-    Validation --> CSRF
-    CSRF --> Env
-
-    style HTTPS fill:#ffcdd2
-    style Session fill:#f8bbd0
-    style Hash fill:#e1bee7
-    style Validation fill:#d1c4e9
-    style CSRF fill:#c5cae9
-    style Env fill:#bbdefb
-```
-
 ## 機能モジュール図
 
 ```mermaid
-graph TB
-    subgraph "Core Modules"
-        App["app.py<br/>アプリケーション"] 
-        Config["config.py<br/>設定管理"]
-        DB["database.py<br/>DB接続"]
-        Auth["auth.py<br/>認証"]
+flowchart TB
+    subgraph Core["🎯 コア"]
+        App["app.py"]
+        Config["config.py"]
+        DB["database.py"]
+        Auth["auth.py"]
     end
-
-    subgraph "Business Logic"
-        QM["question_manager.py<br/>問題管理"]
-        RS["ranking_system.py<br/>ランキング"]
-        AS["achievement_system.py<br/>達成度"]
+    
+    subgraph Logic["🧠 ビジネスロジック"]
+        QM["問題管理"]
+        RS["ランキング"]
+        AS["達成度"]
     end
-
-    subgraph "Routes"
-        Main["main_routes.py"]
-        Practice["practice_routes.py"]
-        Exam["exam_routes.py"]
-        Admin["admin_routes.py"]
-        Ranking["ranking_routes.py"]
+    
+    subgraph Routes["🛤️ ルート"]
+        Main["メイン"]
+        Practice["練習"]
+        Exam["試験"]
+        Admin["管理"]
+        Ranking["順位"]
     end
-
+    
     App --> Config
     App --> DB
     App --> Auth
-    App --> Main
-    App --> Practice
-    App --> Exam
-    App --> Admin
-    App --> Ranking
+    App --> Routes
     
-    Main --> QM
-    Practice --> QM
-    Exam --> QM
-    Ranking --> RS
-    Ranking --> AS
-
-    QM --> DB
-    RS --> DB
-    AS --> DB
-
-    style App fill:#4fc3f7
-    style Config fill:#81c784
-    style DB fill:#ffb74d
-    style Auth fill:#e57373
+    Routes --> Logic
+    Logic --> DB
+    
+    style App fill:#90CAF9,stroke:#1976D2,stroke-width:2px,color:#000
+    style Config fill:#A5D6A7,stroke:#388E3C,stroke-width:2px,color:#000
+    style DB fill:#FFE082,stroke:#F57C00,stroke-width:2px,color:#000
+    style Auth fill:#EF9A9A,stroke:#D32F2F,stroke-width:2px,color:#000
+    style QM fill:#CE93D8,stroke:#7B1FA2,stroke-width:2px,color:#fff
+    style RS fill:#9FA8DA,stroke:#303F9F,stroke-width:2px,color:#fff
+    style AS fill:#80DEEA,stroke:#0097A7,stroke-width:2px,color:#000
+    style Core fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#000
+    style Logic fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,color:#000
+    style Routes fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#000
 ```
+
+## テーブル説明
+
+### 主要テーブル
+
+| テーブル | 説明 | 主要カラム |
+|---------|------|-----------|
+| **USERS** | ユーザー情報 | username (ユニーク), password_hash, is_admin |
+| **QUESTIONS** | 問題マスター | question_id (ユニーク), question_text, choices (JSON), correct_answer |
+| **USER_ANSWERS** | 解答履歴 | user_id, question_id, is_correct, answered_at |
+| **MOCK_EXAMS** | 過去問試験 | exam_name, description, time_limit |
+| **MOCK_EXAM_RESULTS** | 試験結果 | user_id, exam_id, score, time_taken |
+
+### リレーションシップ
+
+- 1人のユーザーが複数の解答を持つ (1:N)
+- 1つの問題が複数の解答を持つ (1:N)
+- 1つの試験が複数の問題を持つ (M:N - MOCK_EXAM_QUESTIONS経由)
+- 1つの試験結果が複数の解答詳細を持つ (1:N)
 
 ## スケーリング構成（将来対応）
 
 ```mermaid
-graph TB
-    subgraph "Load Balancer"
-        LB["⚖️ Render Load Balancer"]
-    end
-
-    subgraph "Application Tier"
+flowchart TB
+    LB["⚖️ Load Balancer"]
+    
+    subgraph Apps["Application Instances"]
         App1["🚀 Instance 1"]
         App2["🚀 Instance 2"]
         App3["🚀 Instance N"]
     end
-
-    subgraph "Database Tier"
-        Primary[("💾 Primary DB")]
-        Replica1[("💾 Replica 1")]
-        Replica2[("💾 Replica 2")]
-    end
-
-    subgraph "Cache Layer"
-        Redis["⚡ Redis Cache"]
-    end
-
+    
+    Primary[("💾 Primary DB")]
+    
     LB --> App1
     LB --> App2
     LB --> App3
-
-    App1 --> Redis
-    App2 --> Redis
-    App3 --> Redis
-
+    
     App1 --> Primary
     App2 --> Primary
     App3 --> Primary
-
-    Primary -.-> Replica1
-    Primary -.-> Replica2
-
-    style LB fill:#4fc3f7
-    style App1 fill:#81c784
-    style App2 fill:#81c784
-    style App3 fill:#81c784
-    style Primary fill:#ffb74d
-    style Replica1 fill:#ffb74d,stroke-dasharray: 5 5
-    style Replica2 fill:#ffb74d,stroke-dasharray: 5 5
-    style Redis fill:#e57373
+    
+    style LB fill:#64B5F6,stroke:#1976D2,stroke-width:3px,color:#000
+    style App1 fill:#81C784,stroke:#388E3C,stroke-width:2px,color:#000
+    style App2 fill:#81C784,stroke:#388E3C,stroke-width:2px,color:#000
+    style App3 fill:#81C784,stroke:#388E3C,stroke-width:2px,color:#000
+    style Primary fill:#FFD54F,stroke:#F57C00,stroke-width:3px,color:#000
+    style Apps fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#000
 ```
