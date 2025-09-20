@@ -123,7 +123,8 @@ def achievement_review(achievement_level):
         db_manager = current_app.db_manager
         achievement_system = AchievementSystem(db_manager)
         
-        user_id = session.get('user_id')\n        
+        user_id = session.get('user_id')
+        
         # 指定された達成度の問題を取得
         questions = achievement_system.get_questions_by_achievement(user_id, achievement_level)
         
