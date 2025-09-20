@@ -2,6 +2,7 @@ import os
 import sqlite3
 import json
 import logging
+from utils import sanitize_image_url, validate_image_url
 
 # PostgreSQLライブラリのインポート（エラー時はSQLiteのみ使用）
 try:
@@ -202,6 +203,7 @@ class QuestionManager:
     def save_questions(self, questions, source_file=''):
         saved_count = 0
         errors = []
+        warnings = []
         
         for i, question in enumerate(questions):
             try:
@@ -213,10 +215,22 @@ class QuestionManager:
                 question_id = question.get('question_id', f"Q{i+1:03d}_{source_file}")
                 choices_data = json.dumps(question['choices'], ensure_ascii=False)
                 
-                # image_urlの処理（nullまたは空文字列をNoneに変換）
+                # 画像URLの処理とバリデーション
                 image_url = question.get('image_url')
-                if image_url and image_url.lower() in ['null', 'none', '']:
-                    image_url = None
+                
+                # サニタイズ
+                image_url = sanitize_image_url(image_url)
+                
+                # バリデーション
+                if image_url:
+                    is_valid, error_message = validate_image_url(image_url)
+                    if not is_valid:
+                        logger.warning(f"Question {question_id}: 画像URL検証失敗 - {error_message}")
+                        warnings.append(f"Question {i+1}: 画像URL検証失敗 - {error_message}")
+                        image_url = None  # 無効なURLは保存しない
+                    elif error_message:
+                        # 警告メッセージがある場合（例: 信頼されていないドメイン）
+                        logger.info(f"Question {question_id}: {error_message}")
                 
                 # Check if exists
                 existing = self.db.execute_query(
@@ -273,5 +287,11 @@ class QuestionManager:
                 
             except Exception as e:
                 errors.append(f"Question {i+1}: {str(e)}")
+                logger.error(f"Error saving question {i+1}: {str(e)}")
         
-        return {'saved_count': saved_count, 'total_count': len(questions), 'errors': errors}
+        return {
+            'saved_count': saved_count, 
+            'total_count': len(questions), 
+            'errors': errors,
+            'warnings': warnings
+        }
