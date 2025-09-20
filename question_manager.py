@@ -31,7 +31,12 @@ class QuestionManager:
         ]
         
         text_lower = text.lower()
-        return any(re.search(pattern, text_lower) for pattern in image_patterns)
+        is_image = any(re.search(pattern, text_lower) for pattern in image_patterns)
+        
+        # デバッグログ
+        print(f"[DEBUG] is_image_url: text='{text}', is_image={is_image}")
+        
+        return is_image
     
     def get_question(self, question_id):
         """指定されたIDの問題を取得"""
@@ -51,12 +56,18 @@ class QuestionManager:
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
                 
+                # デバッグログ
+                print(f"[DEBUG] Question choices: {question['choices']}")
+                
                 # 選択肢が画像URLかどうかを判定
                 question['has_image_choices'] = False
                 if question['choices']:
                     # 最初の選択肢をチェック（すべて同じ形式と仮定）
                     first_choice = list(question['choices'].values())[0]
                     question['has_image_choices'] = self.is_image_url(first_choice)
+                    
+                    print(f"[DEBUG] First choice: '{first_choice}'")
+                    print(f"[DEBUG] has_image_choices: {question['has_image_choices']}")
                 
                 # 後方互換性: choice_imagesがあれば処理（廃止予定）
                 if question.get('choice_images'):
@@ -69,6 +80,8 @@ class QuestionManager:
             return None
         except Exception as e:
             print(f"Error getting question {question_id}: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def get_questions_by_genre(self, genre):
