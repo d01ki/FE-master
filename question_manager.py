@@ -28,8 +28,14 @@ class QuestionManager:
             
             if result:
                 question = dict(result[0])
+                # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
+                # choice_imagesをJSONパース
+                if question.get('choice_images') and isinstance(question['choice_images'], str):
+                    question['choice_images'] = json.loads(question['choice_images'])
+                else:
+                    question['choice_images'] = None
                 return question
             return None
         except Exception as e:
@@ -51,8 +57,14 @@ class QuestionManager:
             questions = []
             for row in result:
                 question = dict(row)
+                # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
+                # choice_imagesをJSONパース
+                if question.get('choice_images') and isinstance(question['choice_images'], str):
+                    question['choice_images'] = json.loads(question['choice_images'])
+                else:
+                    question['choice_images'] = None
                 questions.append(question)
             
             return questions
@@ -87,8 +99,14 @@ class QuestionManager:
             
             if result:
                 question = dict(result[0])
+                # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
+                # choice_imagesをJSONパース
+                if question.get('choice_images') and isinstance(question['choice_images'], str):
+                    question['choice_images'] = json.loads(question['choice_images'])
+                else:
+                    question['choice_images'] = None
                 self.last_question_id = question['id']  # 今回の問題IDを記録
                 return question
             return None
@@ -177,13 +195,26 @@ class QuestionManager:
                     
                     choices_json = json.dumps(question['choices'], ensure_ascii=False)
                     
-                    # question_idの取得（新形式: 2024_s_問1）
+                    # question_idの取得
                     question_id = question.get('question_id', f"Q{i+1:03d}_{source_file}")
                     
                     # image_urlの処理（nullを空文字に変換）
                     image_url = question.get('image_url', '')
                     if image_url == 'null' or image_url == 'None':
                         image_url = ''
+                    
+                    # choice_imagesの処理
+                    choice_images = question.get('choice_images')
+                    choice_images_json = None
+                    if choice_images and isinstance(choice_images, dict):
+                        # 各選択肢の画像URLを検証
+                        valid_choice_images = {}
+                        for key, url in choice_images.items():
+                            if url and url != 'null' and url != 'None':
+                                valid_choice_images[key] = url
+                        
+                        if valid_choice_images:
+                            choice_images_json = json.dumps(valid_choice_images, ensure_ascii=False)
                     
                     # 重複チェック（question_idで）
                     if self.db_manager.db_type == 'postgresql':
@@ -202,8 +233,8 @@ class QuestionManager:
                         if self.db_manager.db_type == 'postgresql':
                             self.db_manager.execute_query(
                                 '''INSERT INTO questions 
-                                   (question_id, question_text, choices, correct_answer, explanation, genre, image_url) 
-                                   VALUES (%s, %s, %s, %s, %s, %s, %s)''',
+                                   (question_id, question_text, choices, correct_answer, explanation, genre, image_url, choice_images) 
+                                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)''',
                                 (
                                     question_id,
                                     question['question_text'],
@@ -211,14 +242,15 @@ class QuestionManager:
                                     question['correct_answer'],
                                     question.get('explanation', ''),
                                     question.get('genre', 'その他'),
-                                    image_url
+                                    image_url,
+                                    choice_images_json
                                 )
                             )
                         else:
                             self.db_manager.execute_query(
                                 '''INSERT INTO questions 
-                                   (question_id, question_text, choices, correct_answer, explanation, genre, image_url) 
-                                   VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                                   (question_id, question_text, choices, correct_answer, explanation, genre, image_url, choice_images) 
+                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
                                 (
                                     question_id,
                                     question['question_text'],
@@ -226,7 +258,8 @@ class QuestionManager:
                                     question['correct_answer'],
                                     question.get('explanation', ''),
                                     question.get('genre', 'その他'),
-                                    image_url
+                                    image_url,
+                                    choice_images_json
                                 )
                             )
                         saved_count += 1
