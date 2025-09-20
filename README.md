@@ -1,101 +1,119 @@
-# 🎓 基本情報技術者試験 学習アプリ
+<div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-2.3+-green.svg)](https://flask.palletsprojects.com/)
+# 🎓 FE Master
 
-> **効率的な学習で基本情報技術者試験の合格を目指そう！**
+### 基本情報技術者試験 学習アプリケーション
 
-## ✨ 主な機能
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-2.0+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-### 📚 学習機能
-- **ランダム問題練習** - 幅広い分野からランダムに出題
-- **ジャンル別演習** - 苦手分野を集中的に学習
-- **模擬試験** - 本番形式での実力確認
-- **学習履歴** - 進捗状況と成績の可視化
+**効率的な学習で基本情報技術者試験の合格を目指す**
 
-### 🎯 特徴
-- **直感的なUI** - モダンで使いやすいインターフェース
-- **レスポンシブデザイン** - スマートフォンでも快適に学習
-- **詳細な解説** - 各問題に丁寧な説明付き
-- **進捗管理** - 個人の学習状況を詳細に追跡
-
-## 🚀 デモ
-
-実際のアプリケーションを体験してみてください：
-
-**[🔗 ライブデモを見る](https://your-app-url.onrender.com)**
-
-## 📱 スクリーンショット
-
-### ダッシュボード
-美しく整理された学習進捗とクイックアクセス
-
-### 問題演習画面
-シンプルで集中しやすい問題解答環境
-
-### 学習履歴
-詳細な統計とパフォーマンス分析
-
-## 🛠️ 技術スタック
-
-- **バックエンド**: Flask (Python)
-- **データベース**: PostgreSQL / SQLite
-- **フロントエンド**: Tailwind CSS
-- **アイコン**: Font Awesome
-- **デプロイ**: Render
-
-## 📖 使用方法
-
-### 👤 一般ユーザー
-
-1. **アカウント作成**
-   - 新規登録ページでアカウントを作成
-   - 最低限の情報のみで簡単登録
-
-2. **学習開始**
-   - ダッシュボードから学習メニューを選択
-   - 自分のペースで問題に挑戦
-
-3. **進捗確認**
-   - 学習履歴で成長を実感
-   - ジャンル別の得意・不得意を把握
-
-### 👑 管理者
-
-- 問題データの管理
-- JSONファイルによる問題の一括登録
-- システム設定とメンテナンス
-
-## 🔒 セキュリティ
-
-- パスワードハッシュ化による安全な認証
-- セッション管理による不正アクセス防止
-- 管理者権限の適切な分離
-
-## 📈 開発の背景
-
-基本情報技術者試験の学習をより効率的に、そして楽しくするために開発されました。
-従来の問題集とは異なり、デジタルならではの機能を活用して学習体験を向上させています。
-
-## 🎯 今後の展望
-
-- AIを活用した個別学習プランの提案
-- より詳細な学習分析機能
-- ソーシャル機能による学習仲間との交流
-- モバイルアプリ版の開発
-
-## 🤝 貢献
-
-プロジェクトへの貢献を歓迎します！
-バグ報告、機能提案、プルリクエストなど、どんな形でもお気軽にご参加ください。
-
-## 📄 ライセンス
-
-このプロジェクトは [MIT License](LICENSE) の下で公開されています。
+</div>
 
 ---
 
-**🎯 基本情報技術者試験の合格を応援します！**
+## ✨ 特徴
 
-*効率的な学習で、確実にスキルアップしましょう。*
+<table>
+<tr>
+<td width="33%" align="center">
+
+### 🎯 ランダム問題
+毎日異なる問題で<br>飽きずに学習
+
+</td>
+<td width="33%" align="center">
+
+### 📊 ジャンル別演習
+苦手分野を<br>集中的に克服
+
+</td>
+<td width="33%" align="center">
+
+### 📝 模擬試験
+本番形式で<br>実力を確認
+
+</td>
+</tr>
+</table>
+
+### 🚀 主な機能
+
+- **📱 レスポンシブデザイン** - PC・スマホどちらでも快適に学習
+- **📊 学習履歴管理** - あなたの進捗を詳細に追跡
+- **🖼️ 画像対応** - 図表付き問題も完全サポート
+- **🔒 ユーザー認証** - 個人の学習データを安全に保管
+
+---
+
+## 🛠️ 技術スタック
+
+<div align="center">
+
+| カテゴリ | 技術 |
+|:---:|:---|
+| **Backend** | Python, Flask |
+| **Database** | PostgreSQL, SQLite |
+| **Frontend** | HTML5, Tailwind CSS, JavaScript |
+| **Deployment** | Render.com |
+
+</div>
+
+---
+
+## 🚀 クイックスタート
+
+```bash
+# リポジトリをクローン
+git clone https://github.com/d01ki/FE-master.git
+cd FE-master
+
+# 仮想環境を作成
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 依存パッケージをインストール
+pip install -r requirements.txt
+
+# アプリケーションを起動
+python app.py
+```
+
+🎉 http://localhost:5002 でアクセスできます！
+
+---
+
+## 🌐 デプロイ
+
+詳しいデプロイ手順は [Wiki](https://github.com/d01ki/FE-master/wiki) をご覧ください。
+
+---
+
+## 🤝 貢献
+
+プルリクエストを歓迎します！
+
+1. フォークする
+2. ブランチを作成 (`git checkout -b feature/amazing-feature`)
+3. 変更をコミット (`git commit -m 'Add amazing feature'`)
+4. プッシュ (`git push origin feature/amazing-feature`)
+5. プルリクエストを作成
+
+---
+
+## 📝 ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。
+
+---
+
+<div align="center">
+
+**Made with ❤️ by FE Master Team**
+
+⭐ このプロジェクトが役に立ったら、スターをお願いします！
+
+</div>

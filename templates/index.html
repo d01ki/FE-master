@@ -7,82 +7,32 @@
         <!-- Welcome Card -->
         <div class="card mb-8 animate-fadeIn">
             <h1 class="text-2xl font-bold mb-4">
-                {% if current_user.is_authenticated %}
-                    こんにちは、{{ current_user.username }}さん
+                {% if session.get('user_id') %}
+                    こんにちは、{{ session.get('username') }}さん
                 {% else %}
                     基本情報技術者試験の学習を始めましょう
                 {% endif %}
             </h1>
             <p class="text-gray-600 mb-6">
-                {% if current_user.is_authenticated %}
-                    前回の学習から{{ last_login_days }}日が経過しています。
+                {% if session.get('user_id') %}
                     今日も頑張りましょう！
                 {% else %}
                     会員登録して学習を始めると、進捗管理や学習履歴の確認ができます。
                 {% endif %}
             </p>
-            {% if not current_user.is_authenticated %}
+            {% if not session.get('user_id') %}
                 <div class="flex gap-4">
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary">
                         <i class="fas fa-user-plus"></i>
                         <span>新規登録</span>
                     </a>
-                    <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">
+                    <a href="{{ url_for('login') }}" class="btn btn-secondary">
                         <i class="fas fa-sign-in-alt"></i>
                         <span>ログイン</span>
                     </a>
                 </div>
             {% endif %}
         </div>
-
-        {% if current_user.is_authenticated %}
-            <!-- Progress Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                <div class="card">
-                    <h3 class="text-lg font-semibold mb-3">総合進捗</h3>
-                    <div class="progress-bar mb-2">
-                        <div class="progress-bar-fill" style="width: {{ overall_progress }}%"></div>
-                    </div>
-                    <p class="text-sm text-gray-600">全{{ total_questions }}問中{{ solved_questions }}問完了</p>
-                </div>
-                <div class="card">
-                    <h3 class="text-lg font-semibold mb-3">正答率</h3>
-                    <div class="text-3xl font-bold text-primary mb-2">{{ accuracy_rate }}%</div>
-                    <p class="text-sm text-gray-600">直近100問の平均</p>
-                </div>
-            </div>
-
-            <!-- Recent Activity -->
-            <div class="card">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">最近の学習履歴</h2>
-                    <a href="{{ url_for('main.dashboard') }}" class="text-primary hover:underline">
-                        詳細を見る
-                        <i class="fas fa-arrow-right ml-1"></i>
-                    </a>
-                </div>
-                {% if recent_activities %}
-                    <div class="space-y-4">
-                        {% for activity in recent_activities %}
-                            <div class="flex items-start gap-4">
-                                <div class="w-8 h-8 rounded-full bg-{{ 'green' if activity.is_correct else 'red' }}-100 flex items-center justify-center">
-                                    <i class="fas fa-{{ 'check' if activity.is_correct else 'times' }} text-{{ 'green' if activity.is_correct else 'red' }}-600"></i>
-                                </div>
-                                <div class="flex-grow">
-                                    <div class="flex justify-between items-start">
-                                        <p class="font-medium">{{ activity.question_title }}</p>
-                                        <span class="text-sm text-gray-500">{{ activity.timestamp }}</span>
-                                    </div>
-                                    <p class="text-sm text-gray-600">{{ activity.category }}</p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="text-gray-600">まだ学習履歴がありません。問題を解いて学習を始めましょう！</p>
-                {% endif %}
-            </div>
-        {% endif %}
     </div>
 
     <!-- Right Column: Quick Start and Categories -->
@@ -91,35 +41,18 @@
         <div class="card mb-8">
             <h2 class="text-xl font-bold mb-4">クイックスタート</h2>
             <div class="space-y-4">
-                <a href="{{ url_for('main.random_question') }}" class="btn btn-primary w-full justify-center">
+                <a href="{{ url_for('practice.random_practice') }}" class="btn btn-primary w-full justify-center">
                     <i class="fas fa-random"></i>
                     <span>ランダム問題に挑戦</span>
                 </a>
-                <a href="{{ url_for('main.daily_challenge') }}" class="btn btn-secondary w-full justify-center">
-                    <i class="fas fa-calendar-day"></i>
-                    <span>今日のチャレンジ</span>
+                <a href="{{ url_for('practice.genre_practice') }}" class="btn btn-secondary w-full justify-center">
+                    <i class="fas fa-tags"></i>
+                    <span>ジャンル別演習</span>
                 </a>
-            </div>
-        </div>
-
-        <!-- Categories -->
-        <div class="card">
-            <h2 class="text-xl font-bold mb-4">カテゴリー別学習</h2>
-            <div class="space-y-2">
-                {% for category in categories %}
-                    <a href="{{ url_for('main.category', name=category.name) }}" 
-                       class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50">
-                        <div class="flex items-center gap-3">
-                            <i class="fas {{ category.icon }} text-gray-500"></i>
-                            <span>{{ category.display_name }}</span>
-                        </div>
-                        {% if current_user.is_authenticated %}
-                            <div class="text-sm text-gray-500">
-                                {{ category.progress }}%
-                            </div>
-                        {% endif %}
-                    </a>
-                {% endfor %}
+                <a href="{{ url_for('exam.mock_exam') }}" class="btn btn-secondary w-full justify-center">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>模擬試験</span>
+                </a>
             </div>
         </div>
     </div>

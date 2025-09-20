@@ -2,6 +2,7 @@ import os
 import sqlite3
 import json
 import logging
+from utils import sanitize_image_url, validate_image_url
 
 # PostgreSQLライブラリのインポート（エラー時はSQLiteのみ使用）
 try:
@@ -88,6 +89,7 @@ class DatabaseManager:
                 correct_answer VARCHAR(10) NOT NULL,
                 explanation TEXT,
                 genre VARCHAR(100),
+                image_url VARCHAR(500),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
             """CREATE TABLE IF NOT EXISTS user_answers (
@@ -99,7 +101,15 @@ class DatabaseManager:
                 answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
             "CREATE INDEX IF NOT EXISTS idx_questions_genre ON questions(genre)",
-            "CREATE INDEX IF NOT EXISTS idx_user_answers_user_id ON user_answers(user_id)"
+            "CREATE INDEX IF NOT EXISTS idx_user_answers_user_id ON user_answers(user_id)",
+            # 既存のテーブルにimage_urlカラムを追加（存在しない場合のみ）
+            """DO $$ 
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                              WHERE table_name='questions' AND column_name='image_url') THEN
+                    ALTER TABLE questions ADD COLUMN image_url VARCHAR(500);
+                END IF;
+            END $$;"""
         ]
         
         for query in queries:
@@ -125,6 +135,7 @@ class DatabaseManager:
                 correct_answer TEXT NOT NULL,
                 explanation TEXT,
                 genre TEXT,
+                image_url TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )""",
             """CREATE TABLE IF NOT EXISTS user_answers (
@@ -144,6 +155,21 @@ class DatabaseManager:
                 self.execute_query(query)
             except Exception as e:
                 logger.error(f"SQLite init error: {e}")
+        
+        # 既存のテーブルにimage_urlカラムを追加（存在しない場合のみ）
+        try:
+            self.execute_query("""
+                SELECT sql FROM sqlite_master WHERE type='table' AND name='questions'
+            """)
+            # カラムが存在するかチェック
+            table_info = self.execute_query("PRAGMA table_info(questions)")
+            column_names = [col['name'] for col in table_info]
+            
+            if 'image_url' not in column_names:
+                self.execute_query("ALTER TABLE questions ADD COLUMN image_url TEXT")
+                logger.info("Added image_url column to questions table")
+        except Exception as e:
+            logger.error(f"SQLite alter table error: {e}")
 
 class QuestionManager:
     def __init__(self, db_manager):
@@ -177,6 +203,7 @@ class QuestionManager:
     def save_questions(self, questions, source_file=''):
         saved_count = 0
         errors = []
+        warnings = []
         
         for i, question in enumerate(questions):
             try:
@@ -188,6 +215,23 @@ class QuestionManager:
                 question_id = question.get('question_id', f"Q{i+1:03d}_{source_file}")
                 choices_data = json.dumps(question['choices'], ensure_ascii=False)
                 
+                # 画像URLの処理とバリデーション
+                image_url = question.get('image_url')
+                
+                # サニタイズ
+                image_url = sanitize_image_url(image_url)
+                
+                # バリデーション
+                if image_url:
+                    is_valid, error_message = validate_image_url(image_url)
+                    if not is_valid:
+                        logger.warning(f"Question {question_id}: 画像URL検証失敗 - {error_message}")
+                        warnings.append(f"Question {i+1}: 画像URL検証失敗 - {error_message}")
+                        image_url = None  # 無効なURLは保存しない
+                    elif error_message:
+                        # 警告メッセージがある場合（例: 信頼されていないドメイン）
+                        logger.info(f"Question {question_id}: {error_message}")
+                
                 # Check if exists
                 existing = self.db.execute_query(
                     'SELECT id FROM questions WHERE question_id = %s' if self.db.db_type == 'postgresql' else 'SELECT id FROM questions WHERE question_id = ?',
@@ -198,26 +242,56 @@ class QuestionManager:
                     # Insert new
                     if self.db.db_type == 'postgresql':
                         self.db.execute_query("""
-                            INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre) 
-                            VALUES (%s, %s, %s, %s, %s, %s)
+                            INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre, image_url) 
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)
                         """, (
                             question_id, question['question_text'], choices_data,
                             question['correct_answer'], question.get('explanation', ''),
-                            question.get('genre', 'その他')
+                            question.get('genre', 'その他'), image_url
                         ))
                     else:
                         self.db.execute_query("""
-                            INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre) 
-                            VALUES (?, ?, ?, ?, ?, ?)
+                            INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre, image_url) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
                         """, (
                             question_id, question['question_text'], choices_data,
                             question['correct_answer'], question.get('explanation', ''),
-                            question.get('genre', 'その他')
+                            question.get('genre', 'その他'), image_url
+                        ))
+                else:
+                    # Update existing question with image_url
+                    if self.db.db_type == 'postgresql':
+                        self.db.execute_query("""
+                            UPDATE questions 
+                            SET question_text = %s, choices = %s, correct_answer = %s, 
+                                explanation = %s, genre = %s, image_url = %s
+                            WHERE question_id = %s
+                        """, (
+                            question['question_text'], choices_data,
+                            question['correct_answer'], question.get('explanation', ''),
+                            question.get('genre', 'その他'), image_url, question_id
+                        ))
+                    else:
+                        self.db.execute_query("""
+                            UPDATE questions 
+                            SET question_text = ?, choices = ?, correct_answer = ?, 
+                                explanation = ?, genre = ?, image_url = ?
+                            WHERE question_id = ?
+                        """, (
+                            question['question_text'], choices_data,
+                            question['correct_answer'], question.get('explanation', ''),
+                            question.get('genre', 'その他'), image_url, question_id
                         ))
                 
                 saved_count += 1
                 
             except Exception as e:
                 errors.append(f"Question {i+1}: {str(e)}")
+                logger.error(f"Error saving question {i+1}: {str(e)}")
         
-        return {'saved_count': saved_count, 'total_count': len(questions), 'errors': errors}
+        return {
+            'saved_count': saved_count, 
+            'total_count': len(questions), 
+            'errors': errors,
+            'warnings': warnings
+        }

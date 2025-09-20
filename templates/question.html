@@ -34,6 +34,18 @@
                     <p class="text-white text-lg leading-relaxed font-medium whitespace-pre-line">{{ question.question_text }}</p>
                 </div>
                 
+                <!-- 画像表示エリア（image_urlが存在し、nullでない場合のみ表示） -->
+                {% if question.image_url and question.image_url != 'null' and question.image_url != 'None' %}
+                <div class="mb-8">
+                    <div class="bg-white/10 rounded-xl p-4 border border-white/20">
+                        <img src="{{ question.image_url }}" 
+                             alt="問題の図表" 
+                             class="max-w-full h-auto rounded-lg mx-auto"
+                             onerror="this.parentElement.innerHTML='<p class=\'text-gray-400 text-center py-4\'>画像を読み込めませんでした</p>'">
+                    </div>
+                </div>
+                {% endif %}
+                
                 <!-- 選択肢 -->
                 <div class="space-y-4 mb-8">
                     {% for choice_key, choice_text in question.choices.items() %}
@@ -58,7 +70,7 @@
                 <!-- スマートなナビゲーションボタン -->
                 <div class="flex justify-center">
                     <div class="relative group">
-                        <a href="{{ url_for('random_question') }}" class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg transition-all duration-200 font-medium flex items-center backdrop-blur-sm border border-white/20">
+                        <a href="{{ url_for('practice.random_practice') }}" class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg transition-all duration-200 font-medium flex items-center backdrop-blur-sm border border-white/20">
                             <span class="mr-3 text-lg">🎯</span>
                             <span>次の問題</span>
                             <i class="fas fa-arrow-right ml-3 text-blue-400"></i>
@@ -93,7 +105,7 @@
                 
                 <!-- スマートなアクションボタン -->
                 <div class="flex justify-center">
-                    <a href="{{ url_for('random_question') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center">
+                    <a href="{{ url_for('practice.random_practice') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center">
                         <span class="mr-3 text-lg">🚀</span>
                         <span>次の問題へ</span>
                         <i class="fas fa-chevron-right ml-3"></i>
@@ -229,7 +241,7 @@ document.addEventListener('keydown', function(e) {
         // 解答後はSpaceキーで次の問題
         if (e.key === ' ') {
             e.preventDefault();
-            window.location.href = "{{ url_for('random_question') }}";
+            window.location.href = "{{ url_for('practice.random_practice') }}";
         }
         return;
     }

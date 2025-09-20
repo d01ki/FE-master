@@ -5,12 +5,14 @@
 
 import json
 from datetime import datetime
+import re
 
 class QuestionManager:
     """問題管理クラス（PostgreSQL/SQLite対応）"""
     
     def __init__(self, db_manager):
         self.db_manager = db_manager
+        self.last_question_id = None  # 前回出題した問題ID
     
     def get_question(self, question_id):
         """指定されたIDの問題を取得"""
@@ -25,7 +27,7 @@ class QuestionManager:
                 )
             
             if result:
-                question = result[0]
+                question = dict(result[0])
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
                 return question
@@ -39,11 +41,11 @@ class QuestionManager:
         try:
             if self.db_manager.db_type == 'postgresql':
                 result = self.db_manager.execute_query(
-                    'SELECT * FROM questions WHERE genre = %s ORDER BY id', (genre,)
+                    'SELECT * FROM questions WHERE genre = %s ORDER BY question_id', (genre,)
                 )
             else:
                 result = self.db_manager.execute_query(
-                    'SELECT * FROM questions WHERE genre = ? ORDER BY id', (genre,)
+                    'SELECT * FROM questions WHERE genre = ? ORDER BY question_id', (genre,)
                 )
             
             questions = []
@@ -58,55 +60,40 @@ class QuestionManager:
             print(f"Error getting questions by genre {genre}: {e}")
             return []
     
-    def get_random_questions(self, count):
-        """ランダムに問題を取得"""
-        try:
-            if self.db_manager.db_type == 'postgresql':
-                result = self.db_manager.execute_query(
-                    'SELECT * FROM questions ORDER BY RANDOM() LIMIT %s', (count,)
-                )
-            else:
-                result = self.db_manager.execute_query(
-                    'SELECT * FROM questions ORDER BY RANDOM() LIMIT ?', (count,)
-                )
-            
-            questions = []
-            for row in result:
-                question = dict(row)
-                if isinstance(question['choices'], str):
-                    question['choices'] = json.loads(question['choices'])
-                questions.append(question)
-            
-            return questions
-        except Exception as e:
-            print(f"Error getting random questions: {e}")
-            return []
-    
     def get_random_question(self):
-        """ランダムに1問取得"""
-        questions = self.get_random_questions(1)
-        return questions[0] if questions else None
-    
-    def get_random_question_by_genre(self, genre):
-        """ジャンル別のランダム問題を1問取得"""
+        """ランダムに1問取得（前回と同じ問題を避ける）"""
         try:
-            if self.db_manager.db_type == 'postgresql':
-                result = self.db_manager.execute_query(
-                    'SELECT * FROM questions WHERE genre = %s ORDER BY RANDOM() LIMIT 1', (genre,)
-                )
+            # 前回の問題を除外するクエリ
+            if self.last_question_id:
+                if self.db_manager.db_type == 'postgresql':
+                    result = self.db_manager.execute_query(
+                        'SELECT * FROM questions WHERE id != %s ORDER BY RANDOM() LIMIT 1',
+                        (self.last_question_id,)
+                    )
+                else:
+                    result = self.db_manager.execute_query(
+                        'SELECT * FROM questions WHERE id != ? ORDER BY RANDOM() LIMIT 1',
+                        (self.last_question_id,)
+                    )
             else:
-                result = self.db_manager.execute_query(
-                    'SELECT * FROM questions WHERE genre = ? ORDER BY RANDOM() LIMIT 1', (genre,)
-                )
+                if self.db_manager.db_type == 'postgresql':
+                    result = self.db_manager.execute_query(
+                        'SELECT * FROM questions ORDER BY RANDOM() LIMIT 1'
+                    )
+                else:
+                    result = self.db_manager.execute_query(
+                        'SELECT * FROM questions ORDER BY RANDOM() LIMIT 1'
+                    )
             
             if result:
-                question = result[0]
+                question = dict(result[0])
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
+                self.last_question_id = question['id']  # 今回の問題IDを記録
                 return question
             return None
         except Exception as e:
-            print(f"Error getting random question by genre {genre}: {e}")
+            print(f"Error getting random question: {e}")
             return None
     
     def get_total_questions(self):
@@ -159,12 +146,27 @@ class QuestionManager:
             print(f"解答履歴保存エラー: {e}")
             return False
     
+    def extract_year_from_filename(self, filename):
+        """ファイル名から年度を抽出"""
+        # 2025r07_kamoku_a_spring.json -> 2025
+        match = re.search(r'(\d{4})', filename)
+        return match.group(1) if match else None
+    
     def save_questions(self, questions, source_file=''):
         """問題リストをデータベースに保存"""
         saved_count = 0
         errors = []
         
         try:
+            # ファイル名から年度を抽出して、既にその年度の問題が登録されているかチェック
+            year = self.extract_year_from_filename(source_file)
+            if year and self.check_year_exists(year):
+                return {
+                    'saved_count': 0,
+                    'total_count': len(questions),
+                    'errors': [f'{year}年度の問題は既に登録されています。データを初期化してから再度アップロードしてください。']
+                }
+            
             for i, question in enumerate(questions):
                 try:
                     # 必須フィールドの確認
@@ -175,8 +177,13 @@ class QuestionManager:
                     
                     choices_json = json.dumps(question['choices'], ensure_ascii=False)
                     
-                    # question_idがない場合は自動生成
+                    # question_idの取得（新形式: 2024_s_問1）
                     question_id = question.get('question_id', f"Q{i+1:03d}_{source_file}")
+                    
+                    # image_urlの処理（nullを空文字に変換）
+                    image_url = question.get('image_url', '')
+                    if image_url == 'null' or image_url == 'None':
+                        image_url = ''
                     
                     # 重複チェック（question_idで）
                     if self.db_manager.db_type == 'postgresql':
@@ -195,32 +202,36 @@ class QuestionManager:
                         if self.db_manager.db_type == 'postgresql':
                             self.db_manager.execute_query(
                                 '''INSERT INTO questions 
-                                   (question_id, question_text, choices, correct_answer, explanation, genre) 
-                                   VALUES (%s, %s, %s, %s, %s, %s)''',
+                                   (question_id, question_text, choices, correct_answer, explanation, genre, image_url) 
+                                   VALUES (%s, %s, %s, %s, %s, %s, %s)''',
                                 (
                                     question_id,
                                     question['question_text'],
                                     choices_json,
                                     question['correct_answer'],
                                     question.get('explanation', ''),
-                                    question.get('genre', 'その他')
+                                    question.get('genre', 'その他'),
+                                    image_url
                                 )
                             )
                         else:
                             self.db_manager.execute_query(
                                 '''INSERT INTO questions 
-                                   (question_id, question_text, choices, correct_answer, explanation, genre) 
-                                   VALUES (?, ?, ?, ?, ?, ?)''',
+                                   (question_id, question_text, choices, correct_answer, explanation, genre, image_url) 
+                                   VALUES (?, ?, ?, ?, ?, ?, ?)''',
                                 (
                                     question_id,
                                     question['question_text'],
                                     choices_json,
                                     question['correct_answer'],
                                     question.get('explanation', ''),
-                                    question.get('genre', 'その他')
+                                    question.get('genre', 'その他'),
+                                    image_url
                                 )
                             )
                         saved_count += 1
+                    else:
+                        errors.append(f"問題 {question_id}: 既に登録されています（スキップ）")
                     
                 except Exception as e:
                     error_msg = f"問題保存エラー {question.get('question_id', f'Q{i+1}')}: {e}"
@@ -240,6 +251,34 @@ class QuestionManager:
             'total_count': len(questions),
             'errors': errors
         }
+    
+    def check_year_exists(self, year):
+        """指定された年度の問題が既に登録されているかチェック"""
+        try:
+            if self.db_manager.db_type == 'postgresql':
+                result = self.db_manager.execute_query(
+                    'SELECT COUNT(*) as count FROM questions WHERE question_id LIKE %s',
+                    (f'{year}_%',)
+                )
+            else:
+                result = self.db_manager.execute_query(
+                    'SELECT COUNT(*) as count FROM questions WHERE question_id LIKE ?',
+                    (f'{year}_%',)
+                )
+            return result[0]['count'] > 0 if result else False
+        except Exception as e:
+            print(f"Error checking year existence: {e}")
+            return False
+    
+    def delete_all_questions(self):
+        """すべての問題を削除（学習履歴は保持）"""
+        try:
+            self.db_manager.execute_query('DELETE FROM questions')
+            # 学習履歴は削除しない！
+            return {'success': True, 'message': 'すべての問題を削除しました（学習履歴は保持）'}
+        except Exception as e:
+            print(f"Error deleting all questions: {e}")
+            return {'success': False, 'error': str(e)}
     
     def get_available_genres(self):
         """利用可能なジャンル一覧を取得"""

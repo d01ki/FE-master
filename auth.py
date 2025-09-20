@@ -29,7 +29,7 @@ def init_auth_routes(app, db_manager):
     @app.route('/register', methods=['GET', 'POST'])
     def register():
         if 'user_id' in session:
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('main.dashboard'))
             
         if request.method == 'POST':
             username = request.form['username'].strip()
@@ -82,7 +82,7 @@ def init_auth_routes(app, db_manager):
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if 'user_id' in session:
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('main.dashboard'))
             
         if request.method == 'POST':
             username = request.form['username'].strip()
@@ -100,7 +100,7 @@ def init_auth_routes(app, db_manager):
                 session['username'] = 'admin'
                 session['is_admin'] = True
                 flash('管理者としてログインしました。', 'success')
-                return redirect(url_for('admin'))
+                return redirect(url_for('admin.admin'))
             
             try:
                 user = db_manager.execute_query(
@@ -114,7 +114,7 @@ def init_auth_routes(app, db_manager):
                     session['username'] = user[0]['username']
                     session['is_admin'] = user[0]['is_admin']
                     flash(f'ようこそ、{username}さん！', 'success')
-                    return redirect(url_for('dashboard'))
+                    return redirect(url_for('main.dashboard'))
                 else:
                     flash('ユーザー名またはパスワードが正しくありません。', 'error')
             except Exception as e:
@@ -137,7 +137,7 @@ def init_auth_routes(app, db_manager):
                 session['username'] = 'admin'
                 session['is_admin'] = True
                 flash('管理者としてログインしました。', 'success')
-                return redirect(url_for('admin'))
+                return redirect(url_for('admin.admin'))
             else:
                 flash('管理者のユーザー名またはパスワードが正しくありません。', 'error')
                 
