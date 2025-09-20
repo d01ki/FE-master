@@ -9,9 +9,7 @@ import json
 import random
 import re
 
-exam_bp = Blueprint('exam', __name__
-
-)
+exam_bp = Blueprint('exam', __name__)
 
 def is_image_url(text):
     """テキストが画像URLかどうかを判定"""
@@ -93,11 +91,13 @@ def mock_exam_start(filename):
         # 画像選択肢フラグを追加
         questions = add_image_choice_flags(questions)
         
-        # セッションに問題を保存
+        # セッションに問題と問題数を保存
         session['mock_exam_questions'] = questions
+        session['mock_exam_total'] = len(questions)
         session.modified = True
         
         print(f"📚 Saved {len(questions)} questions to session")
+        print(f"📊 Session size: {len(str(questions))} bytes")
         
         return render_template('mock_exam_practice.html', 
                              questions=questions, 
@@ -117,13 +117,30 @@ def submit_mock_exam():
     try:
         data = request.get_json()
         answers = data.get('answers', {})
+        total_from_client = data.get('total_questions', 0)
         
         print(f"📝 Received answers: {len(answers)} questions")
+        print(f"📊 Total from client: {total_from_client}")
         
         # セッションから問題を取得
         questions = session.get('mock_exam_questions', [])
+        total_from_session = session.get('mock_exam_total', 0)
         
         print(f"📚 Questions from session: {len(questions) if questions else 0}")
+        print(f"📊 Total from session: {total_from_session}")
+        
+        # セッションに問題がない場合、クライアントから送られた問題数を使用
+        if not questions and total_from_client > 0:
+            print(f"⚠️  Using total from client: {total_from_client}")
+            total_count = total_from_client
+            
+            # 簡易採点（セッションなしの場合）
+            # 注: 正解データがないため、採点不可
+            return jsonify({
+                'error': '試験データがセッションから失われました。正確な採点ができません。',
+                'answered_count': len(answers),
+                'total_count': total_count
+            }), 400
         
         if not questions:
             print(f"❌ No questions in session!")
@@ -145,6 +162,7 @@ def submit_mock_exam():
         
         # セッションをクリア
         session.pop('mock_exam_questions', None)
+        session.pop('mock_exam_total', None)
         
         print(f"✅ Result: {correct_count}/{total_count} = {score}%")
         
