@@ -130,6 +130,12 @@
                     <a href="{{ url_for('exam.mock_exam') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint in ['exam.mock_exam', 'exam.mock_exam_start'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-clipboard-list mr-2"></i>模擬試験
                     </a>
+                    <a href="{{ url_for('ranking.achievement_page') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint in ['ranking.achievement_page', 'ranking.achievement_review'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-trophy mr-2"></i>達成度
+                    </a>
+                    <a href="{{ url_for('ranking.ranking_page') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'ranking.ranking_page' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-ranking-star mr-2"></i>ランキング
+                    </a>
                     <a href="{{ url_for('main.history') }}" class="nav-link px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'main.history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-history mr-2"></i>学習履歴
                     </a>
@@ -170,6 +176,12 @@
                     </a>
                     <a href="{{ url_for('exam.mock_exam') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint in ['exam.mock_exam', 'exam.mock_exam_start'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-clipboard-list mr-2"></i>模擬試験
+                    </a>
+                    <a href="{{ url_for('ranking.achievement_page') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint in ['ranking.achievement_page', 'ranking.achievement_review'] %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-trophy mr-2"></i>達成度
+                    </a>
+                    <a href="{{ url_for('ranking.ranking_page') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'ranking.ranking_page' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
+                        <i class="fas fa-ranking-star mr-2"></i>ランキング
                     </a>
                     <a href="{{ url_for('main.history') }}" class="block px-4 py-2 rounded-lg transition-all duration-200 {% if request.endpoint == 'main.history' %}bg-white/10 text-white{% else %}text-gray-300 hover:text-white hover:bg-white/5{% endif %}">
                         <i class="fas fa-history mr-2"></i>学習履歴
