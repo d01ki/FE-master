@@ -5,6 +5,7 @@
 from flask import Blueprint, render_template, jsonify, session, redirect, url_for, request, flash
 from functools import wraps
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return redirect(url_for('login'))
+            return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -45,6 +46,7 @@ def ranking_page():
         
     except Exception as e:
         logger.error(f"ランキングページエラー: {e}")
+        logger.error(traceback.format_exc())
         flash('ランキングの取得に失敗しました', 'error')
         return redirect(url_for('main.dashboard'))
 
@@ -101,6 +103,7 @@ def achievement_page():
         
     except Exception as e:
         logger.error(f"達成度ページエラー: {e}")
+        logger.error(traceback.format_exc())
         flash('達成度の取得に失敗しました', 'error')
         return redirect(url_for('main.dashboard'))
 
@@ -137,43 +140,33 @@ def achievement_review(achievement_level):
         
     except Exception as e:
         logger.error(f"達成度別復習エラー: {e}")
+        logger.error(traceback.format_exc())
         flash('問題の取得に失敗しました', 'error')
         return redirect(url_for('ranking.achievement_page'))
 
-@ranking_bp.route('/achievement/practice/<int:question_id>')
+@ranking_bp.route('/achievement/start/<int:question_id>')
 @login_required
-def achievement_practice(question_id):
-    """達成度から問題演習を開始"""
+def achievement_start_practice(question_id):
+    """達成度から特定の問題演習を開始"""
     try:
         from flask import current_app
         
         db_manager = current_app.db_manager
+        question_manager = current_app.question_manager
         
-        # 問題が存在するか確認
-        if db_manager.db_type == 'postgresql':
-            question = db_manager.execute_query(
-                "SELECT * FROM questions WHERE id = %s",
-                (question_id,)
-            )
-        else:
-            question = db_manager.execute_query(
-                "SELECT * FROM questions WHERE id = ?",
-                (question_id,)
-            )
+        # 問題を取得
+        question = question_manager.get_question_by_id(question_id)
         
         if not question:
             flash('問題が見つかりません', 'error')
             return redirect(url_for('ranking.achievement_page'))
         
-        # セッションに問題IDを保存
-        session['current_question_id'] = question_id
-        session['practice_mode'] = 'achievement'
-        
-        # 問題演習ページにリダイレクト
-        return redirect(url_for('practice.random_practice'))
+        # 直接問題ページを表示
+        return render_template('question.html', question=question, mode='achievement')
         
     except Exception as e:
         logger.error(f"問題演習開始エラー: {e}")
+        logger.error(traceback.format_exc())
         flash('問題の読み込みに失敗しました', 'error')
         return redirect(url_for('ranking.achievement_page'))
 
