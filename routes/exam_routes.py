@@ -8,8 +8,12 @@ import os
 import json
 import random
 import re
+import uuid
 
 exam_bp = Blueprint('exam', __name__)
+
+# メモリ内に試験データを保存（本番ではRedisなど使用）
+exam_sessions = {}
 
 def is_image_url(text):
     """テキストが画像URLかどうかを判定"""
@@ -91,17 +95,25 @@ def mock_exam_start(filename):
         # 画像選択肢フラグを追加
         questions = add_image_choice_flags(questions)
         
-        # セッションに問題と問題数を保存
-        session['mock_exam_questions'] = questions
-        session['mock_exam_total'] = len(questions)
+        # 試験セッションIDを生成
+        exam_session_id = str(uuid.uuid4())
+        
+        # メモリに保存（セッションではなく）
+        exam_sessions[exam_session_id] = {
+            'questions': questions,
+            'user_id': session.get('user_id')
+        }
+        
+        # セッションにはIDだけ保存
+        session['exam_session_id'] = exam_session_id
         session.modified = True
         
-        print(f"📚 Saved {len(questions)} questions to session")
-        print(f"📊 Session size: {len(str(questions))} bytes")
+        print(f"📚 Created exam session: {exam_session_id} with {len(questions)} questions")
         
         return render_template('mock_exam_practice.html', 
                              questions=questions, 
-                             exam_info=file_info)
+                             exam_info=file_info,
+                             exam_session_id=exam_session_id)
         
     except Exception as e:
         print(f"❌ Mock exam start error: {e}")
@@ -117,34 +129,20 @@ def submit_mock_exam():
     try:
         data = request.get_json()
         answers = data.get('answers', {})
-        total_from_client = data.get('total_questions', 0)
+        exam_session_id = data.get('exam_session_id')
         
         print(f"📝 Received answers: {len(answers)} questions")
-        print(f"📊 Total from client: {total_from_client}")
+        print(f"📊 Exam session ID: {exam_session_id}")
         
-        # セッションから問題を取得
-        questions = session.get('mock_exam_questions', [])
-        total_from_session = session.get('mock_exam_total', 0)
+        # メモリから問題を取得
+        if not exam_session_id or exam_session_id not in exam_sessions:
+            print(f"❌ No exam session found for ID: {exam_session_id}")
+            return jsonify({'error': '試験セッションが見つかりません。ページを再読み込みして試験を再開してください。'}), 400
         
-        print(f"📚 Questions from session: {len(questions) if questions else 0}")
-        print(f"📊 Total from session: {total_from_session}")
+        exam_data = exam_sessions[exam_session_id]
+        questions = exam_data['questions']
         
-        # セッションに問題がない場合、クライアントから送られた問題数を使用
-        if not questions and total_from_client > 0:
-            print(f"⚠️  Using total from client: {total_from_client}")
-            total_count = total_from_client
-            
-            # 簡易採点（セッションなしの場合）
-            # 注: 正解データがないため、採点不可
-            return jsonify({
-                'error': '試験データがセッションから失われました。正確な採点ができません。',
-                'answered_count': len(answers),
-                'total_count': total_count
-            }), 400
-        
-        if not questions:
-            print(f"❌ No questions in session!")
-            return jsonify({'error': '試験データが見つかりません。ページを再読み込みして試験を再開してください。'}), 400
+        print(f"📚 Questions from session: {len(questions)}")
         
         # 採点処理
         total_count = len(questions)
@@ -160,9 +158,9 @@ def submit_mock_exam():
         
         score = round((correct_count / total_count) * 100, 1) if total_count > 0 else 0
         
-        # セッションをクリア
-        session.pop('mock_exam_questions', None)
-        session.pop('mock_exam_total', None)
+        # 試験セッションを削除
+        del exam_sessions[exam_session_id]
+        session.pop('exam_session_id', None)
         
         print(f"✅ Result: {correct_count}/{total_count} = {score}%")
         
