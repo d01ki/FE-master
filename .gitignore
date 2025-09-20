@@ -101,3 +101,13 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Question Data - SECURITY: Prevent leaking exam questions and answers
+# Uncomment these lines if you want to exclude question data from git:
+# json_questions/*.json
+# uploads/*.json
+# uploads/*.xlsx
+# uploads/*.csv
+
+# Note: If you're using a public repository, it's HIGHLY RECOMMENDED
+# to uncomment the above lines or use a private repository
