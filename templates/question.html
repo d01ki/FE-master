@@ -35,7 +35,7 @@
                 </div>
                 
                 <!-- 問題の画像表示エリア -->
-                {% if question.image_url and question.image_url != 'null' and question.image_url != 'None' and question.image_url != '' %}
+                {% if question.image_url %}
                 <div class="mb-8">
                     <div class="bg-white/10 rounded-xl p-4 border border-white/20">
                         <img src="{{ question.image_url }}" 
@@ -155,7 +155,7 @@ const hasChoiceImages = {{ 'true' if question.has_image_choices else 'false' }};
 console.log('Question loaded:', {
     id: '{{ question.id }}',
     has_image_choices: {{ 'true' if question.has_image_choices else 'false' }},
-    image_url: '{{ question.image_url }}'
+    image_url: '{{ question.image_url if question.image_url else "None" }}'
 });
 
 // 解答選択関数
