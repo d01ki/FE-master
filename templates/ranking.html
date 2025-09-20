@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}ランキング - 基本情報技術者試験 学習アプリ{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- ヘッダー -->
+        <div class="text-center mb-12 fade-in-up">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                <span class="gradient-text">🏆 総合ランキング</span>
+            </h1>
+            <p class="text-gray-400 text-lg">正答率・解答量・活動度を総合したスコアランキング</p>
+        </div>
+
+        <!-- 自分の情報 -->
+        <div class="glass rounded-2xl p-6 mb-8 fade-in-up shadow-xl">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fas fa-user-circle mr-2 text-blue-400"></i>
+                あなたの順位
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white/5 rounded-xl p-4">
+                    <div class="text-sm text-gray-400 mb-1">総合順位</div>
+                    <div class="text-3xl font-bold text-yellow-400">
+                        {% if user_stats.rank %}
+                            {{ user_stats.rank }}位
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="bg-white/5 rounded-xl p-4">
+                    <div class="text-sm text-gray-400 mb-1">総合スコア</div>
+                    <div class="text-3xl font-bold text-purple-400">
+                        {{ user_stats.scores.total_score }}
+                    </div>
+                </div>
+                <div class="bg-white/5 rounded-xl p-4">
+                    <div class="text-sm text-gray-400 mb-1">正答率</div>
+                    <div class="text-3xl font-bold text-green-400">
+                        {{ user_stats.accuracy_rate }}%
+                    </div>
+                </div>
+                <div class="bg-white/5 rounded-xl p-4">
+                    <div class="text-sm text-gray-400 mb-1">解答数</div>
+                    <div class="text-3xl font-bold text-blue-400">
+                        {{ user_stats.total_answers }}問
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- スコア内訳 -->
+        <div class="glass rounded-2xl p-6 mb-8 fade-in-up shadow-xl">
+            <h3 class="text-lg font-semibold mb-4">スコア内訳</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-400">正答率スコア (40%)</span>
+                        <span class="text-white font-medium">{{ user_stats.scores.accuracy_score }}</span>
+                    </div>
+                    <div class="w-full bg-white/10 rounded-full h-2">
+                        <div class="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full" 
+                             style="width: {{ user_stats.scores.accuracy_score }}%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-400">解答量スコア (35%)</span>
+                        <span class="text-white font-medium">{{ user_stats.scores.volume_score }}</span>
+                    </div>
+                    <div class="w-full bg-white/10 rounded-full h-2">
+                        <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full" 
+                             style="width: {{ user_stats.scores.volume_score }}%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-400">活動度スコア (25%)</span>
+                        <span class="text-white font-medium">{{ user_stats.scores.activity_score }}</span>
+                    </div>
+                    <div class="w-full bg-white/10 rounded-full h-2">
+                        <div class="bg-gradient-to-r from-purple-400 to-purple-600 h-2 rounded-full" 
+                             style="width: {{ user_stats.scores.activity_score }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ランキングテーブル -->
+        <div class="glass rounded-2xl p-6 fade-in-up shadow-xl">
+            <h2 class="text-xl font-semibold mb-6">TOP 100</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-white/10">
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">順位</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">ユーザー名</th>
+                            <th class="px-4 py-3 text-center text-sm font-medium text-gray-400">総合スコア</th>
+                            <th class="px-4 py-3 text-center text-sm font-medium text-gray-400">正答率</th>
+                            <th class="px-4 py-3 text-center text-sm font-medium text-gray-400">解答量</th>
+                            <th class="px-4 py-3 text-center text-sm font-medium text-gray-400">活動度</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in rankings %}
+                        <tr class="border-b border-white/5 hover:bg-white/5 transition-colors
+                                   {% if entry.user_id == current_user_id %}bg-blue-500/10{% endif %}">
+                            <td class="px-4 py-4">
+                                {% if entry.rank <= 3 %}
+                                    <span class="text-2xl">
+                                        {% if entry.rank == 1 %}🥇
+                                        {% elif entry.rank == 2 %}🥈
+                                        {% elif entry.rank == 3 %}🥉
+                                        {% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="text-gray-400">{{ entry.rank }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-user-circle mr-2 text-gray-500"></i>
+                                    <span class="{% if entry.user_id == current_user_id %}text-blue-300 font-medium{% endif %}">
+                                        {{ entry.username }}
+                                        {% if entry.user_id == current_user_id %}
+                                            <span class="text-xs text-blue-400">(あなた)</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 text-center">
+                                <span class="text-lg font-bold text-purple-400">{{ entry.total_score }}</span>
+                            </td>
+                            <td class="px-4 py-4 text-center text-green-400">{{ entry.accuracy_score }}</td>
+                            <td class="px-4 py-4 text-center text-blue-400">{{ entry.volume_score }}</td>
+                            <td class="px-4 py-4 text-center text-yellow-400">{{ entry.activity_score }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 説明 -->
+        <div class="mt-8 text-center text-sm text-gray-500">
+            <p>※ 管理者ユーザーはランキングから除外されています</p>
+            <p>※ スコアは正答率(40%) + 解答量(35%) + 活動度(25%)で計算されます</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
