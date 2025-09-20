@@ -78,21 +78,55 @@
                     {% endif %}
                     
                     <!-- 選択肢 -->
-                    <div class="space-y-4 mb-8">
-                        {% for choice_key, choice_text in question.choices.items() %}
-                            <label class="choice-option flex items-start p-6 border-2 border-white/20 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 hover:border-orange-500/50 transition-all duration-200 group">
-                                <input type="radio" 
-                                       name="question_{{ question_idx }}" 
-                                       value="{{ choice_key }}" 
-                                       data-question-index="{{ question_idx }}"
-                                       class="answer-radio mt-2 mr-4 text-orange-500 focus:ring-orange-500 w-5 h-5 bg-white/10 border-white/30">
-                                <div class="flex-1">
-                                    <span class="font-bold text-orange-400 mr-3 text-xl">{{ choice_key }}.</span>
-                                    <span class="text-white text-lg leading-relaxed">{{ choice_text }}</span>
-                                </div>
-                            </label>
-                        {% endfor %}
-                    </div>
+                    {% if question.has_image_choices %}
+                        <!-- 選択肢が画像の場合: 2×2グリッド -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                            {% for choice_key, choice_value in question.choices.items() %}
+                                <label class="choice-option choice-image-option relative p-4 bg-white/5 rounded-xl border-2 border-white/10 hover:bg-white/10 hover:border-orange-500/50 transition-all duration-200 cursor-pointer group">
+                                    <input type="radio" 
+                                           name="question_{{ question_idx }}" 
+                                           value="{{ choice_key }}" 
+                                           data-question-index="{{ question_idx }}"
+                                           class="answer-radio hidden">
+                                    
+                                    <!-- 選択肢ラベル（左上） -->
+                                    <div class="absolute top-3 left-3 z-10">
+                                        <div class="flex items-center">
+                                            <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio-icon group-hover:border-orange-400 transition-colors bg-slate-900/80">
+                                                <div class="w-4 h-4 rounded-full bg-gradient-to-r from-orange-500 to-red-600 hidden choice-dot"></div>
+                                            </div>
+                                            <span class="font-bold text-orange-400 text-lg ml-2 bg-slate-900/80 px-2 py-1 rounded">{{ choice_key }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 選択肢の画像 -->
+                                    <div class="bg-white/10 rounded-lg p-3 border border-white/20">
+                                        <img src="{{ choice_value }}" 
+                                             alt="選択肢 {{ choice_key }}" 
+                                             class="w-full h-auto rounded-lg"
+                                             onerror="this.parentElement.innerHTML='<p class=\\'text-gray-400 text-center py-8\\'>{{ choice_key }}. 画像を読み込めませんでした</p>'">
+                                    </div>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <!-- 選択肢がテキストの場合: リスト表示 -->
+                        <div class="space-y-4 mb-8">
+                            {% for choice_key, choice_text in question.choices.items() %}
+                                <label class="choice-option flex items-start p-6 border-2 border-white/20 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 hover:border-orange-500/50 transition-all duration-200 group">
+                                    <input type="radio" 
+                                           name="question_{{ question_idx }}" 
+                                           value="{{ choice_key }}" 
+                                           data-question-index="{{ question_idx }}"
+                                           class="answer-radio mt-2 mr-4 text-orange-500 focus:ring-orange-500 w-5 h-5 bg-white/10 border-white/30">
+                                    <div class="flex-1">
+                                        <span class="font-bold text-orange-400 mr-3 text-xl">{{ choice_key }}.</span>
+                                        <span class="text-white text-lg leading-relaxed">{{ choice_text }}</span>
+                                    </div>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                     
                     <!-- Navigation -->
                     <div class="flex justify-between items-center">
@@ -171,11 +205,26 @@ document.addEventListener('DOMContentLoaded', function() {
             answers[questionIndex] = selectedValue;
             updateProgress();
             
-            const allOptions = this.closest('.question-card').querySelectorAll('.choice-option');
+            const currentCard = this.closest('.question-card');
+            const allOptions = currentCard.querySelectorAll('.choice-option');
+            
+            // すべての選択肢をリセット
             allOptions.forEach(opt => {
                 opt.classList.remove('border-orange-500', 'bg-orange-500/20');
+                const dot = opt.querySelector('.choice-dot');
+                const radioIcon = opt.querySelector('.choice-radio-icon');
+                if (dot) dot.classList.add('hidden');
+                if (radioIcon) radioIcon.classList.remove('border-orange-500');
             });
-            this.closest('.choice-option').classList.add('border-orange-500', 'bg-orange-500/20');
+            
+            // 選択された選択肢をハイライト
+            const selectedOption = this.closest('.choice-option');
+            selectedOption.classList.add('border-orange-500', 'bg-orange-500/20');
+            
+            const dot = selectedOption.querySelector('.choice-dot');
+            const radioIcon = selectedOption.querySelector('.choice-radio-icon');
+            if (dot) dot.classList.remove('hidden');
+            if (radioIcon) radioIcon.classList.add('border-orange-500');
             
             console.log(`Q${questionIndex}: Selected ${selectedValue}, Total: ${Object.keys(answers).length}`);
         });
