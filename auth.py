@@ -41,7 +41,7 @@ def init_auth_routes(app, db_manager):
                 flash('ユーザー名とパスワードを入力してください。', 'error')
                 return redirect(url_for('register'))
             
-            # Security: Block "admin" username registration
+            # Security: Block "admin" username registration (case-insensitive)
             if username.lower() == 'admin':
                 flash('このユーザー名は使用できません。別のユーザー名を選択してください。', 'error')
                 return redirect(url_for('register'))
@@ -58,14 +58,29 @@ def init_auth_routes(app, db_manager):
                 flash('パスワードが一致しません。', 'error')
                 return redirect(url_for('register'))
 
-            # Check duplicate username
+            # Check duplicate username (case-insensitive)
             try:
+                # Check for exact match first
                 existing_user = db_manager.execute_query(
                     'SELECT id FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT id FROM users WHERE username = ?',
                     (username,)
                 )
-                if existing_user:
-                    flash('このユーザー名は既に使用されています。', 'error')
+                
+                # Also check case-insensitive to prevent similar usernames
+                if db_manager.db_type == 'postgresql':
+                    existing_user_case_insensitive = db_manager.execute_query(
+                        'SELECT id FROM users WHERE LOWER(username) = LOWER(%s)',
+                        (username,)
+                    )
+                else:
+                    # SQLite is case-insensitive by default for LIKE, but we'll be explicit
+                    existing_user_case_insensitive = db_manager.execute_query(
+                        'SELECT id FROM users WHERE LOWER(username) = LOWER(?)',
+                        (username,)
+                    )
+                
+                if existing_user or existing_user_case_insensitive:
+                    flash('このユーザー名は既に使用されています。別のユーザー名を選択してください。', 'error')
                     return redirect(url_for('register'))
 
                 # Create user
@@ -98,7 +113,7 @@ def init_auth_routes(app, db_manager):
                 return redirect(url_for('login'))
             
             # Admin login via environment variable (if set)
-            if username == 'admin' and Config.ADMIN_PASSWORD:
+            if username.lower() == 'admin' and Config.ADMIN_PASSWORD:
                 if password == Config.ADMIN_PASSWORD:
                     session.clear()
                     session['user_id'] = 'admin'
@@ -111,6 +126,7 @@ def init_auth_routes(app, db_manager):
                     return redirect(url_for('login'))
             
             try:
+                # Case-sensitive username lookup for regular users
                 user = db_manager.execute_query(
                     'SELECT * FROM users WHERE username = %s' if db_manager.db_type == 'postgresql' else 'SELECT * FROM users WHERE username = ?',
                     (username,)
@@ -138,7 +154,7 @@ def init_auth_routes(app, db_manager):
             password = request.form['password']
             
             # Admin login via environment variable only
-            if username == 'admin' and Config.ADMIN_PASSWORD and password == Config.ADMIN_PASSWORD:
+            if username.lower() == 'admin' and Config.ADMIN_PASSWORD and password == Config.ADMIN_PASSWORD:
                 session.clear()
                 session['user_id'] = 'admin'
                 session['username'] = 'admin'
