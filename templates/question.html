@@ -34,7 +34,7 @@
                     <p class="text-white text-lg leading-relaxed font-medium whitespace-pre-line">{{ question.question_text }}</p>
                 </div>
                 
-                <!-- 画像表示エリア（image_urlが存在し、nullでない場合のみ表示） -->
+                <!-- 問題の画像表示エリア -->
                 {% if question.image_url and question.image_url != 'null' and question.image_url != 'None' %}
                 <div class="mb-8">
                     <div class="bg-white/10 rounded-xl p-4 border border-white/20">
@@ -47,25 +47,62 @@
                 {% endif %}
                 
                 <!-- 選択肢 -->
-                <div class="space-y-4 mb-8">
-                    {% for choice_key, choice_text in question.choices.items() %}
-                        <button class="choice-option w-full text-left p-5 bg-white/5 rounded-xl border-2 border-white/10 hover:bg-white/10 hover:border-blue-500/50 transition-all duration-200 group"
-                                data-choice="{{ choice_key }}"
-                                onclick="selectAnswer('{{ choice_key }}')">
-                            <div class="flex items-start">
-                                <div class="flex items-center mr-4 mt-1">
-                                    <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors">
-                                        <div class="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hidden choice-dot"></div>
+                {% if question.choice_images %}
+                    <!-- 選択肢に画像がある場合: 2×2グリッドレイアウト -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                        {% for choice_key, choice_text in question.choices.items() %}
+                            <button class="choice-option choice-image-option relative p-4 bg-white/5 rounded-xl border-2 border-white/10 hover:bg-white/10 hover:border-blue-500/50 transition-all duration-200 group"
+                                    data-choice="{{ choice_key }}"
+                                    onclick="selectAnswer('{{ choice_key }}')">
+                                <!-- 選択肢ラベル（左上） -->
+                                <div class="absolute top-3 left-3 z-10">
+                                    <div class="flex items-center">
+                                        <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors bg-slate-900/80">
+                                            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hidden choice-dot"></div>
+                                        </div>
+                                        <span class="font-bold text-blue-400 text-lg ml-2 bg-slate-900/80 px-2 py-1 rounded">{{ choice_key }}</span>
                                     </div>
                                 </div>
-                                <div class="flex-1">
-                                    <span class="font-bold text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
-                                    <span class="text-white text-base leading-relaxed">{{ choice_text }}</span>
+                                
+                                <!-- 選択肢の画像 -->
+                                {% if question.choice_images.get(choice_key) %}
+                                    <div class="bg-white/10 rounded-lg p-3 border border-white/20">
+                                        <img src="{{ question.choice_images[choice_key] }}" 
+                                             alt="選択肢 {{ choice_key }}" 
+                                             class="w-full h-auto rounded-lg"
+                                             onerror="this.parentElement.innerHTML='<p class=\'text-gray-400 text-center py-8\'>{{ choice_key }}. {{ choice_text }}</p>'">
+                                    </div>
+                                {% else %}
+                                    <!-- 画像がない選択肢はテキスト表示 -->
+                                    <div class="text-white text-center py-8">
+                                        <span class="text-base leading-relaxed">{{ choice_text }}</span>
+                                    </div>
+                                {% endif %}
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <!-- 選択肢がテキストのみの場合: 従来のリスト表示 -->
+                    <div class="space-y-4 mb-8">
+                        {% for choice_key, choice_text in question.choices.items() %}
+                            <button class="choice-option w-full text-left p-5 bg-white/5 rounded-xl border-2 border-white/10 hover:bg-white/10 hover:border-blue-500/50 transition-all duration-200 group"
+                                    data-choice="{{ choice_key }}"
+                                    onclick="selectAnswer('{{ choice_key }}')">
+                                <div class="flex items-start">
+                                    <div class="flex items-center mr-4 mt-1">
+                                        <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors">
+                                            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hidden choice-dot"></div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="font-bold text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
+                                        <span class="text-white text-base leading-relaxed">{{ choice_text }}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </button>
-                    {% endfor %}
-                </div>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% endif %}
                 
                 <!-- スマートなナビゲーションボタン -->
                 <div class="flex justify-center">
@@ -120,6 +157,7 @@
 {% block scripts %}
 <script>
 let answered = false;
+const hasChoiceImages = {{ 'true' if question.choice_images else 'false' }};
 
 // 解答選択関数
 function selectAnswer(selectedChoice) {
