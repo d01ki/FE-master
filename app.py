@@ -14,7 +14,7 @@ from question_manager import QuestionManager
 from helper_functions import parse_filename_info
 
 # ルーティングモジュールのインポート
-from routes import main_bp, practice_bp, exam_bp, admin_bp
+from routes import main_bp, practice_bp, exam_bp, admin_bp, ranking_bp
 
 app = Flask(__name__)
 
@@ -78,6 +78,7 @@ app.register_blueprint(main_bp)
 app.register_blueprint(practice_bp)
 app.register_blueprint(exam_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(ranking_bp)
 
 # JSONフォルダの問題を自動読み込み
 def load_json_questions_on_startup():
