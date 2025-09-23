@@ -3,6 +3,7 @@
 """
 from flask import Blueprint, render_template, session, redirect, url_for, current_app
 from auth import login_required
+from persistent_session import persistent_login_required
 
 main_bp = Blueprint('main', __name__)
 
@@ -10,13 +11,25 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/index')
 def index():
     """トップページ - 未ログインユーザーはログインページへリダイレクト"""
+    # 永続セッションチェック
+    session_manager = getattr(current_app, 'session_manager', None)
+    if session_manager:
+        session_token = session.get('session_token')
+        if session_token:
+            session_data = session_manager.get_session_data(session_token)
+            if session_data:
+                # セッションデータを復元
+                for key, value in session_data['user_data'].items():
+                    session[key] = value
+                return redirect(url_for('main.dashboard'))
+    
     if 'user_id' in session:
         return redirect(url_for('main.dashboard'))
     # 未ログインユーザーは直接ログインページへ
     return redirect(url_for('login'))
 
 @main_bp.route('/dashboard')
-@login_required
+@persistent_login_required
 def dashboard():
     """ダッシュボード"""
     db_manager = current_app.db_manager
@@ -59,7 +72,7 @@ def dashboard():
     return render_template('dashboard.html', stats=stats)
 
 @main_bp.route('/history')
-@login_required
+@persistent_login_required
 def history():
     """学習履歴ページ"""
     db_manager = current_app.db_manager
