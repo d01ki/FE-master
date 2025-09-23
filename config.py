@@ -12,7 +12,7 @@ class Config:
     """Application configuration"""
     
     # Flask settings
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'fe2025-super-secure-secret-key-12345-abcdef'
     FLASK_ENV = os.environ.get('FLASK_ENV', 'production')
     DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
     
@@ -21,7 +21,7 @@ class Config:
     
     # Determine database type from URL
     if DATABASE_URL:
-        if DATABASE_URL.startswith('postgresql'):
+        if DATABASE_URL.startswith('postgresql://fe_master_db_user:hqvV0rxK79mnFtBp3doqrvJVCCVE6M7v@dpg-d2ug21h5pdvs73aenmsg-a.oregon-postgres.render.com/fe_master_db'):
             DATABASE_TYPE = 'postgresql'
         else:
             DATABASE_TYPE = 'sqlite'
