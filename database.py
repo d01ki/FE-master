@@ -24,15 +24,22 @@ class DatabaseManager:
         if self.db_type == 'postgresql' and not PSYCOPG2_AVAILABLE:
             print("PostgreSQL requested but psycopg2 not available. Falling back to SQLite.")
             self.db_type = 'sqlite'
-            config['DATABASE_TYPE'] = 'sqlite'
+            self.config['DATABASE_TYPE'] = 'sqlite'
         
     def get_connection(self):
         if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
-            conn = psycopg2.connect(self.config['DATABASE_URL'])
+            conn = psycopg2.connect(
+                host=self.config['DB_HOST'],
+                database=self.config['DB_NAME'],
+                user=self.config['DB_USER'],
+                password=self.config['DB_PASSWORD'],
+                port=self.config['DB_PORT']
+            )
             conn.autocommit = False
             return conn
         else:
-            conn = sqlite3.connect(self.config['DATABASE'])
+            db_path = self.config.get('DATABASE', 'fe_exam.db')
+            conn = sqlite3.connect(db_path)
             conn.row_factory = sqlite3.Row
             return conn
     
@@ -40,12 +47,11 @@ class DatabaseManager:
         conn = self.get_connection()
         try:
             if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
-                cur = conn.cursor()
+                cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
                 cur.execute(query, params or ())
                 if query.strip().upper().startswith(('SELECT', 'WITH')):
                     result = cur.fetchall()
-                    columns = [desc[0] for desc in cur.description]
-                    result = [dict(zip(columns, row)) for row in result]
+                    result = [dict(row) for row in result]
                 else:
                     result = cur.rowcount
                     conn.commit()
@@ -168,8 +174,16 @@ class DatabaseManager:
         
         # 既存のテーブルにimage_urlカラムを追加（存在しない場合のみ）
         try:
-            table_info = self.execute_query("PRAGMA table_info(questions)")
-            column_names = [col['name'] for col in table_info]
+            # PRAGMA table_info()の結果を安全に処理
+            table_info_result = self.execute_query("PRAGMA table_info(questions)")
+            column_names = []
+            
+            if table_info_result and isinstance(table_info_result, list):
+                for row in table_info_result:
+                    if isinstance(row, dict) and 'name' in row:
+                        column_names.append(row['name'])
+                    elif hasattr(row, 'keys') and 'name' in row.keys():
+                        column_names.append(row['name'])
             
             if 'image_url' not in column_names:
                 self.execute_query("ALTER TABLE questions ADD COLUMN image_url TEXT")
@@ -179,8 +193,11 @@ class DatabaseManager:
             if 'choice_images' not in column_names:
                 self.execute_query("ALTER TABLE questions ADD COLUMN choice_images TEXT")
                 logger.info("Added choice_images column to questions table")
+                
         except Exception as e:
-            logger.error(f"SQLite alter table error: {e}")
+            # ALTER TABLEエラーをより詳細にログ出力し、継続実行
+            logger.warning(f"SQLite alter table warning (non-fatal): {e}")
+            print(f"SQLite alter table error: {e}")
 
 class QuestionManager:
     def __init__(self, db_manager):
