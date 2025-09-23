@@ -6,6 +6,7 @@ Flask + PostgreSQL/SQLite + ユーザー認証を使用した学習プラット�
 from flask import Flask
 import os
 from datetime import timedelta
+from config import Config
 
 # 分割されたモジュールのインポート
 from database import DatabaseManager
@@ -18,58 +19,43 @@ from routes import main_bp, practice_bp, exam_bp, admin_bp, ranking_bp
 
 app = Flask(__name__)
 
-# 環境変数の取得
-IS_PRODUCTION = os.environ.get('FLASK_ENV') != 'development'
+# Configクラスの設定を適用
+app.config.from_object(Config)
 
 # セキュリティ強化: SECRET_KEYを環境変数から取得（必須）
-app.secret_key = os.environ.get('SECRET_KEY')
-if not app.secret_key:
-    if not IS_PRODUCTION:
+if not app.config['SECRET_KEY']:
+    if Config.DEBUG:
         # 開発環境用のフォールバック
-        app.secret_key = 'dev-secret-key-change-in-production'
+        app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
         print("⚠️  警告: 開発用のSECRET_KEYを使用しています。本番環境では必ず環境変数を設定してください。")
     else:
         raise ValueError("❌ セキュリティエラー: SECRET_KEY環境変数が設定されていません。本番環境では必須です。")
 
-# セッション設定（本番環境ではHTTPS強制）
+# セッション設定（セッション時間を延長してRender無料枠でも使いやすく）
 app.config.update(
-    SESSION_COOKIE_SECURE=IS_PRODUCTION,  # 本番環境ではTrue（HTTPS必須）
+    SESSION_COOKIE_SECURE=not Config.DEBUG,  # 本番環境ではTrue（HTTPS必須）
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
-    PERMANENT_SESSION_LIFETIME=timedelta(hours=2)
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=24)  # セッション時間を24時間に延長
 )
 
-# データベース設定
-DATABASE_URL = os.environ.get('DATABASE_URL')
-DATABASE_TYPE = 'postgresql' if DATABASE_URL else 'sqlite'
-
 # 管理者パスワードの設定（本番環境では環境変数必須）
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
-if not ADMIN_PASSWORD:
-    if not IS_PRODUCTION:
+if not Config.ADMIN_PASSWORD:
+    if Config.DEBUG:
         # 開発環境のみデフォルト使用を許可
-        ADMIN_PASSWORD = 'dev-admin-password-CHANGE-ME'
+        Config.ADMIN_PASSWORD = 'dev-admin-password-CHANGE-ME'
         print("⚠️  警告: 開発用のデフォルト管理者パスワードを使用しています。")
     else:
         raise ValueError("❌ セキュリティエラー: 本番環境ではADMIN_PASSWORD環境変数の設定が必須です。")
 
-app.config.update({
-    'DATABASE_URL': DATABASE_URL,
-    'DATABASE': 'fe_exam.db',
-    'DATABASE_TYPE': DATABASE_TYPE,
-    'UPLOAD_FOLDER': 'uploads',
-    'JSON_FOLDER': 'json_questions',
-    'ADMIN_PASSWORD': ADMIN_PASSWORD,
-    'IS_PRODUCTION': IS_PRODUCTION
-})
-
 # フォルダ作成
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.config['JSON_FOLDER'], exist_ok=True)
+os.makedirs('uploads', exist_ok=True)
+os.makedirs('json_questions', exist_ok=True)
 os.makedirs('static/images', exist_ok=True)
 
 # データベースマネージャーの初期化
-db_manager = DatabaseManager(app.config)
+db_config = Config.get_db_config()
+db_manager = DatabaseManager(db_config)
 db_manager.init_database()
 
 # QuestionManagerの初期化
@@ -78,6 +64,7 @@ question_manager = QuestionManager(db_manager)
 # アプリケーションコンテキストに追加
 app.db_manager = db_manager
 app.question_manager = question_manager
+app.config['ADMIN_PASSWORD'] = Config.ADMIN_PASSWORD
 
 # 認証システムの初期化
 init_auth_routes(app, db_manager)
@@ -93,7 +80,8 @@ app.register_blueprint(ranking_bp)
 def load_json_questions_on_startup():
     """起動時にJSONフォルダの問題を自動読み込み"""
     try:
-        if os.path.exists(app.config['JSON_FOLDER']):
+        json_folder = 'json_questions'
+        if os.path.exists(json_folder):
             existing_count = db_manager.execute_query('SELECT COUNT(*) as count FROM questions')
             existing_total = existing_count[0]['count'] if existing_count else 0
             
@@ -103,9 +91,9 @@ def load_json_questions_on_startup():
                 loaded_files = []
                 total_questions = 0
                 
-                for filename in os.listdir(app.config['JSON_FOLDER']):
+                for filename in os.listdir(json_folder):
                     if filename.endswith('.json'):
-                        json_filepath = os.path.join(app.config['JSON_FOLDER'], filename)
+                        json_filepath = os.path.join(json_folder, filename)
                         try:
                             import json
                             with open(json_filepath, 'r', encoding='utf-8') as json_file:
@@ -140,13 +128,12 @@ def load_json_questions_on_startup():
 load_json_questions_on_startup()
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5002))
-    # デバッグモードは開発環境のみ有効化（本番環境では自動的に無効）
-    debug_mode = not IS_PRODUCTION
+    port = Config.PORT
+    debug_mode = Config.DEBUG
     
     print(f"🚀 Starting Flask app on port {port}")
     print(f"🔧 Debug mode: {'ON (開発環境)' if debug_mode else 'OFF (本番環境)'}")
-    print(f"💾 Database: {DATABASE_TYPE.upper()}")
-    print(f"🔒 Cookie Secure: {'ON (HTTPS必須)' if IS_PRODUCTION else 'OFF (開発環境)'}")
+    print(f"💾 Database: {Config.DATABASE_TYPE.upper()}")
+    print(f"🔒 Cookie Secure: {'ON (HTTPS必須)' if not debug_mode else 'OFF (開発環境)'}")
     
-    app.run(debug=debug_mode, host='0.0.0.0', port=port)
+    app.run(debug=debug_mode, host=Config.HOST, port=port)
