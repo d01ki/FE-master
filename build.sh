@@ -8,16 +8,14 @@ pip install -r requirements.txt
 
 echo "🗄️ Initializing database..."
 python -c "
+from config import Config
 from database import DatabaseManager
-import os
 
-config = {
-    'DATABASE_URL': os.environ.get('DATABASE_URL'),
-    'DATABASE_TYPE': 'postgresql' if os.environ.get('DATABASE_URL') else 'sqlite',
-    'DATABASE': 'fe_exam.db'
-}
+# Configクラスからデータベース設定を取得
+db_config = Config.get_db_config()
+print(f'Database Type: {db_config[\"DATABASE_TYPE\"]}')
 
-db = DatabaseManager(config)
+db = DatabaseManager(db_config)
 db.init_database()
 print('✅ Database initialized successfully!')
 "
