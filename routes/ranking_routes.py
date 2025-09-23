@@ -4,6 +4,7 @@
 
 from flask import Blueprint, render_template, jsonify, session, redirect, url_for, request, flash
 from functools import wraps
+from persistent_session import persistent_login_required
 import logging
 import traceback
 
@@ -11,16 +12,8 @@ logger = logging.getLogger(__name__)
 
 ranking_bp = Blueprint('ranking', __name__)
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('auth.login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
 @ranking_bp.route('/ranking')
-@login_required
+@persistent_login_required
 def ranking_page():
     """ランキングページ"""
     try:
@@ -51,7 +44,7 @@ def ranking_page():
         return redirect(url_for('main.dashboard'))
 
 @ranking_bp.route('/api/ranking/user/<int:user_id>')
-@login_required
+@persistent_login_required
 def get_user_ranking(user_id):
     """ユーザーのランキング情報をAPI経由で取得"""
     try:
@@ -76,7 +69,7 @@ def get_user_ranking(user_id):
         }), 500
 
 @ranking_bp.route('/achievement')
-@login_required
+@persistent_login_required
 def achievement_page():
     """達成度ページ（網羅表）"""
     try:
@@ -108,7 +101,7 @@ def achievement_page():
         return redirect(url_for('main.dashboard'))
 
 @ranking_bp.route('/achievement/review/<achievement_level>')
-@login_required
+@persistent_login_required
 def achievement_review(achievement_level):
     """達成度別の問題復習ページ"""
     try:
@@ -145,7 +138,7 @@ def achievement_review(achievement_level):
         return redirect(url_for('ranking.achievement_page'))
 
 @ranking_bp.route('/achievement/practice/<int:question_id>')
-@login_required
+@persistent_login_required
 def achievement_practice(question_id):
     """達成度から特定の問題演習を開始"""
     try:
@@ -170,7 +163,7 @@ def achievement_practice(question_id):
         return redirect(url_for('ranking.achievement_page'))
 
 @ranking_bp.route('/api/achievement/coverage')
-@login_required
+@persistent_login_required
 def get_achievement_coverage():
     """達成度網羅表データをAPI経由で取得"""
     try:
