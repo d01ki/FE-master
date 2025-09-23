@@ -81,7 +81,8 @@ def upload_questions():
     try:
         # ファイルを保存
         filename = secure_filename(file.filename)
-        filepath = os.path.join(current_app.config['JSON_FOLDER'], filename)
+        json_folder = current_app.config.get('JSON_FOLDER', 'json_questions')
+        filepath = os.path.join(json_folder, filename)
         file.save(filepath)
         
         # JSONファイルを読み込んで検証
