@@ -3,6 +3,7 @@
 """
 from flask import Blueprint, render_template, request, jsonify, session, current_app
 from auth import login_required
+from persistent_session import persistent_login_required
 import json
 
 practice_bp = Blueprint('practice', __name__)
@@ -16,7 +17,7 @@ def get_question_manager():
     return current_app.question_manager
 
 @practice_bp.route('/practice/random')
-@login_required
+@persistent_login_required
 def random_practice():
     """ランダム問題練習"""
     question_manager = get_question_manager()
@@ -30,7 +31,7 @@ def random_practice():
     return render_template('question.html', question=question, mode='random')
 
 @practice_bp.route('/practice/genre')
-@login_required
+@persistent_login_required
 def genre_practice():
     """ジャンル別演習のトップページ"""
     db_manager = get_db_manager()
@@ -82,7 +83,7 @@ def genre_practice():
     return render_template('genre_practice.html', genres=genre_stats)
 
 @practice_bp.route('/practice/genre/<genre>')
-@login_required
+@persistent_login_required
 def practice_by_genre(genre):
     """ジャンル別問題演習"""
     question_manager = get_question_manager()
@@ -98,7 +99,7 @@ def practice_by_genre(genre):
     return render_template('practice.html', questions=questions, genre=genre)
 
 @practice_bp.route('/questions/<int:question_id>/answer', methods=['POST'])
-@login_required
+@persistent_login_required
 def submit_answer(question_id):
     """問題の解答を送信"""
     question_manager = get_question_manager()
