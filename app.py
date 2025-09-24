@@ -3,7 +3,7 @@
 Flask + PostgreSQL/SQLite + ユーザー認証を使用した学習プラットフォーム
 """
 
-from flask import Flask
+from flask import Flask, redirect, url_for
 import os
 from datetime import timedelta
 from config import Config
@@ -68,6 +68,21 @@ app.config['ADMIN_PASSWORD'] = Config.ADMIN_PASSWORD
 
 # 認証システムの初期化
 init_auth_routes(app, db_manager)
+
+# ===== Auth endpoint aliases for compatibility =====
+# Some middlewares or decorators may call url_for('auth.login') style endpoints.
+# Provide alias endpoints that redirect to the actual views.
+@app.route('/auth/login', endpoint='auth.login')
+def _auth_login_alias():
+    return redirect(url_for('login'))
+
+@app.route('/auth/register', endpoint='auth.register')
+def _auth_register_alias():
+    return redirect(url_for('register'))
+
+@app.route('/auth/logout', endpoint='auth.logout')
+def _auth_logout_alias():
+    return redirect(url_for('logout'))
 
 # ブループリントの登録
 app.register_blueprint(main_bp)
