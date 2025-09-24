@@ -70,6 +70,7 @@ app.config['ADMIN_PASSWORD'] = Config.ADMIN_PASSWORD
 init_auth_routes(app, db_manager)
 
 # ===== Auth endpoint aliases for compatibility with middleware expecting 'auth.*' endpoints =====
+# Some middlewares may call url_for('auth.login') style endpoints; these redirect to actual views.
 @app.route('/auth/login', endpoint='auth.login')
 def _auth_login_alias():
     return redirect(url_for('login'))
