@@ -3,69 +3,82 @@
 {% block title %}問題 - {{ super() }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-    <div class="container mx-auto px-6 py-8">
-        <!-- 問題カード -->
-        <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden mb-8">
-            <div class="bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-6 border-b border-white/10">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-white flex items-center">
-                        <span class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-question-circle text-blue-400"></i>
-                        </span>
-                        問題
-                    </h2>
-                    <div class="flex items-center space-x-2">
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-4xl mx-auto px-6 py-8">
+        <!-- Progress Bar -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between text-sm text-gray-500 mb-2">
+                <span>進行状況</span>
+                <span>問題を解いてスキルアップ</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 65%"></div>
+            </div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <!-- Header -->
+            <div class="px-8 py-6 bg-gray-50 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h1 class="text-xl font-semibold text-gray-900">基本情報技術者試験</h1>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
                         {% if question.genre %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                                <i class="fas fa-tag mr-1"></i>{{ question.genre }}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                {{ question.genre }}
                             </span>
                         {% endif %}
-                        <span class="text-sm text-gray-400 bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                            ID: {{ question.question_id or question.id }}
+                        <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                            No.{{ question.question_id or question.id }}
                         </span>
                     </div>
                 </div>
             </div>
             
             <div class="p-8">
-                <!-- 問題文 -->
+                <!-- Question Text -->
                 <div class="mb-8">
-                    <p class="text-white text-lg leading-relaxed font-medium whitespace-pre-line">{{ question.question_text }}</p>
+                    <p class="text-gray-800 text-lg leading-relaxed whitespace-pre-line">{{ question.question_text }}</p>
                 </div>
                 
-                <!-- 問題の画像表示エリア -->
+                <!-- Question Image -->
                 {% if question.image_url %}
                 <div class="mb-8">
-                    <div class="bg-white/10 rounded-xl p-4 border border-white/20">
+                    <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
                         <img src="{{ question.image_url }}" 
                              alt="問題の図表" 
-                             class="max-w-full h-auto rounded-lg mx-auto"
-                             onerror="this.parentElement.innerHTML='<p class=\\'text-gray-400 text-center py-4\\'>画像を読み込めませんでした: {{ question.image_url }}</p>'">
+                             class="max-w-full h-auto rounded-lg mx-auto shadow-sm"
+                             onerror="this.parentElement.innerHTML='<p class=\\'text-gray-400 text-center py-4\\'>画像を読み込めませんでした</p>'">
                     </div>
                 </div>
                 {% endif %}
                 
-                <!-- 選択肢 -->
+                <!-- Choices -->
                 {% if question.has_image_choices %}
-                    <!-- 選択肢に画像URLがある場合: 2×2グリッドレイアウト -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <!-- Image Choices: Grid Layout -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         {% for choice_key, choice_value in question.choices.items() %}
-                            <button class="choice-option choice-image-option relative p-4 bg-white/5 rounded-xl border-2 border-white/10 hover:bg-white/10 hover:border-blue-500/50 transition-all duration-200 group"
+                            <button class="choice-option choice-image-option relative p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group"
                                     data-choice="{{ choice_key }}"
                                     onclick="selectAnswer('{{ choice_key }}')">
-                                <!-- 選択肢ラベル（左上） -->
                                 <div class="absolute top-3 left-3 z-10">
                                     <div class="flex items-center">
-                                        <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors bg-slate-900/80">
-                                            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hidden choice-dot"></div>
+                                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors">
+                                            <div class="w-3 h-3 rounded-full bg-blue-500 hidden choice-dot"></div>
                                         </div>
-                                        <span class="font-bold text-blue-400 text-lg ml-2 bg-slate-900/80 px-2 py-1 rounded">{{ choice_key }}</span>
+                                        <span class="font-semibold text-gray-700 text-lg ml-2 bg-white/90 px-2 py-1 rounded">{{ choice_key }}</span>
                                     </div>
                                 </div>
                                 
-                                <!-- 選択肢の画像 -->
-                                <div class="bg-white/10 rounded-lg p-3 border border-white/20">
+                                <div class="bg-white rounded-lg p-4 border border-gray-100">
                                     <img src="{{ choice_value }}" 
                                          alt="選択肢 {{ choice_key }}" 
                                          class="w-full h-auto rounded-lg"
@@ -75,21 +88,21 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <!-- 選択肢がテキストのみの場合: 従来のリスト表示 -->
+                    <!-- Text Choices: List Layout -->
                     <div class="space-y-4 mb-8">
                         {% for choice_key, choice_text in question.choices.items() %}
-                            <button class="choice-option w-full text-left p-5 bg-white/5 rounded-xl border-2 border-white/10 hover:bg-white/10 hover:border-blue-500/50 transition-all duration-200 group"
+                            <button class="choice-option w-full text-left p-6 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group"
                                     data-choice="{{ choice_key }}"
                                     onclick="selectAnswer('{{ choice_key }}')">
-                                <div class="flex items-start">
-                                    <div class="flex items-center mr-4 mt-1">
-                                        <div class="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors">
-                                            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hidden choice-dot"></div>
+                                <div class="flex items-start space-x-4">
+                                    <div class="flex-shrink-0 mt-1">
+                                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center choice-radio group-hover:border-blue-400 transition-colors">
+                                            <div class="w-3 h-3 rounded-full bg-blue-500 hidden choice-dot"></div>
                                         </div>
                                     </div>
                                     <div class="flex-1">
-                                        <span class="font-bold text-blue-400 text-lg mr-3">{{ choice_key }}.</span>
-                                        <span class="text-white text-base leading-relaxed">{{ choice_text }}</span>
+                                        <span class="font-semibold text-blue-600 text-lg mr-3">{{ choice_key }}</span>
+                                        <span class="text-gray-800 text-base leading-relaxed">{{ choice_text }}</span>
                                     </div>
                                 </div>
                             </button>
@@ -97,7 +110,283 @@
                     </div>
                 {% endif %}
                 
-                <!-- スマートなナビゲーションボタン -->
+                <!-- Result Display Area (Initially Hidden) -->
+                <div id="result-display" class="hidden">
+                    <div id="answer-feedback" class="p-6 rounded-lg border-l-4 mb-6">
+                        <div class="flex items-center">
+                            <div id="feedback-icon" class="mr-3"></div>
+                            <div>
+                                <h3 id="feedback-title" class="text-lg font-semibold"></h3>
+                                <p id="feedback-message" class="text-sm text-gray-600 mt-1"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Explanation -->
+                    <div id="explanation-section" class="hidden">
+                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center mr-3">
+                                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                    </svg>
+                                </div>
+                                <h4 class="text-lg font-semibold text-gray-900">解説</h4>
+                            </div>
+                            <p id="explanation-text" class="text-gray-700 leading-relaxed whitespace-pre-line"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="mt-8 flex items-center justify-between">
+            <button onclick="goHome()" 
+                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                ホーム
+            </button>
+            
+            <button id="next-button" onclick="nextQuestion()" disabled
+                    class="inline-flex items-center px-6 py-3 text-base font-medium text-white bg-gray-400 border border-transparent rounded-lg cursor-not-allowed transition-all duration-200">
+                <span id="next-button-text">解答を選択してください</span>
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let answered = false;
+let isCorrect = false;
+
+function selectAnswer(selectedChoice) {
+    if (answered) return;
+    
+    answered = true;
+    
+    // Add loading state to selected option
+    const selectedOption = document.querySelector(`[data-choice="${selectedChoice}"]`);
+    selectedOption.innerHTML += '<div class="absolute inset-0 bg-blue-100 rounded-lg flex items-center justify-center"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div></div>';
+    
+    // Disable all choices
+    document.querySelectorAll('.choice-option').forEach(option => {
+        option.disabled = true;
+        option.classList.remove('hover:border-blue-300', 'hover:bg-blue-50');
+        option.classList.add('cursor-not-allowed', 'opacity-75');
+    });
+    
+    // Submit answer
+    fetch('/answer', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            question_id: '{{ question.id }}',
+            answer: selectedChoice
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove loading state
+        const loadingDiv = selectedOption.querySelector('.absolute.inset-0');
+        if (loadingDiv) {
+            loadingDiv.remove();
+        }
+        
+        showResult(data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Remove loading state
+        const loadingDiv = selectedOption.querySelector('.absolute.inset-0');
+        if (loadingDiv) {
+            loadingDiv.remove();
+        }
+        showError();
+    });
+}
+
+function showResult(data) {
+    isCorrect = data.is_correct;
+    
+    // Update choice styling with animations
+    document.querySelectorAll('.choice-option').forEach((option, index) => {
+        const choiceKey = option.getAttribute('data-choice');
+        option.classList.remove('opacity-75');
+        
+        setTimeout(() => {
+            if (choiceKey === data.correct_answer) {
+                option.classList.add('border-green-500', 'bg-green-50');
+                option.querySelector('.choice-radio').innerHTML = '<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            } else if (choiceKey === data.user_answer && !isCorrect) {
+                option.classList.add('border-red-500', 'bg-red-50');
+                option.querySelector('.choice-radio').innerHTML = '<svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            }
+        }, index * 100);
+    });
+    
+    // Show result feedback with animation
+    setTimeout(() => {
+        const feedbackElement = document.getElementById('answer-feedback');
+        const iconElement = document.getElementById('feedback-icon');
+        const titleElement = document.getElementById('feedback-title');
+        const messageElement = document.getElementById('feedback-message');
+        
+        if (isCorrect) {
+            feedbackElement.className = 'p-6 rounded-lg border-l-4 mb-6 border-green-500 bg-green-50 transform translate-y-4 opacity-0 transition-all duration-300';
+            iconElement.innerHTML = '<svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            titleElement.textContent = '正解です！';
+            titleElement.className = 'text-lg font-semibold text-green-800';
+            messageElement.textContent = '素晴らしい理解力です。この調子で学習を続けましょう。';
+            messageElement.className = 'text-sm text-green-600 mt-1';
+        } else {
+            feedbackElement.className = 'p-6 rounded-lg border-l-4 mb-6 border-red-500 bg-red-50 transform translate-y-4 opacity-0 transition-all duration-300';
+            iconElement.innerHTML = '<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            titleElement.textContent = '不正解';
+            titleElement.className = 'text-lg font-semibold text-red-800';
+            messageElement.textContent = `正解は「${data.correct_answer}」です。解説を確認して理解を深めましょう。`;
+            messageElement.className = 'text-sm text-red-600 mt-1';
+        }
+        
+        // Show explanation if available
+        if (data.explanation && data.explanation.trim()) {
+            document.getElementById('explanation-text').textContent = data.explanation;
+            document.getElementById('explanation-section').classList.remove('hidden');
+        }
+        
+        // Show result display with animation
+        document.getElementById('result-display').classList.remove('hidden');
+        
+        // Animate in
+        setTimeout(() => {
+            feedbackElement.classList.remove('translate-y-4', 'opacity-0');
+        }, 50);
+        
+        // Enable next button with pulse effect
+        const nextButton = document.getElementById('next-button');
+        nextButton.disabled = false;
+        nextButton.className = 'inline-flex items-center px-6 py-3 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 border border-transparent rounded-lg cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 animate-pulse';
+        document.getElementById('next-button-text').textContent = '次の問題へ';
+        
+        // Remove pulse after 2 seconds
+        setTimeout(() => {
+            nextButton.classList.remove('animate-pulse');
+        }, 2000);
+        
+    }, 500);
+}
+
+function showError() {
+    const feedbackElement = document.getElementById('answer-feedback');
+    feedbackElement.className = 'p-6 rounded-lg border-l-4 mb-6 border-yellow-500 bg-yellow-50';
+    document.getElementById('feedback-icon').innerHTML = '<svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>';
+    document.getElementById('feedback-title').textContent = 'エラーが発生しました';
+    document.getElementById('feedback-title').className = 'text-lg font-semibold text-yellow-800';
+    document.getElementById('feedback-message').textContent = '解答の処理中にエラーが発生しました。ページを更新してもう一度お試しください。';
+    document.getElementById('result-display').classList.remove('hidden');
+}
+
+function nextQuestion() {
+    if (!answered) return;
+    
+    // Add loading animation to button
+    const button = document.getElementById('next-button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="ml-2">読み込み中...</span>';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        {% if mode == 'random' %}
+            window.location.href = "{{ url_for('practice.random_practice') }}";
+        {% else %}
+            window.location.href = "{{ url_for('practice.genre_practice') }}";
+        {% endif %}
+    }, 300);
+}
+
+function goHome() {
+    window.location.href = "{{ url_for('main.dashboard') }}";
+}
+
+// Enhanced keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Escape key to go home
+    if (e.key === 'Escape') {
+        goHome();
+        return;
+    }
+    
+    if (answered) {
+        // Space or Enter to proceed to next question
+        if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            nextQuestion();
+        }
+        return;
+    }
+    
+    // Number keys for choice selection (1-4)
+    if (e.key >= '1' && e.key <= '4') {
+        e.preventDefault();
+        const choices = ['ア', 'イ', 'ウ', 'エ'];
+        const choiceIndex = parseInt(e.key) - 1;
+        if (choiceIndex < choices.length) {
+            const targetChoice = choices[choiceIndex];
+            const targetButton = document.querySelector(`[data-choice="${targetChoice}"]`);
+            if (targetButton && !answered) {
+                // Add visual feedback for keyboard selection
+                targetButton.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+                setTimeout(() => {
+                    selectAnswer(targetChoice);
+                }, 200);
+            }
+        }
+    }
+    
+    // Letter keys for choice selection (a-d)
+    const letterMap = { 'a': 'ア', 'i': 'イ', 'u': 'ウ', 'e': 'エ' };
+    if (letterMap[e.key.toLowerCase()]) {
+        e.preventDefault();
+        const targetChoice = letterMap[e.key.toLowerCase()];
+        const targetButton = document.querySelector(`[data-choice="${targetChoice}"]`);
+        if (targetButton && !answered) {
+            targetButton.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+            setTimeout(() => {
+                selectAnswer(targetChoice);
+            }, 200);
+        }
+    }
+});
+
+// Show keyboard shortcuts hint
+document.addEventListener('DOMContentLoaded', function() {
+    if (!window.localStorage.getItem('keyboard-hint-shown')) {
+        setTimeout(() => {
+            const hint = document.createElement('div');
+            hint.className = 'fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50 animate-pulse';
+            hint.innerHTML = 'ヒント: 1-4キーで選択肢を選べます';
+            document.body.appendChild(hint);
+            
+            setTimeout(() => {
+                hint.style.opacity = '0';
+                setTimeout(() => hint.remove(), 300);
+            }, 3000);
+            
+            window.localStorage.setItem('keyboard-hint-shown', 'true');
+        }, 1000);
+    }
+});
+</script>
+{% endblock %}
                 <div class="flex justify-center">
                     <div class="relative group">
                         <a href="{{ url_for('practice.random_practice') }}" class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg transition-all duration-200 font-medium flex items-center backdrop-blur-sm border border-white/20">

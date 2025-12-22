@@ -2,7 +2,7 @@
 メインページのルーティング
 """
 from flask import Blueprint, render_template, session, redirect, url_for, current_app, jsonify
-from app.core.auth import login_required
+from auth import login_required
 
 main_bp = Blueprint('main', __name__)
 
@@ -41,18 +41,24 @@ def dashboard():
         'total_answers': 0
     }
     
-    # ジャンル一覧を取得
-    genres = question_manager.get_all_genres()
-    
     if user_id and user_id != 'admin':
         # ユーザーの解答統計を取得
-        user_stats = db_manager.execute_query('''
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
-            FROM user_answers 
-            WHERE user_id = ?
-        ''', (user_id,))
+        if db_manager.db_type == 'postgresql':
+            user_stats = db_manager.execute_query('''
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
+                FROM user_answers 
+                WHERE user_id = %s
+            ''', (user_id,))
+        else:
+            user_stats = db_manager.execute_query('''
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
+                FROM user_answers 
+                WHERE user_id = ?
+            ''', (user_id,))
         
         if user_stats and user_stats[0]['total'] > 0:
             stats['total_answers'] = user_stats[0]['total']
@@ -60,7 +66,7 @@ def dashboard():
             if stats['total_answers'] > 0:
                 stats['accuracy_rate'] = round((stats['correct_answers'] / stats['total_answers']) * 100, 1)
     
-    return render_template('dashboard.html', stats=stats, genres=genres)
+    return render_template('dashboard.html', stats=stats)
 
 @main_bp.route('/history')
 @login_required
@@ -108,7 +114,7 @@ def history():
             LIMIT 100
         ''', (user_id,))
     
-    # Noneチェックとdatetime変換
+    # Noneチェック
     safe_history = []
     for item in history_data:
         safe_item = dict(item)
@@ -118,17 +124,6 @@ def history():
             safe_item['genre'] = '不明'
         if safe_item['correct_answer'] is None:
             safe_item['correct_answer'] = '不明'
-        
-        # datetime を文字列に変換
-        if safe_item.get('answered_at'):
-            if hasattr(safe_item['answered_at'], 'strftime'):
-                safe_item['answered_at'] = safe_item['answered_at'].strftime('%Y-%m-%d %H:%M')
-            elif isinstance(safe_item['answered_at'], str):
-                # PostgreSQLから文字列として返される場合は最初の16文字を取得
-                safe_item['answered_at'] = safe_item['answered_at'][:16]
-        else:
-            safe_item['answered_at'] = None
-            
         safe_history.append(safe_item)
     
     return render_template('history.html', history=safe_history)

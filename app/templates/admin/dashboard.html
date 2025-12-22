@@ -3,156 +3,134 @@
 {% block title %}管理者ダッシュボード - {{ super() }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-    <div class="container mx-auto px-6 py-8">
+<div class="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+    <div class="container mx-auto px-4 py-4 flex-1 flex flex-col">
         <!-- Header -->
-        <div class="mb-8">
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                <h1 class="text-3xl font-bold text-white mb-2 flex items-center">
-                    <span class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
-                        <i class="fas fa-cog text-white text-xl"></i>
+        <div class="mb-4">
+            <div class="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                <h1 class="text-xl font-bold text-white flex items-center">
+                    <span class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-cog text-white text-sm"></i>
                     </span>
                     管理者ダッシュボード
                 </h1>
-                <p class="text-gray-300">システムの管理と監視</p>
             </div>
         </div>
 
         <!-- システム統計 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-4 gap-3 mb-4">
             <!-- 問題数 -->
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-300 text-sm">問題数</p>
-                        <p class="text-2xl font-bold text-white">{{ stats.questions_count }}</p>
+            <div class="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 bg-blue-600 rounded flex items-center justify-center mr-2">
+                        <i class="fas fa-question-circle text-white text-xs"></i>
                     </div>
-                    <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-question-circle text-white"></i>
+                    <div>
+                        <p class="text-gray-300 text-xs">問題数</p>
+                        <p class="text-lg font-bold text-white">{{ stats.questions_count }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- ユーザー数 -->
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-300 text-sm">ユーザー数</p>
-                        <p class="text-2xl font-bold text-white">{{ stats.users_count }}</p>
+            <div class="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 bg-green-600 rounded flex items-center justify-center mr-2">
+                        <i class="fas fa-users text-white text-xs"></i>
                     </div>
-                    <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-users text-white"></i>
+                    <div>
+                        <p class="text-gray-300 text-xs">ユーザー数</p>
+                        <p class="text-lg font-bold text-white">{{ stats.users_count }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- 総解答数 -->
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-300 text-sm">総解答数</p>
-                        <p class="text-2xl font-bold text-white">{{ stats.answers_count }}</p>
+            <div class="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 bg-purple-600 rounded flex items-center justify-center mr-2">
+                        <i class="fas fa-chart-line text-white text-xs"></i>
                     </div>
-                    <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-chart-line text-white"></i>
+                    <div>
+                        <p class="text-gray-300 text-xs">総解答数</p>
+                        <p class="text-lg font-bold text-white">{{ stats.answers_count }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- ジャンル数 -->
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-300 text-sm">ジャンル数</p>
-                        <p class="text-2xl font-bold text-white">{{ stats.genres_count }}</p>
+            <div class="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 bg-orange-600 rounded flex items-center justify-center mr-2">
+                        <i class="fas fa-tags text-white text-xs"></i>
                     </div>
-                    <div class="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-tags text-white"></i>
+                    <div>
+                        <p class="text-gray-300 text-xs">ジャンル数</p>
+                        <p class="text-lg font-bold text-white">{{ stats.genres_count }}</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- 管理機能メニュー -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="flex-1 grid grid-cols-2 gap-4 mb-4">
             <!-- ユーザー管理 -->
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-200">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-200 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
                         <i class="fas fa-users text-white text-xl"></i>
                     </div>
                     <a href="{{ url_for('admin.user_management') }}" 
-                       class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm">
+                       class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 font-medium">
                         管理
                     </a>
                 </div>
-                <h3 class="text-xl font-bold text-white mb-2">ユーザー管理</h3>
-                <p class="text-gray-300 mb-4">登録ユーザーの管理、学習進捗の確認、アカウントの有効/無効切り替えができます。</p>
-                <ul class="text-sm text-gray-400 space-y-1">
-                    <li>• ユーザー一覧表示</li>
-                    <li>• 学習進捗確認</li>
-                    <li>• データリセット</li>
-                    <li>• アカウント管理</li>
-                </ul>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold text-white mb-3">ユーザー管理</h3>
+                    <p class="text-gray-300 mb-4">登録ユーザーの管理、学習進捗の確認、アカウントの有効/無効切り替えができます。</p>
+                    <div class="grid grid-cols-2 gap-2 text-sm text-gray-400">
+                        <div class="flex items-center"><i class="fas fa-check text-purple-400 mr-1"></i>ユーザー一覧</div>
+                        <div class="flex items-center"><i class="fas fa-check text-purple-400 mr-1"></i>学習進捗</div>
+                        <div class="flex items-center"><i class="fas fa-check text-purple-400 mr-1"></i>データリセット</div>
+                        <div class="flex items-center"><i class="fas fa-check text-purple-400 mr-1"></i>アカウント管理</div>
+                    </div>
+                </div>
             </div>
 
             <!-- データ管理 -->
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-200">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+            <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-200 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                         <i class="fas fa-upload text-white text-xl"></i>
                     </div>
                     <a href="{{ url_for('upload.upload_page') }}" 
-                       class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm">
+                       class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 font-medium">
                         アップロード
                     </a>
                 </div>
-                <h3 class="text-xl font-bold text-white mb-2">データ管理</h3>
-                <p class="text-gray-300 mb-4">問題データ（JSON）と画像ファイルのアップロード、データベースの管理ができます。</p>
-                <ul class="text-sm text-gray-400 space-y-1">
-                    <li>• JSON/ZIPアップロード</li>
-                    <li>• 画像ファイル管理</li>
-                    <li>• データベース統計</li>
-                    <li>• バックアップ</li>
-                </ul>
-            </div>
-
-            <!-- システム情報 -->
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-info-circle text-white text-xl"></i>
-                    </div>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-2">システム情報</h3>
-                <p class="text-gray-300 mb-4">現在のシステム状況と基本情報を表示しています。</p>
-                <div class="text-sm text-gray-400 space-y-2">
-                    <div class="flex justify-between">
-                        <span>データベース:</span>
-                        <span class="text-gray-300">SQLite</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>環境:</span>
-                        <span class="text-gray-300">開発</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>バージョン:</span>
-                        <span class="text-gray-300">1.0.0</span>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold text-white mb-3">データ管理</h3>
+                    <p class="text-gray-300 mb-4">問題データ（JSON）と画像ファイルのアップロード、データベースの管理ができます。</p>
+                    <div class="grid grid-cols-2 gap-2 text-sm text-gray-400">
+                        <div class="flex items-center"><i class="fas fa-check text-green-400 mr-1"></i>JSON/ZIP</div>
+                        <div class="flex items-center"><i class="fas fa-check text-green-400 mr-1"></i>画像管理</div>
+                        <div class="flex items-center"><i class="fas fa-check text-green-400 mr-1"></i>データベース</div>
+                        <div class="flex items-center"><i class="fas fa-check text-green-400 mr-1"></i>バックアップ</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- 操作リンク -->
-        <div class="mt-8 flex flex-wrap gap-4">
+        <div class="flex flex-wrap gap-4">
             <a href="{{ url_for('main.dashboard') }}" 
-               class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
+               class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center">
                 <i class="fas fa-arrow-left mr-2"></i>
                 ダッシュボードに戻る
             </a>
             
             <a href="{{ url_for('logout') }}" 
-               class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
+               class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center">
                 <i class="fas fa-sign-out-alt mr-2"></i>
                 ログアウト
             </a>
