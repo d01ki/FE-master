@@ -1,10 +1,9 @@
-# Python
+# Python関連
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -17,98 +16,57 @@ parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-PYTHONPATH
-
-# Virtual Environment
+MANIFEST
 venv/
+env/
 ENV/
-env.bak/
-venv.bak/
 
-# IDEs
-.idea/
+# データベース関連
+*.db
+*.sqlite
+*.sqlite3
+fe_exam.db
+fe_master.db
+
+# セッション関連
+flask_session/
+cookies.txt
+*_cookies.txt
+
+# IDE関連
 .vscode/
+.idea/
 *.swp
 *.swo
 
-# Database
-*.db
-*.sqlite3
-*.sqlite
-
-# Environment variables - IMPORTANT: Never commit these!
-.env
-.env.local
-.env.*.local
-.env.production
-.env.development
-
-# Logs
-*.log
-logs/
-
-# Cache directories
-__pycache__/
-.cache/
-.pytest_cache/
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Local development settings
-*.local
-local_settings.py
-
-# Flask stuff
-instance/
-.webassets-cache
-
-# Testing
-.coverage
-.coverage.*
-htmlcov/
-.tox/
-.nox/
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# Node.js (if used)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# OS specific
+# OS関連
 .DS_Store
 Thumbs.db
 
-# Temporary files
-*.tmp
-*.temp
-*.swp
-*.swo
-*~
+# ログファイル
+*.log
+logs/
 
-# Question Data - SECURITY: Prevent leaking exam questions and answers
-json_questions/*.json
-uploads/*.json
-uploads/*.xlsx
-uploads/*.csv
-uploads/*.xls
+# 環境変数ファイル（本番用）
+.env.production
+.env.aws
 
-# Keep directory structure but ignore content
-!json_questions/.gitkeep
-!uploads/.gitkeep
+# 一時ファイル
+tmp/
+temp/
+
+# テスト関連
+.coverage
+.pytest_cache/
+htmlcov/
+
+# 開発時の不要ファイル
+data/
+test_files/
+
+# AWS/Docker関連の機密情報
+*.pem
+*.key

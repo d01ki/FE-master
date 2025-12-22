@@ -19,40 +19,8 @@ services:
       - .:/app
       # SQLiteデータベースの永続化
       - ./data:/app/data
-    depends_on:
-      - redis
     networks:
       - app-network
-
-  # Redis（セッション管理用）
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6380:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - app-network
-
-  # PostgreSQL（本番環境用）
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: fe_exam
-      POSTGRES_USER: fe_user
-      POSTGRES_PASSWORD: fe_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network
-    profiles:
-      - production
-
-volumes:
-  redis_data:
-  postgres_data:
 
 networks:
   app-network:

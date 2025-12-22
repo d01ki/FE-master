@@ -61,16 +61,18 @@ logs/
 .pytest_cache/
 htmlcov/
 
-# ドキュメント
-docs/
-
-# 一時ファイル
+# 開発時の一時ファイル
 tmp/
 temp/
+cookies.txt
+*_cookies.txt
+flask_session/
 
-# アップロードファイル
+# 削除したディレクトリ
+backend/
+docs/
 uploads/
 
-# Docker関連（ネストした Dockerfile を除外したい場合）
-# Dockerfile
-# docker-compose*.yml
+# AWS機密情報
+*.pem
+*.key
