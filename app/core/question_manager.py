@@ -98,14 +98,9 @@ class QuestionManager:
     def get_questions_by_genre(self, genre):
         """ジャンル別問題を取得"""
         try:
-            if self.db_manager.db_type == 'postgresql':
-                result = self.db_manager.execute_query(
-                    'SELECT * FROM questions WHERE genre = %s ORDER BY question_id', (genre,)
-                )
-            else:
-                result = self.db_manager.execute_query(
-                    'SELECT * FROM questions WHERE genre = ? ORDER BY question_id', (genre,)
-                )
+            result = self.db_manager.execute_query(
+                'SELECT * FROM questions WHERE genre = ? ORDER BY question_id', (genre,)
+            )
             
             questions = []
             for row in result:
@@ -140,6 +135,32 @@ class QuestionManager:
             return questions
         except Exception as e:
             print(f"Error getting questions by genre {genre}: {e}")
+            return []
+    
+    def get_all_genres(self):
+        """すべてのジャンル一覧を取得"""
+        try:
+            result = self.db_manager.execute_query(
+                'SELECT DISTINCT genre FROM questions WHERE genre IS NOT NULL ORDER BY genre'
+            )
+            
+            genres = []
+            for row in result:
+                genre = row['genre']
+                # ジャンル別問題数も取得
+                count_result = self.db_manager.execute_query(
+                    'SELECT COUNT(*) as count FROM questions WHERE genre = ?', (genre,)
+                )
+                count = count_result[0]['count'] if count_result else 0
+                
+                genres.append({
+                    'name': genre,
+                    'count': count
+                })
+            
+            return genres
+        except Exception as e:
+            print(f"Error getting genres: {e}")
             return []
     
     def get_random_question(self):

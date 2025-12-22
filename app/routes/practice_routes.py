@@ -33,15 +33,12 @@ def random_practice():
 @login_required
 def genre_practice():
     """ジャンル別演習のトップページ"""
-    # 一時的に固定データでテスト
-    stats = {
-        'total_questions': 30,
-        'correct_answers': 8, 
-        'accuracy_rate': 80,
-        'total_answers': 10
-    }
+    question_manager = get_question_manager()
     
-    return render_template('dashboard.html', stats=stats, username=session.get('username'))
+    # ジャンル一覧を取得
+    genres = question_manager.get_all_genres()
+    
+    return render_template('genre_practice.html', genres=genres)
 
 @practice_bp.route('/practice/genre/<genre>')
 @login_required
@@ -49,7 +46,7 @@ def practice_by_genre(genre):
     """ジャンル別問題演習"""
     question_manager = get_question_manager()
     
-    # 指定されたジャンルの問題を取得（これが修正箇所！）
+    # 指定されたジャンルの問題を取得
     questions = question_manager.get_questions_by_genre(genre)
     
     if not questions:
@@ -57,7 +54,10 @@ def practice_by_genre(genre):
                              message=f'{genre}の問題が見つかりません',
                              detail='このジャンルの問題が登録されていません')
     
-    return render_template('practice.html', questions=questions, genre=genre)
+    # 最初の問題を表示
+    question = questions[0] if questions else None
+    
+    return render_template('question.html', question=question, mode='genre', genre=genre)
 
 @practice_bp.route('/questions/<int:question_id>/answer', methods=['POST'])
 @login_required

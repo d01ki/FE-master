@@ -1,163 +1,463 @@
-# FE Master - AWS Docker デプロイメント
+# FE Master - AWS デプロイメント
 
 ## 🏗️ システムアーキテクチャ
 
-### 現在のアーキテクチャ (Docker Development)
+### AWS デプロイメント構成
 
 ```mermaid
 graph TB
-    User[👤 User] --> LB[🌐 Load Balancer<br/>localhost:5000]
-    
-    LB --> App[🐳 Flask Application<br/>Python 3.11]
-    
-    App --> DB[(🗄️ PostgreSQL 15<br/>Database)]
-    App --> Static[📁 Static Files<br/>CSS/JS/Images]
-    
-    subgraph "Docker Compose Stack"
-        App
-        DB
-        Static
-    end
-    
-    subgraph "Application Structure"
-        App --> Auth[🔐 Authentication<br/>Session-based]
-        App --> API[🔌 API Routes<br/>Practice/Admin/Main]
-        App --> Templates[📄 Jinja2 Templates<br/>Bootstrap UI]
-    end
-    
-    subgraph "Data Flow"
-        Auth --> Session[📝 User Sessions]
-        API --> QuestionMgr[❓ Question Manager]
-        QuestionMgr --> QuestDB[(Questions Table)]
-        Auth --> UserMgr[👥 User Manager]
-        UserMgr --> UserDB[(Users Table)]
-        QuestionMgr --> AnswerDB[(Answers Table)]
-    end
-```
-
-### 学習フロー図
-
-```mermaid
-flowchart LR
-    Start([🚀 Start]) --> Login{🔐 Login?}
-    Login -->|Yes| Role{👤 Role?}
-    Login -->|No| Register[📝 Register]
-    Register --> Login
-    
-    Role -->|Admin| AdminDash[👨‍💼 Admin Dashboard]
-    Role -->|User| UserDash[📊 User Dashboard]
-    
-    AdminDash --> UserMgmt[👥 User Management]
-    AdminDash --> DataUpload[📤 Data Upload]
-    AdminDash --> SystemStats[📈 System Stats]
-    
-    UserDash --> Practice[🎯 Practice Mode]
-    UserDash --> History[📚 History]
-    UserDash --> Stats[📊 User Stats]
-    
-    Practice --> RandomQ[🎲 Random Questions]
-    Practice --> GenreQ[🏷️ Genre Questions]
-    
-    RandomQ --> Answer[✍️ Answer Question]
-    GenreQ --> Answer
-    Answer --> Result[✅ Check Result]
-    Result --> Save[💾 Save Answer]
-    Save --> Practice
-    
-    History --> Review[👀 Review Answers]
-```
-
-### AWS デプロイメント環境
-
-```mermaid
-architecture-beta
-    group aws(cloud)[AWS Cloud]
-    
-    service internet(internet)[Internet] in aws
-    service cloudfront(cdn)[CloudFront CDN] in aws
-    service alb(elb)[Application Load Balancer] in aws
-    service ecs(container)[ECS Fargate Cluster] in aws
-    service rds(database)[RDS PostgreSQL] in aws
-    service s3(storage)[S3 Bucket] in aws
-    service secrets(disk)[Secrets Manager] in aws
-    service logs(logs)[CloudWatch Logs] in aws
-    
-    internet:R --> cloudfront:L
-    cloudfront:R --> alb:L
-    alb:R --> ecs:L
-    ecs:R --> rds:L
-    ecs:D --> s3:U
-    ecs:B --> secrets:T
-    ecs:B --> logs:T
-```
-
-### AWS インフラストラクチャ詳細
-
-```mermaid
-graph TB
-    subgraph "🌍 External Access"
+    subgraph "🌐 Internet"
         User[👤 Users]
-        Domain[🌐 Custom Domain<br/>fe-master.example.com]
     end
     
-    User --> Domain
-    Domain --> CDN
-    
-    subgraph "📡 Content Delivery"
-        CDN[☁️ CloudFront<br/>Global CDN]
-        S3Static[📦 S3 Bucket<br/>Static Assets]
-    end
-    
-    CDN --> ALB
-    CDN --> S3Static
-    
-    subgraph "🔀 Load Balancing"
-        ALB[⚖️ Application Load Balancer<br/>Multi-AZ]
-        TG[🎯 Target Groups<br/>Health Checks]
-    end
-    
-    ALB --> TG
-    
-    subgraph "🐳 Container Platform"
-        subgraph "ECS Cluster"
-            direction TB
-            Service[📋 ECS Service<br/>Auto Scaling]
-            TaskA[📦 Task A<br/>Flask App]
-            TaskB[📦 Task B<br/>Flask App]
-            TaskC[📦 Task C<br/>Flask App]
+    subgraph "AWS VPC (10.0.0.0/16)"
+        subgraph "🌍 Public Subnet (10.0.1.0/24)"
+            EC2[🖥️ EC2 Instance<br/>Docker + Flask App<br/>Security Group: sg-api]
         end
         
-        Service --> TaskA
-        Service --> TaskB 
-        Service --> TaskC
-        TG --> Service
+        subgraph "🔒 Private Subnet (10.0.2.0/24)"
+            RDS[(🗄️ RDS PostgreSQL<br/>Security Group: sg-db)]
+        end
     end
     
-    subgraph "🗄️ Database Layer"
-        RDS[(🗄️ RDS PostgreSQL<br/>Multi-AZ)]
-        ReadReplica[(📖 Read Replica<br/>Read Scaling)]
+    User --> EC2
+    EC2 --> RDS
+```
+
+### セキュリティグループ構成
+
+```mermaid
+graph LR
+    subgraph "🛡️ Security Groups"
+        subgraph "sg-api (EC2)"
+            HTTP[HTTP: 80<br/>Source: 0.0.0.0/0]
+            HTTPS[HTTPS: 443<br/>Source: 0.0.0.0/0]
+            SSH[SSH: 22<br/>Source: My IP]
+            App[App: 5000<br/>Source: 0.0.0.0/0]
+        end
+        
+        subgraph "sg-db (RDS)"
+            PostgreSQL[PostgreSQL: 5432<br/>Source: sg-api]
+        end
     end
+```
+
+## 📋 AWS デプロイメント手順
+
+### 1. 事前準備
+
+```bash
+# AWS CLI設定
+aws configure
+
+# キーペア作成（EC2接続用）
+aws ec2 create-key-pair --key-name fe-master-key --query 'KeyMaterial' --output text > fe-master-key.pem
+chmod 400 fe-master-key.pem
+```
+
+### 2. VPCとネットワーク作成
+
+```bash
+# VPC作成
+VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
+aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=fe-master-vpc
+
+# インターネットゲートウェイ作成
+IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
+aws ec2 attach-internet-gateway --vpc-id $VPC_ID --internet-gateway-id $IGW_ID
+
+# パブリックサブネット作成
+PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.1.0/24 --availability-zone us-east-1a --query 'Subnet.SubnetId' --output text)
+aws ec2 create-tags --resources $PUBLIC_SUBNET_ID --tags Key=Name,Value=fe-master-public-subnet
+
+# プライベートサブネット作成
+PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.2.0/24 --availability-zone us-east-1a --query 'Subnet.SubnetId' --output text)
+aws ec2 create-tags --resources $PRIVATE_SUBNET_ID --tags Key=Name,Value=fe-master-private-subnet
+
+# プライベートサブネット作成（DB用、別AZ）
+PRIVATE_SUBNET_2_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.3.0/24 --availability-zone us-east-1b --query 'Subnet.SubnetId' --output text)
+aws ec2 create-tags --resources $PRIVATE_SUBNET_2_ID --tags Key=Name,Value=fe-master-private-subnet-2
+
+# ルートテーブル設定
+ROUTE_TABLE_ID=$(aws ec2 create-route-table --vpc-id $VPC_ID --query 'RouteTable.RouteTableId' --output text)
+aws ec2 create-route --route-table-id $ROUTE_TABLE_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
+aws ec2 associate-route-table --subnet-id $PUBLIC_SUBNET_ID --route-table-id $ROUTE_TABLE_ID
+```
+
+### 3. セキュリティグループ作成
+
+```bash
+# API用セキュリティグループ（sg-api）
+API_SG_ID=$(aws ec2 create-security-group --group-name sg-api --description "Security group for API server" --vpc-id $VPC_ID --query 'GroupId' --output text)
+
+# APIセキュリティグループのルール設定
+aws ec2 authorize-security-group-ingress --group-id $API_SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id $API_SG_ID --protocol tcp --port 443 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id $API_SG_ID --protocol tcp --port 5000 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id $API_SG_ID --protocol tcp --port 22 --cidr $(curl -s https://checkip.amazonaws.com/)/32
+
+# DB用セキュリティグループ（sg-db）
+DB_SG_ID=$(aws ec2 create-security-group --group-name sg-db --description "Security group for database" --vpc-id $VPC_ID --query 'GroupId' --output text)
+
+# DBセキュリティグループのルール設定（APIサーバーからのアクセスのみ）
+aws ec2 authorize-security-group-ingress --group-id $DB_SG_ID --protocol tcp --port 5432 --source-group $API_SG_ID
+```
+
+### 4. RDS作成
+
+```bash
+# DBサブネットグループ作成
+aws rds create-db-subnet-group \
+  --db-subnet-group-name fe-master-db-subnet-group \
+  --db-subnet-group-description "Subnet group for FE Master database" \
+  --subnet-ids $PRIVATE_SUBNET_ID $PRIVATE_SUBNET_2_ID
+
+# PostgreSQLインスタンス作成
+aws rds create-db-instance \
+  --db-instance-identifier fe-master-db \
+  --db-instance-class db.t4g.micro \
+  --engine postgres \
+  --master-username postgres \
+  --master-user-password YourSecurePassword123! \
+  --allocated-storage 20 \
+  --vpc-security-group-ids $DB_SG_ID \
+  --db-subnet-group-name fe-master-db-subnet-group \
+  --backup-retention-period 7 \
+  --no-multi-az \
+  --no-publicly-accessible
+
+# RDS作成完了待ち（5-10分程度）
+aws rds wait db-instance-available --db-instance-identifier fe-master-db
+```
+
+### 5. EC2インスタンス作成
+
+```bash
+# RDSエンドポイント取得
+DB_ENDPOINT=$(aws rds describe-db-instances --db-instance-identifier fe-master-db --query 'DBInstances[0].Endpoint.Address' --output text)
+
+# ユーザーデータにRDSエンドポイントを設定
+sed -i "s/DB_ENDPOINT_PLACEHOLDER/$DB_ENDPOINT/g" user-data.sh
+
+# EC2インスタンス起動
+INSTANCE_ID=$(aws ec2 run-instances \
+  --image-id ami-0c02fb55956c7d316 \
+  --instance-type t3.micro \
+  --key-name fe-master-key \
+  --security-group-ids $API_SG_ID \
+  --subnet-id $PUBLIC_SUBNET_ID \
+  --associate-public-ip-address \
+  --user-data file://user-data.sh \
+  --query 'Instances[0].InstanceId' --output text)
+
+aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=fe-master-api
+
+# パブリックIPアドレス取得
+EC2_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+echo "EC2 Public IP: $EC2_PUBLIC_IP"
+```
+
+## 🔄 デプロイメントフロー
+
+### 自動デプロイメント
+
+```bash
+# デプロイスクリプト例（deploy.sh）
+#!/bin/bash
+set -e
+
+# 1. コードの更新
+ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "cd FE-master && git pull origin main"
+
+# 2. Dockerイメージの再ビルド
+ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "cd FE-master && docker-compose -f docker-compose.prod.yml build"
+
+# 3. サービスの再起動
+ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "cd FE-master && docker-compose -f docker-compose.prod.yml up -d"
+
+# 4. ヘルスチェック
+sleep 30
+curl -f http://$EC2_PUBLIC_IP:5000/ || exit 1
+echo "デプロイメント完了!"
+```
+
+## 📊 監視とメンテナンス
+
+### CloudWatchアラーム設定
+
+```bash
+# CPU使用率アラーム
+aws cloudwatch put-metric-alarm \
+  --alarm-name "fe-master-high-cpu" \
+  --alarm-description "High CPU utilization" \
+  --metric-name CPUUtilization \
+  --namespace AWS/EC2 \
+  --statistic Average \
+  --period 300 \
+  --threshold 80 \
+  --comparison-operator GreaterThanThreshold \
+  --dimensions Name=InstanceId,Value=$INSTANCE_ID \
+  --evaluation-periods 2
+
+# RDS接続アラーム
+aws cloudwatch put-metric-alarm \
+  --alarm-name "fe-master-rds-connections" \
+  --alarm-description "High database connections" \
+  --metric-name DatabaseConnections \
+  --namespace AWS/RDS \
+  --statistic Average \
+  --period 300 \
+  --threshold 50 \
+  --comparison-operator GreaterThanThreshold \
+  --dimensions Name=DBInstanceIdentifier,Value=fe-master-db \
+  --evaluation-periods 2
+```
+
+## 🔒 セキュリティベストプラクティス
+
+### SSL/TLS証明書設定（オプション）
+
+```bash
+# Let's Encryptで無料SSL証明書取得
+ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP << 'EOF'
+sudo yum install -y nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# Nginxリバースプロキシ設定
+sudo tee /etc/nginx/conf.d/fe-master.conf << 'NGINX'
+server {
+    listen 80;
+    server_name your-domain.com;
     
-    TaskA --> RDS
-    TaskB --> RDS
-    TaskC --> RDS
-    RDS --> ReadReplica
-    
-    subgraph "🔐 Security & Config"
-        Secrets[🔒 Secrets Manager<br/>DB Credentials]
-        IAM[👤 IAM Roles<br/>Service Permissions]
-    end
-    
-    Service --> Secrets
-    Service --> IAM
-    
-    subgraph "📊 Monitoring & Logs"
-        CloudWatch[📈 CloudWatch<br/>Metrics & Alarms]
-        LogGroups[📝 Log Groups<br/>Application Logs]
-    end
-    
-    Service --> CloudWatch
-    Service --> LogGroups
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+NGINX
+
+sudo systemctl reload nginx
+EOF
+```
+
+## 💰 AWS コスト見積もり
+
+### 月間コスト概算
+
+```mermaid
+pie title AWS Monthly Cost Breakdown
+    "EC2 t3.micro" : 8
+    "RDS t4g.micro" : 15  
+    "Data Transfer" : 5
+    "EBS Storage" : 3
+    "Other" : 4
+```
+
+- **EC2 t3.micro**: ~$8.5/月 (730時間)
+- **RDS t4g.micro**: ~$15/月 (Single-AZ)
+- **EBS Storage**: ~$3/月 (30GB gp3)
+- **Data Transfer**: ~$5/月 (100GB out)
+- **その他**: ~$4/月 (CloudWatch等)
+
+**総計**: ~$35/月
+
+## 🚀 クイックスタート
+
+### 開発環境
+```bash
+# 1. リポジトリクローン
+git clone https://github.com/your-username/FE-master.git
+cd FE-master
+
+# 2. Docker起動
+docker-compose up -d
+
+# 3. アクセス
+open http://localhost:5000
+```
+
+### AWS本番環境（一括実行）
+```bash
+# 1. deploy-aws.shスクリプトを実行
+chmod +x deploy-aws.sh
+./deploy-aws.sh
+
+# 2. 接続確認
+curl http://EC2-PUBLIC-IP:5000
+```
+
+## 🔧 トラブルシューティング
+
+### よくある問題
+
+1. **EC2インスタンスに接続できない**
+   ```bash
+   # セキュリティグループ確認
+   aws ec2 describe-security-groups --group-ids $API_SG_ID
+   
+   # SSH接続テスト
+   ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP
+   ```
+
+2. **RDSに接続できない**
+   ```bash
+   # RDS状態確認
+   aws rds describe-db-instances --db-instance-identifier fe-master-db
+   
+   # セキュリティグループ確認
+   aws ec2 describe-security-groups --group-ids $DB_SG_ID
+   ```
+
+3. **アプリケーションが起動しない**
+   ```bash
+   # Docker Composeログ確認
+   ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "cd FE-master && docker-compose -f docker-compose.prod.yml logs"
+   
+   # 環境変数確認
+   ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "cd FE-master && cat .env"
+   ```
+
+## 📝 メンテナンス
+
+### 定期メンテナンス
+
+```bash
+# 1. バックアップ確認
+aws rds describe-db-snapshots --db-instance-identifier fe-master-db
+
+# 2. ログローテーション
+ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "docker system prune -f"
+
+# 3. セキュリティアップデート
+ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "sudo yum update -y"
+```
+
+### スケーリング
+
+```bash
+# インスタンスタイプ変更
+aws ec2 modify-instance-attribute \
+  --instance-id $INSTANCE_ID \
+  --instance-type Value=t3.small
+
+# RDSスケールアップ
+aws rds modify-db-instance \
+  --db-instance-identifier fe-master-db \
+  --db-instance-class db.t4g.small \
+  --apply-immediately
+```
+
+## 💡 ベストプラクティス
+
+### セキュリティ
+- SSH接続は特定IPからのみ許可
+- RDSは必ずプライベートサブネットに配置
+- 定期的なセキュリティアップデート実施
+
+### 可用性
+- Multi-AZデプロイメント（コスト増）
+- Auto Scalingの導入（トラフィック増加時）
+- CloudWatchによる監視とアラート
+
+### コスト最適化
+- Reserved Instanceの利用
+- 適切なインスタンスサイズの選択
+- 不要なリソースの定期削除
+
+---
+
+> 📝 **注意**: 実際のデプロイメント前に、パスワードやドメイン名などの設定値を適切に変更してください。
+
+## 📋 AWS デプロイメント手順
+
+### 1. 事前準備
+
+```bash
+# AWS CLI設定
+aws configure
+
+# キーペア作成（EC2接続用）
+aws ec2 create-key-pair --key-name fe-master-key --query 'KeyMaterial' --output text > fe-master-key.pem
+chmod 400 fe-master-key.pem
+```
+
+### 2. VPCとネットワーク作成
+
+```bash
+# VPC作成
+VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
+aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=fe-master-vpc
+
+# インターネットゲートウェイ作成
+IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
+aws ec2 attach-internet-gateway --vpc-id $VPC_ID --internet-gateway-id $IGW_ID
+
+# パブリックサブネット作成
+PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.1.0/24 --availability-zone us-east-1a --query 'Subnet.SubnetId' --output text)
+aws ec2 create-tags --resources $PUBLIC_SUBNET_ID --tags Key=Name,Value=fe-master-public-subnet
+
+# プライベートサブネット作成
+PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.2.0/24 --availability-zone us-east-1a --query 'Subnet.SubnetId' --output text)
+aws ec2 create-tags --resources $PRIVATE_SUBNET_ID --tags Key=Name,Value=fe-master-private-subnet
+
+# プライベートサブネット作成（DB用、別AZ）
+PRIVATE_SUBNET_2_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.3.0/24 --availability-zone us-east-1b --query 'Subnet.SubnetId' --output text)
+aws ec2 create-tags --resources $PRIVATE_SUBNET_2_ID --tags Key=Name,Value=fe-master-private-subnet-2
+
+# ルートテーブル設定
+ROUTE_TABLE_ID=$(aws ec2 create-route-table --vpc-id $VPC_ID --query 'RouteTable.RouteTableId' --output text)
+aws ec2 create-route --route-table-id $ROUTE_TABLE_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
+aws ec2 associate-route-table --subnet-id $PUBLIC_SUBNET_ID --route-table-id $ROUTE_TABLE_ID
+```
+
+### 3. セキュリティグループ作成
+
+```bash
+# API用セキュリティグループ（sg-api）
+API_SG_ID=$(aws ec2 create-security-group --group-name sg-api --description "Security group for API server" --vpc-id $VPC_ID --query 'GroupId' --output text)
+
+# APIセキュリティグループのルール設定
+aws ec2 authorize-security-group-ingress --group-id $API_SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id $API_SG_ID --protocol tcp --port 443 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id $API_SG_ID --protocol tcp --port 5000 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id $API_SG_ID --protocol tcp --port 22 --cidr $(curl -s https://checkip.amazonaws.com/)/32
+
+# DB用セキュリティグループ（sg-db）
+DB_SG_ID=$(aws ec2 create-security-group --group-name sg-db --description "Security group for database" --vpc-id $VPC_ID --query 'GroupId' --output text)
+
+# DBセキュリティグループのルール設定（APIサーバーからのアクセスのみ）
+aws ec2 authorize-security-group-ingress --group-id $DB_SG_ID --protocol tcp --port 5432 --source-group $API_SG_ID
+```
+
+### 4. RDS作成
+
+```bash
+# DBサブネットグループ作成
+aws rds create-db-subnet-group \
+  --db-subnet-group-name fe-master-db-subnet-group \
+  --db-subnet-group-description "Subnet group for FE Master database" \
+  --subnet-ids $PRIVATE_SUBNET_ID $PRIVATE_SUBNET_2_ID
+
+# PostgreSQLインスタンス作成
+aws rds create-db-instance \
+  --db-instance-identifier fe-master-db \
+  --db-instance-class db.t4g.micro \
+  --engine postgres \
+  --master-username postgres \
+  --master-user-password YourSecurePassword123! \
+  --allocated-storage 20 \
+  --vpc-security-group-ids $DB_SG_ID \
+  --db-subnet-group-name fe-master-db-subnet-group \
+  --backup-retention-period 7 \
+  --no-multi-az \
+  --no-publicly-accessible
+
+# RDS作成完了待ち（5-10分程度）
+aws rds wait db-instance-available --db-instance-identifier fe-master-db
 ```
 
 ## 🐳 Docker環境について
@@ -327,107 +627,118 @@ graph TB
     end
     
     subgraph "🎯 Key Metrics"
-        CPU[⚙️ CPU Utilization]
-        Memory[💾 Memory Usage]  
-        Latency[⏱️ Response Time]
-        Errors[❌ Error Rate]
-        DBConn[🔗 DB Connections]
-    end
-    
-    CloudWatch --> CPU
-    CloudWatch --> Memory
-    CloudWatch --> Latency
-    CloudWatch --> Errors
-    CloudWatch --> DBConn
-    
-    Alarms --> AutoScaling[📈 Auto Scaling]
-    Logs --> Analysis[🔍 Log Analysis]
-```
-
-## 📋 デプロイメント手順
-
-### ステップ 1: 環境準備
-```bash
-# AWS CLI設定
-aws configure
-
-# Terraform インフラ作成 (optional)
-terraform init
-terraform plan
-terraform apply
-
-# 環境変数設定
-cp .env.aws.example .env.production
-# .env.production を編集
-```
-
-### ステップ 2: コンテナデプロイ
-
-### ステップ 2: コンテナデプロイ
-```bash
-# 1. イメージビルドとプッシュ
-docker build -t fe-master .
-docker tag fe-master:latest 123456789012.dkr.ecr.us-east-1.amazonaws.com/fe-master:latest
-docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/fe-master:latest
-
-# 2. ECS サービス作成/更新
-aws ecs create-service \
-    --cluster fe-master-cluster \
-    --service-name fe-master-service \
-    --task-definition fe-master:1 \
-    --desired-count 2 \
-    --launch-type FARGATE
-
-# 3. デプロイメント確認
-aws ecs describe-services \
-    --cluster fe-master-cluster \
-    --services fe-master-service
-```
-
-### ステップ 3: ドメイン設定
-```bash
-# Route 53 でDNS設定
-aws route53 create-hosted-zone --name fe-master.example.com
-
-# SSL証明書取得 (ACM)
-aws acm request-certificate \
-    --domain-name fe-master.example.com \
-    --validation-method DNS
-```
-
 ## 💰 AWS コスト見積もり
 
 ### 月間コスト概算
 
 ```mermaid
 pie title AWS Monthly Cost Breakdown
-    "ECS Fargate (2 tasks)" : 45
-    "RDS PostgreSQL (t4g.medium)" : 25
-    "Application Load Balancer" : 20
-    "CloudFront CDN" : 10
-    "S3 Storage" : 5
-    "Other Services" : 10
+    "EC2 t3.micro" : 8
+    "RDS t4g.micro" : 15  
+    "Data Transfer" : 5
+    "EBS Storage" : 3
+    "Other" : 4
 ```
 
-- **ECS Fargate**: ~$45/月 (0.5 vCPU, 1GB RAM × 2 tasks)
-- **RDS PostgreSQL**: ~$25/月 (db.t4g.medium)
-- **Application Load Balancer**: ~$20/月
-- **CloudFront**: ~$10/月 (1TB転送)
-- **S3**: ~$5/月 (100GB storage)
-- **その他**: ~$10/月 (CloudWatch, Secrets Manager等)
+- **EC2 t3.micro**: ~$8.5/月 (730時間)
+- **RDS t4g.micro**: ~$15/月 (Single-AZ)
+- **EBS Storage**: ~$3/月 (30GB gp3)
+- **Data Transfer**: ~$5/月 (100GB out)
+- **その他**: ~$4/月 (CloudWatch等)
 
-**総計**: ~$115/月
+**総計**: ~$35/月
 
-### コスト最適化のポイント
+## 🚀 クイックスタート
 
-```mermaid
-mindmap
-  root(💰 Cost Optimization)
-    Compute
-      Reserved Instances
-      Spot Instances
-      Right Sizing
-    Storage
+### 開発環境
+```bash
+# 1. リポジトリクローン
+git clone https://github.com/your-username/FE-master.git
+cd FE-master
+
+# 2. Docker起動
+docker-compose up -d
+
+# 3. アクセス
+open http://localhost:5000
+```
+
+### AWS本番環境
+```bash
+# 1. 環境変数設定
+export VPC_ID=vpc-xxxxxxxxx
+export PUBLIC_SUBNET_ID=subnet-xxxxxxxxx  
+export PRIVATE_SUBNET_ID=subnet-xxxxxxxxx
+export API_SG_ID=sg-xxxxxxxxx
+export DB_SG_ID=sg-xxxxxxxxx
+
+# 2. 一括デプロイ
+./scripts/deploy-aws.sh
+
+# 3. 接続確認
+curl http://EC2-PUBLIC-IP:5000
+```
+
+## 🔧 トラブルシューティング
+
+### よくある問題
+
+1. **EC2インスタンスに接続できない**
+   ```bash
+   # セキュリティグループ確認
+   aws ec2 describe-security-groups --group-ids $API_SG_ID
+   
+   # SSH接続テスト
+   ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP
+   ```
+
+2. **RDSに接続できない**
+   ```bash
+   # RDS状態確認
+   aws rds describe-db-instances --db-instance-identifier fe-master-db
+   
+   # セキュリティグループ確認
+   aws ec2 describe-security-groups --group-ids $DB_SG_ID
+   ```
+
+3. **アプリケーションが起動しない**
+   ```bash
+   # Docker Composeログ確認
+   ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "cd FE-master && docker-compose -f docker-compose.prod.yml logs"
+   
+   # 環境変数確認
+   ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "cd FE-master && cat .env"
+   ```
+
+## 📝 メンテナンス
+
+### 定期メンテナンス
+
+```bash
+# 1. バックアップ確認
+aws rds describe-db-snapshots --db-instance-identifier fe-master-db
+
+# 2. ログローテーション
+ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "docker system prune -f"
+
+# 3. セキュリティアップデート
+ssh -i fe-master-key.pem ec2-user@$EC2_PUBLIC_IP "sudo yum update -y"
+```
+
+### スケーリング
+
+```bash
+# インスタンスタイプ変更
+aws ec2 modify-instance-attribute \
+  --instance-id $INSTANCE_ID \
+  --instance-type Value=t3.small
+
+# RDSスケールアップ
+aws rds modify-db-instance \
+  --db-instance-identifier fe-master-db \
+  --db-instance-class db.t4g.small \
+  --apply-immediately
+```
       Lifecycle Policies
       Compression
       Archiving
