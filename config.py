@@ -14,8 +14,8 @@ class Config:
 
     # Flask settings
     SECRET_KEY = os.environ.get('SECRET_KEY')
-    FLASK_ENV = os.environ.get('FLASK_ENV', 'production')
-    DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+    FLASK_ENV = os.environ.get('FLASK_ENV', 'development')  # デフォルトを development に変更
+    DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'  # デフォルトを True に変更
 
     # Database settings
     DATABASE_URL = os.environ.get('DATABASE_URL')
