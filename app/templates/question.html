@@ -101,7 +101,7 @@
                 <div class="flex justify-center">
                     <div class="relative group">
                         <a href="{{ url_for('practice.random_practice') }}" class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg transition-all duration-200 font-medium flex items-center backdrop-blur-sm border border-white/20">
-                            <span class="mr-3 text-lg">🎯</span>
+                            <span class="mr-3 text-lg">●</span>
                             <span>次の問題</span>
                             <i class="fas fa-arrow-right ml-3 text-blue-400"></i>
                         </a>
@@ -136,11 +136,33 @@
                 <!-- スマートなアクションボタン -->
                 <div class="flex justify-center">
                     <a href="{{ url_for('practice.random_practice') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all duration-200 font-semibold flex items-center">
-                        <span class="mr-3 text-lg">🚀</span>
+                        <span class="mr-3 text-lg">▶</span>
                         <span>次の問題へ</span>
                         <i class="fas fa-chevron-right ml-3"></i>
                     </a>
                 </div>
+            </div>
+        </div>
+        
+        <!-- ナビゲーションボタン -->
+        <div class="flex justify-between items-center mb-8">
+            <a href="{{ url_for('main.dashboard') }}" 
+               class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
+                <i class="fas fa-home mr-2"></i>ダッシュボードに戻る
+            </a>
+            
+            <div class="flex space-x-4">
+                {% if mode == 'random' %}
+                    <a href="{{ url_for('practice.random_practice') }}" 
+                       class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
+                        <i class="fas fa-random mr-2"></i>次のランダム問題
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('practice.genre_practice') }}" 
+                       class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i>ジャンル選択に戻る
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>

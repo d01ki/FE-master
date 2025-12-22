@@ -2,9 +2,7 @@
 模擬試験関連のルーティング
 """
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash, current_app
-from auth import login_required
-from persistent_session import persistent_login_required
-from helper_functions import parse_filename_info
+from app.core.auth import login_required
 import os
 import json
 import random
@@ -45,7 +43,7 @@ def add_image_choice_flags(questions):
     return questions
 
 @exam_bp.route('/mock_exam')
-@persistent_login_required
+@login_required
 def mock_exam():
     """模擬試験のトップページ"""
     json_folder = current_app.config.get('JSON_FOLDER', 'json_questions')
@@ -72,7 +70,7 @@ def mock_exam():
     return render_template('mock_exam.html', files=files)
 
 @exam_bp.route('/mock_exam/<filename>')
-@persistent_login_required
+@login_required
 def mock_exam_start(filename):
     """指定年度の模擬試験開始"""
     try:
@@ -125,7 +123,7 @@ def mock_exam_start(filename):
         return redirect(url_for('exam.mock_exam'))
 
 @exam_bp.route('/mock_exam/submit', methods=['POST'])
-@persistent_login_required
+@login_required
 def submit_mock_exam():
     """模擬試験の採点"""
     try:

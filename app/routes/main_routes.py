@@ -1,35 +1,32 @@
 """
 メインページのルーティング
 """
-from flask import Blueprint, render_template, session, redirect, url_for, current_app
-from auth import login_required
-from persistent_session import persistent_login_required
+from flask import Blueprint, render_template, session, redirect, url_for, current_app, jsonify
+from app.core.auth import login_required
 
 main_bp = Blueprint('main', __name__)
+
+@main_bp.route('/health')
+def health():
+    """ヘルスチェックエンドポイント"""
+    return jsonify({'status': 'healthy', 'timestamp': 'ok'}), 200
 
 @main_bp.route('/')
 @main_bp.route('/index')
 def index():
-    """トップページ - 未ログインユーザーはログインページへリダイレクト"""
-    # 永続セッションチェック
-    session_manager = getattr(current_app, 'session_manager', None)
-    if session_manager:
-        session_token = session.get('session_token')
-        if session_token:
-            session_data = session_manager.get_session_data(session_token)
-            if session_data:
-                # セッションデータを復元
-                for key, value in session_data['user_data'].items():
-                    session[key] = value
-                return redirect(url_for('main.dashboard'))
-    
+    """トップページ - ログイン済みユーザーはダッシュボードへ、未ログインはログインページへ"""
     if 'user_id' in session:
+        # 一般ユーザーがログイン済み
         return redirect(url_for('main.dashboard'))
-    # 未ログインユーザーは直接ログインページへ
-    return redirect(url_for('login'))
+    elif session.get('admin_logged_in'):
+        # 管理者がログイン済み  
+        return redirect(url_for('admin.admin_dashboard'))
+    else:
+        # 未ログイン - ログインページへ
+        return redirect(url_for('login'))
 
 @main_bp.route('/dashboard')
-@persistent_login_required
+@login_required
 def dashboard():
     """ダッシュボード"""
     db_manager = current_app.db_manager
@@ -72,7 +69,7 @@ def dashboard():
     return render_template('dashboard.html', stats=stats)
 
 @main_bp.route('/history')
-@persistent_login_required
+@login_required
 def history():
     """学習履歴ページ"""
     db_manager = current_app.db_manager
@@ -117,7 +114,7 @@ def history():
             LIMIT 100
         ''', (user_id,))
     
-    # Noneチェック
+    # Noneチェックとdatetime変換
     safe_history = []
     for item in history_data:
         safe_item = dict(item)
@@ -127,6 +124,17 @@ def history():
             safe_item['genre'] = '不明'
         if safe_item['correct_answer'] is None:
             safe_item['correct_answer'] = '不明'
+        
+        # datetime を文字列に変換
+        if safe_item.get('answered_at'):
+            if hasattr(safe_item['answered_at'], 'strftime'):
+                safe_item['answered_at'] = safe_item['answered_at'].strftime('%Y-%m-%d %H:%M')
+            elif isinstance(safe_item['answered_at'], str):
+                # PostgreSQLから文字列として返される場合は最初の16文字を取得
+                safe_item['answered_at'] = safe_item['answered_at'][:16]
+        else:
+            safe_item['answered_at'] = None
+            
         safe_history.append(safe_item)
     
     return render_template('history.html', history=safe_history)

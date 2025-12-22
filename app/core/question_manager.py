@@ -145,27 +145,19 @@ class QuestionManager:
     def get_random_question(self):
         """ランダムに1問取得（前回と同じ問題を避ける）"""
         try:
+            # PostgreSQLではRANDOM()、SQLiteではRANDOM()を使用
+            random_func = 'RANDOM()' if self.db_manager.db_type == 'postgresql' else 'RANDOM()'
+            
             # 前回の問題を除外するクエリ
             if self.last_question_id:
-                if self.db_manager.db_type == 'postgresql':
-                    result = self.db_manager.execute_query(
-                        'SELECT * FROM questions WHERE id != %s ORDER BY RANDOM() LIMIT 1',
-                        (self.last_question_id,)
-                    )
-                else:
-                    result = self.db_manager.execute_query(
-                        'SELECT * FROM questions WHERE id != ? ORDER BY RANDOM() LIMIT 1',
-                        (self.last_question_id,)
-                    )
+                result = self.db_manager.execute_query(
+                    f'SELECT * FROM questions WHERE id != ? ORDER BY {random_func} LIMIT 1',
+                    (self.last_question_id,)
+                )
             else:
-                if self.db_manager.db_type == 'postgresql':
-                    result = self.db_manager.execute_query(
-                        'SELECT * FROM questions ORDER BY RANDOM() LIMIT 1'
-                    )
-                else:
-                    result = self.db_manager.execute_query(
-                        'SELECT * FROM questions ORDER BY RANDOM() LIMIT 1'
-                    )
+                result = self.db_manager.execute_query(
+                    f'SELECT * FROM questions ORDER BY {random_func} LIMIT 1'
+                )
             
             if result:
                 question = dict(result[0])

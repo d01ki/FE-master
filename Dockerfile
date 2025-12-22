@@ -1,29 +1,50 @@
-FROM python:3.11-slim
+# Multi-stage build for production optimization
+FROM python:3.11-slim as builder
 
-# 作業ディレクトリを設定
-WORKDIR /app
-
-# システムパッケージの更新とインストール
+# Build dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Pythonの依存関係をインストール
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+WORKDIR /app
 
-# アプリケーションファイルをコピー
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# Production stage
+FROM python:3.11-slim
+
+# Create non-root user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Copy Python dependencies from builder stage
+COPY --from=builder /root/.local /root/.local
+
+# Make sure scripts in .local are usable
+ENV PATH=/root/.local/bin:$PATH
+
+WORKDIR /app
+
+# Copy application files
 COPY . .
 
-# ポート番号を環境変数で指定可能に
+# Set ownership to non-root user
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
+# Environment variables
 ENV PORT=5000
 ENV HOST=0.0.0.0
+ENV PYTHONPATH=/app
 
-# アプリケーション起動
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:${PORT}/health')" || exit 1
+
 CMD ["python", "app.py"]
-
-# ヘルスチェック
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:${PORT}/ || exit 1

@@ -41,7 +41,7 @@
                 <button onclick="location.reload()" class="btn btn-primary">
                     <i class="fas fa-redo mr-2"></i>ページを再読み込み
                 </button>
-                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
                     <i class="fas fa-home mr-2"></i>ダッシュボードに戻る
                 </a>
                 <a href="javascript:history.back()" class="btn btn-secondary">
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Hキーでホーム
         if (e.key === 'h' || e.key === 'H') {
-            window.location.href = "{{ url_for('index') }}";
+            window.location.href = "{{ url_for('main.index') }}";
         }
         
         // Escキーで戻る

@@ -1,0 +1,1 @@
+# Core package - Contains core functionality and configuration

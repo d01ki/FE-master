@@ -51,6 +51,9 @@ Thumbs.db
 logs/
 
 # 環境変数ファイル（本番用）
+.env
+.env.local
+.env.development
 .env.production
 .env.aws
 

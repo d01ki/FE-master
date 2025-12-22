@@ -2,7 +2,49 @@ import os
 import sqlite3
 import json
 import logging
-from utils import sanitize_image_url, validate_image_url
+import re
+from urllib.parse import urlparse
+
+
+def sanitize_image_url(image_url):
+    """画像URLをサニタイズする"""
+    if not image_url or not isinstance(image_url, str):
+        return None
+        
+    url = image_url.strip()
+    if not url:
+        return None
+        
+    # 基本的なURL形式チェック
+    parsed = urlparse(url)
+    if not parsed.scheme and not parsed.netloc:
+        return None
+        
+    return url
+
+
+def validate_image_url(image_url):
+    """画像URLを検証する"""
+    if not image_url:
+        return True, None
+        
+    if not isinstance(image_url, str):
+        return False, "画像URLは文字列である必要があります"
+        
+    url = image_url.strip()
+    if not url:
+        return True, None
+        
+    # URL形式の基本チェック
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return False, "有効なURL形式ではありません"
+        
+    # HTTPSまたはHTTPのみ許可
+    if parsed.scheme not in ['http', 'https']:
+        return False, "HTTPまたはHTTPSのみ許可されています"
+        
+    return True, None
 
 # PostgreSQLライブラリのインポート（エラー時はSQLiteのみ使用）
 try:
@@ -17,38 +59,58 @@ logger = logging.getLogger(__name__)
 
 class DatabaseManager:
     def __init__(self, config):
-        self.db_type = config['DATABASE_TYPE']
+        self.db_type = config.DATABASE_TYPE
         self.config = config
         
         # PostgreSQLが利用できない場合はSQLiteにフォールバック
         if self.db_type == 'postgresql' and not PSYCOPG2_AVAILABLE:
             print("PostgreSQL requested but psycopg2 not available. Falling back to SQLite.")
             self.db_type = 'sqlite'
-            self.config['DATABASE_TYPE'] = 'sqlite'
+            config.DATABASE_TYPE = 'sqlite'
         
     def get_connection(self):
         if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
             conn = psycopg2.connect(
-                host=self.config['DB_HOST'],
-                database=self.config['DB_NAME'],
-                user=self.config['DB_USER'],
-                password=self.config['DB_PASSWORD'],
-                port=self.config['DB_PORT']
+                host=self.config.DB_HOST,
+                database=self.config.DB_NAME,
+                user=self.config.DB_USER,
+                password=self.config.DB_PASSWORD,
+                port=self.config.DB_PORT
             )
             conn.autocommit = False
             return conn
         else:
-            db_path = self.config.get('DATABASE', 'fe_exam.db')
+            db_path = getattr(self.config, 'DATABASE', 'fe_exam.db')
             conn = sqlite3.connect(db_path)
             conn.row_factory = sqlite3.Row
             return conn
     
     def execute_query(self, query, params=None):
+        """
+        クエリを実行する（PostgreSQL/SQLite共通）
+        SQLiteの?プレースホルダーをPostgreSQLの$1形式に自動変換
+        """
+        original_query = query
+        converted_params = params or ()
+        
+        # デバッグログ
+        logger.debug(f"Original query: {original_query}")
+        logger.debug(f"Params: {converted_params}")
+        logger.debug(f"DB Type: {self.db_type}")
+        
+        # PostgreSQL用にパラメータプレースホルダーを変換
+        if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
+            # SQLiteの?形式をPostgreSQLの%s形式に変換
+            query = query.replace('?', '%s')
+            
+            logger.debug(f"Converted query: {query}")
+            logger.debug(f"Params for PostgreSQL: {converted_params}")
+        
         conn = self.get_connection()
         try:
             if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
                 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-                cur.execute(query, params or ())
+                cur.execute(query, converted_params)
                 if query.strip().upper().startswith(('SELECT', 'WITH')):
                     result = cur.fetchall()
                     result = [dict(row) for row in result]
@@ -58,8 +120,8 @@ class DatabaseManager:
                 cur.close()
             else:
                 cur = conn.cursor()
-                cur.execute(query, params or ())
-                if query.strip().upper().startswith(('SELECT', 'WITH')):
+                cur.execute(original_query, converted_params)
+                if original_query.strip().upper().startswith(('SELECT', 'WITH')):
                     result = [dict(row) for row in cur.fetchall()]
                 else:
                     result = cur.rowcount
@@ -68,6 +130,9 @@ class DatabaseManager:
             return result
         except Exception as e:
             conn.rollback()
+            logger.error(f"Database error: {e}")
+            logger.error(f"Query: {query}")
+            logger.error(f"Params: {converted_params}")
             raise e
         finally:
             conn.close()

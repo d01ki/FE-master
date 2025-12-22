@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}過去問演習 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <h1 class="text-3xl font-bold text-white mb-2 flex items-center">
+                    <span class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center mr-4">
+                        <i class="fas fa-clipboard-list text-white text-xl"></i>
+                    </span>
+                    過去問演習
+                </h1>
+                <p class="text-gray-300">本番形式で実力を確認しましょう</p>
+            </div>
+        </div>
+
+        <!-- 準備中メッセージ -->
+        <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 text-center">
+            <div class="w-16 h-16 bg-orange-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-tools text-orange-400 text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">機能準備中</h3>
+            <p class="text-gray-300 mb-6">過去問演習機能は現在準備中です。まずは練習問題で学習を始めましょう。</p>
+            
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="{{ url_for('practice.random_practice') }}" 
+                   class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg transition-all duration-200 inline-flex items-center">
+                    <i class="fas fa-random mr-2"></i>
+                    ランダム練習
+                </a>
+                
+                <a href="{{ url_for('practice.genre_practice') }}" 
+                   class="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-lg transition-all duration-200 inline-flex items-center">
+                    <i class="fas fa-tags mr-2"></i>
+                    ジャンル別練習
+                </a>
+            </div>
+        </div>
+
+        <!-- 今後の予定 -->
+        <div class="mt-8 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                <i class="fas fa-roadmap text-blue-400 mr-3"></i>
+                今後追加予定の機能
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                    <div class="flex items-center text-gray-300">
+                        <i class="fas fa-clock text-orange-400 mr-3"></i>
+                        <span>時間制限付き本番形式試験</span>
+                    </div>
+                    <div class="flex items-center text-gray-300">
+                        <i class="fas fa-chart-bar text-green-400 mr-3"></i>
+                        <span>詳細な成績分析</span>
+                    </div>
+                    <div class="flex items-center text-gray-300">
+                        <i class="fas fa-medal text-purple-400 mr-3"></i>
+                        <span>合格判定・弱点分析</span>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex items-center text-gray-300">
+                        <i class="fas fa-file-export text-blue-400 mr-3"></i>
+                        <span>成績レポート出力</span>
+                    </div>
+                    <div class="flex items-center text-gray-300">
+                        <i class="fas fa-bookmark text-yellow-400 mr-3"></i>
+                        <span>お気に入り問題保存</span>
+                    </div>
+                    <div class="flex items-center text-gray-300">
+                        <i class="fas fa-trophy text-red-400 mr-3"></i>
+                        <span>ランキング機能</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ナビゲーション -->
+        <div class="mt-8 flex flex-wrap gap-4">
+            <a href="{{ url_for('main.dashboard') }}" 
+               class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i>
+                ダッシュボードに戻る
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
