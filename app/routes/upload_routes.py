@@ -105,8 +105,8 @@ def upload_images():
     upload_count = 0
     error_count = 0
     
-    # 画像保存ディレクトリの作成
-    images_dir = os.path.join(current_app.root_path, 'static', 'images', 'questions')
+    # 画像保存ディレクトリの作成（保護されたディレクトリ）
+    images_dir = os.path.join(current_app.root_path, '..', 'protected_images', 'questions')
     os.makedirs(images_dir, exist_ok=True)
     
     for file in files:

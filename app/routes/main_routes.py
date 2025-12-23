@@ -14,7 +14,7 @@ def health():
 @main_bp.route('/')
 @main_bp.route('/index')
 def index():
-    """トップページ - ログイン状態に応じてリダイレクトまたはランディングページ表示"""
+    """トップページ - ログイン状態に応じてリダイレクト"""
     if 'admin_logged_in' in session or session.get('is_admin'):
         # 管理者は管理画面へ
         return redirect(url_for('admin.admin_dashboard'))
@@ -22,8 +22,8 @@ def index():
         # ログインユーザーはダッシュボードへ自動リダイレクト
         return redirect(url_for('main.dashboard'))
     else:
-        # 未ログインユーザーにはランディングページを表示
-        return render_template('index.html')
+        # 未ログインユーザーはログインページへリダイレクト
+        return redirect(url_for('login'))
 
 @main_bp.route('/dashboard')
 @login_required

@@ -85,9 +85,12 @@ def _init_database(config_class):
 
 def _register_blueprints(app):
     """ブループリント登録"""
+    from app.routes.image_routes import image_bp
+    
     blueprints = [
         (main_bp, {}),
         (practice_bp, {}),
+        (image_bp, {}),
         (exam_bp, {}),
         (upload_bp, {}),
         (admin_bp, {})

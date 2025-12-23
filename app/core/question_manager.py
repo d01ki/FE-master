@@ -166,8 +166,11 @@ class QuestionManager:
     def get_random_question(self):
         """ランダムに1問取得（前回と同じ問題を避ける）"""
         try:
-            # PostgreSQLではRANDOM()、SQLiteではRANDOM()を使用
-            random_func = 'RANDOM()' if self.db_manager.db_type == 'postgresql' else 'RANDOM()'
+            # DBごとのランダム関数
+            if self.db_manager.db_type == 'mysql':
+                random_func = 'RAND()'
+            else:
+                random_func = 'RANDOM()'
             
             # 前回の問題を除外するクエリ
             if self.last_question_id:

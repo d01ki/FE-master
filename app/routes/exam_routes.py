@@ -42,6 +42,36 @@ def add_image_choice_flags(questions):
             question['has_image_choices'] = is_image_url(first_choice)
     return questions
 
+def parse_filename_info(filename):
+    """ファイル名から年度・期を解析"""
+    # 2024_spring_fe.json や 2024_s_fe.json などのパターン
+    pattern = r'(\d{4})_(spring|fall|s|f|autumn)_'
+    match = re.search(pattern, filename.lower())
+    
+    if not match:
+        return None
+    
+    year = match.group(1)
+    season_code = match.group(2)
+    
+    season_map = {
+        'spring': '春期',
+        's': '春期',
+        'fall': '秋期',
+        'f': '秋期',
+        'autumn': '秋期'
+    }
+    
+    season = season_map.get(season_code, season_code)
+    
+    return {
+        'filename': filename,
+        'year': year,
+        'season': season,
+        'display_name': f'{year}年度 {season}',
+        'sort_key': f'{year}_{season_code}'
+    }
+
 @exam_bp.route('/mock_exam')
 @login_required
 def mock_exam():

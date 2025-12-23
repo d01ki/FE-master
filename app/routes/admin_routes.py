@@ -1,9 +1,8 @@
 """
 管理者用ユーザー管理機能
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
 from app.core.auth import admin_required
-from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -37,89 +36,86 @@ def user_management():
 @admin_bp.route('/admin/users/<int:user_id>')
 @admin_required
 def user_detail(user_id):
-    """ユーザー詳細画面"""
+    """ユーザー詳細画面（簡略化）"""
+    # 詳細画面は不要なのでユーザー一覧にリダイレクト
+    flash('ユーザー詳細画面は現在利用できません。', 'info')
+    return redirect(url_for('admin.user_management'))
+
+@admin_bp.route('/admin/users/<int:user_id>/toggle-admin', methods=['POST'])
+@admin_required
+def toggle_admin_status(user_id):
+    """ユーザーの管理者権限切り替え"""
     db_manager = current_app.db_manager
     
-    # ユーザー基本情報
-    user = db_manager.execute_query(
-        "SELECT * FROM users WHERE id = ?", (user_id,)
-    )
-    if not user:
-        flash('ユーザーが見つかりません。', 'error')
+    # 自分自身の権限は変更できない
+    if user_id == session.get('user_id'):
+        flash('自分自身の管理者権限は変更できません。', 'error')
         return redirect(url_for('admin.user_management'))
     
-    user = user[0]
-    
-    # 学習統計
-    stats = _get_user_detailed_stats(db_manager, user_id)
-    
-    # 最近の解答履歴
-    recent_answers = db_manager.execute_query("""
-        SELECT ua.*, q.question_text, q.genre 
-        FROM user_answers ua
-        LEFT JOIN questions q ON ua.question_id = q.id
-        WHERE ua.user_id = ?
-        ORDER BY ua.answered_at DESC
-        LIMIT 20
-    """, (user_id,))
-    
-    return render_template('admin/user_detail.html', 
-                         user=user, 
-                         stats=stats, 
-                         recent_answers=recent_answers)
-
-@admin_bp.route('/admin/users/<int:user_id>/reset', methods=['POST'])
-@admin_required
-def reset_user_progress(user_id):
-    """ユーザーの学習進捗リセット"""
-    db_manager = current_app.db_manager
-    
     try:
-        # 解答履歴を削除
-        db_manager.execute_query(
-            "DELETE FROM user_answers WHERE user_id = ?", (user_id,)
-        )
-        flash('ユーザーの学習進捗をリセットしました。', 'success')
-    except Exception as e:
-        flash(f'エラーが発生しました: {str(e)}', 'error')
-    
-    return redirect(url_for('admin.user_detail', user_id=user_id))
-
-@admin_bp.route('/admin/users/<int:user_id>/toggle', methods=['POST'])
-@admin_required  
-def toggle_user_status(user_id):
-    """ユーザーの有効/無効切り替え"""
-    db_manager = current_app.db_manager
-    
-    try:
-        # ユーザーテーブルにis_activeカラムがない場合は追加
-        db_manager.execute_query("""
-            ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1
-        """)
-    except:
-        pass  # カラムが既に存在する場合
-    
-    try:
-        # 現在のステータスを取得
+        # 現在の権限を取得
         user = db_manager.execute_query(
-            "SELECT is_active FROM users WHERE id = ?", (user_id,)
+            "SELECT is_admin FROM users WHERE id = ?", (user_id,)
         )
         if not user:
             flash('ユーザーが見つかりません。', 'error')
             return redirect(url_for('admin.user_management'))
         
-        current_status = user[0].get('is_active', 1)
-        new_status = 0 if current_status else 1
+        current_admin = user[0].get('is_admin', 0)
+        new_admin = 0 if current_admin else 1
         
-        # ステータス更新
+        # 権限更新
         db_manager.execute_query(
-            "UPDATE users SET is_active = ? WHERE id = ?", 
-            (new_status, user_id)
+            "UPDATE users SET is_admin = ? WHERE id = ?", 
+            (new_admin, user_id)
         )
         
-        status_text = "有効" if new_status else "無効"
-        flash(f'ユーザーを{status_text}にしました。', 'success')
+        status_text = "付与" if new_admin else "削除"
+        flash(f'管理者権限を{status_text}しました。', 'success')
+    except Exception as e:
+        flash(f'エラーが発生しました: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.user_management'))
+
+@admin_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    """ユーザーを完全削除（DBから削除）"""
+    db_manager = current_app.db_manager
+    
+    # 自分自身は削除できない
+    if user_id == session.get('user_id'):
+        flash('自分自身を削除することはできません。', 'error')
+        return redirect(url_for('admin.user_management'))
+    
+    try:
+        # ユーザーの存在確認
+        user = db_manager.execute_query(
+            "SELECT username, is_admin FROM users WHERE id = ?", (user_id,)
+        )
+        if not user:
+            flash('ユーザーが見つかりません。', 'error')
+            return redirect(url_for('admin.user_management'))
         
+        username = user[0].get('username')
+        is_admin = user[0].get('is_admin', 0)
+        
+        # 管理者の場合は警告
+        if is_admin:
+            flash('管理者アカウントは削除できません。先に管理者権限を削除してください。', 'error')
+            return redirect(url_for('admin.user_management'))
+        
+        # ユーザーの解答履歴を削除
+        db_manager.execute_query(
+            "DELETE FROM user_answers WHERE user_id = ?", (user_id,)
+        )
+        
+        # ユーザーを削除
+        db_manager.execute_query(
+            "DELETE FROM users WHERE id = ?", (user_id,)
+        )
+        
+        flash(f'ユーザー「{username}」を完全に削除しました。', 'success')
     except Exception as e:
         flash(f'エラーが発生しました: {str(e)}', 'error')
     
@@ -200,47 +196,3 @@ def _get_users_with_stats(db_manager):
     except Exception as e:
         print(f"Error getting users: {e}")
         return []
-
-def _get_user_detailed_stats(db_manager, user_id):
-    """ユーザー詳細統計取得"""
-    try:
-        # 基本統計
-        basic_stats = db_manager.execute_query("""
-            SELECT 
-                COUNT(*) as total_answers,
-                SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct_answers,
-                MIN(answered_at) as first_answer,
-                MAX(answered_at) as last_answer
-            FROM user_answers 
-            WHERE user_id = ?
-        """, (user_id,))
-        
-        stats = basic_stats[0] if basic_stats else {
-            'total_answers': 0, 'correct_answers': 0, 
-            'first_answer': None, 'last_answer': None
-        }
-        
-        # 正答率計算
-        if stats['total_answers'] > 0:
-            stats['accuracy_rate'] = round((stats['correct_answers'] / stats['total_answers']) * 100, 1)
-        else:
-            stats['accuracy_rate'] = 0
-            
-        # ジャンル別統計
-        genre_stats = db_manager.execute_query("""
-            SELECT q.genre,
-                   COUNT(*) as answered,
-                   SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END) as correct
-            FROM user_answers ua
-            JOIN questions q ON ua.question_id = q.id
-            WHERE ua.user_id = ? AND q.genre IS NOT NULL
-            GROUP BY q.genre
-            ORDER BY answered DESC
-        """, (user_id,))
-        
-        stats['genre_breakdown'] = genre_stats
-        
-        return stats
-    except Exception as e:
-        print(f"Error getting detailed stats: {e}")
-        return {'total_answers': 0, 'correct_answers': 0, 'accuracy_rate': 0, 'genre_breakdown': []}

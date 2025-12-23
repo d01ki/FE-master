@@ -77,8 +77,7 @@
                             <tr>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">問題</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ジャンル</th>
-                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">解答</th>
-                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">結果</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">解答・結果</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">解答日時</th>
                             </tr>
                         </thead>
@@ -93,6 +92,19 @@
                                         <div class="text-gray-400 text-sm">
                                             ID: {{ item.question_id }}
                                         </div>
+                                        {% if item.explanation %}
+                                        <button onclick="toggleExplanation({{ loop.index }})" 
+                                                class="mt-2 text-xs text-blue-400 hover:text-blue-300 flex items-center">
+                                            <svg id="icon-{{ loop.index }}" class="w-3 h-3 mr-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            </svg>
+                                            解説を表示
+                                        </button>
+                                        <div id="explanation-{{ loop.index }}" class="hidden mt-2 p-3 bg-white/5 rounded-lg border border-white/10">
+                                            <div class="text-xs text-gray-400 mb-1">解説</div>
+                                            <div class="text-sm text-gray-300 whitespace-pre-line">{{ item.explanation }}</div>
+                                        </div>
+                                        {% endif %}
                                     </td>
                                     <td class="px-6 py-4">
                                         {% if item.genre %}
@@ -104,20 +116,14 @@
                                         {% endif %}
                                     </td>
                                     <td class="px-6 py-4">
-                                        <div class="flex items-center space-x-2">
-                                            <span class="text-gray-300">{{ item.user_answer }}</span>
-                                            <span class="text-gray-500">→</span>
-                                            <span class="text-gray-300">{{ item.correct_answer }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
                                         {% if item.is_correct %}
                                             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-600 text-white">
-                                                <i class="fas fa-check mr-1"></i>正解
+                                                <i class="fas fa-check mr-1"></i>正解: {{ item.user_answer }}
                                             </span>
                                         {% else %}
-                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-600 text-white">
-                                                <i class="fas fa-times mr-1"></i>不正解
+                                            <span class="text-gray-400 text-sm">{{ item.user_answer }}</span>
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-600 text-white ml-2">
+                                                不正解（正解: {{ item.correct_answer }}）
                                             </span>
                                         {% endif %}
                                     </td>
@@ -169,4 +175,19 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleExplanation(index) {
+    const explanation = document.getElementById(`explanation-${index}`);
+    const icon = document.getElementById(`icon-${index}`);
+    
+    if (explanation.classList.contains('hidden')) {
+        explanation.classList.remove('hidden');
+        icon.style.transform = 'rotate(90deg)';
+    } else {
+        explanation.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+</script>
 {% endblock %}

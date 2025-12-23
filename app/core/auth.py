@@ -54,10 +54,11 @@ def init_auth_routes(app, db_manager):
             )
             
             if users and check_password_hash(users[0]['password_hash'], password):
+                from markupsafe import escape
                 session.permanent = True
                 session['user_id'] = users[0]['id']
                 session['username'] = users[0]['username']
-                flash(f'{username}さん、ようこそ！', 'success')
+                flash(f'{escape(username)}さん、ようこそ！', 'success')
                 return redirect(url_for('main.dashboard'))
             else:
                 flash('ユーザー名またはパスワードが正しくありません。', 'error')
@@ -109,7 +110,8 @@ def init_auth_routes(app, db_manager):
     
     @app.route('/logout')
     def logout():
-        username = session.get('username', 'ユーザー')
+        from markupsafe import escape
+        username = escape(session.get('username', 'ユーザー'))
         session.clear()
         flash(f'{username}さん、ログアウトしました。', 'info')
         return redirect(url_for('login'))
