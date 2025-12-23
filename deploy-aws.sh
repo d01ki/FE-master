@@ -139,6 +139,11 @@ DB_ENDPOINT=$(aws rds describe-db-instances --db-instance-identifier fe-master-d
 if [ -f user-data.sh ]; then
   sed -i "s/DB_ENDPOINT_PLACEHOLDER/$DB_ENDPOINT/g" user-data.sh || true
 fi
+if [ -n "$RDS_MASTER_PASSWORD" ]; then
+  if [ -f user-data.sh ]; then
+    sed -i "s/DB_PASSWORD_PLACEHOLDER/$RDS_MASTER_PASSWORD/g" user-data.sh || true
+  fi
+fi
 
 # EC2 インスタンス起動（既存の同名インスタンスがあれば再利用）
 EXISTING_INSTANCE=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=fe-master-api" "Name=instance-state-name,Values=running,stopped" --query 'Reservations[0].Instances[0].InstanceId' --output text 2>/dev/null || true)

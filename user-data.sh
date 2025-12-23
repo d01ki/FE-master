@@ -18,10 +18,10 @@ cd FE-master
 
 # 環境変数設定（RDSエンドポイントは自動取得）
 cat > .env << EOF
-DATABASE_URL=postgresql://postgres:YourSecurePassword123!@DB_ENDPOINT_PLACEHOLDER:5432/postgres
+DATABASE_URL=postgresql://postgres:DB_PASSWORD_PLACEHOLDER@DB_ENDPOINT_PLACEHOLDER:5432/postgres
 FLASK_ENV=production
 SECRET_KEY=$(openssl rand -hex 32)
 EOF
 
 # Dockerコンテナ起動
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yaml up -d
