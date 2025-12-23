@@ -1,60 +1,155 @@
 {% extends "base.html" %}
 
+{% block title %}FE-Master - 基本情報技術者試験学習支援{% endblock %}
+
 {% block content %}
-<div class="flex flex-col md:flex-row gap-8">
-    <!-- Left Column: Welcome Card and Stats -->
-    <div class="w-full md:w-2/3">
-        <!-- Welcome Card -->
-        <div class="card mb-8 animate-fadeIn">
-            <h1 class="text-2xl font-bold mb-4">
-                {% if session.get('user_id') %}
-                    こんにちは、{{ session.get('username') }}さん
-                {% else %}
-                    基本情報技術者試験の学習を始めましょう
-                {% endif %}
-            </h1>
-            <p class="text-gray-600 mb-6">
-                {% if session.get('user_id') %}
-                    今日も頑張りましょう！
-                {% else %}
-                    会員登録して学習を始めると、進捗管理や学習履歴の確認ができます。
-                {% endif %}
-            </p>
-            {% if not session.get('user_id') %}
-                <div class="flex gap-4">
-                    <a href="{{ url_for('register') }}" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i>
-                        <span>新規登録</span>
-                    </a>
-                    <a href="{{ url_for('login') }}" class="btn btn-secondary">
-                        <i class="fas fa-sign-in-alt"></i>
-                        <span>ログイン</span>
-                    </a>
-                </div>
-            {% endif %}
+<div id="app-container">
+    <!-- ローディング表示 -->
+    <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span class="text-gray-700">読み込み中...</span>
         </div>
     </div>
 
-    <!-- Right Column: Quick Start and Categories -->
-    <div class="w-full md:w-1/3">
-        <!-- Quick Start -->
-        <div class="card mb-8">
-            <h2 class="text-xl font-bold mb-4">クイックスタート</h2>
-            <div class="space-y-4">
-                <a href="{{ url_for('practice.random_practice') }}" class="btn btn-primary w-full justify-center">
-                    <i class="fas fa-random"></i>
-                    <span>ランダム問題に挑戦</span>
+    <!-- ヒーローセクション（未ログイン時） -->
+    {% if not session.get('user_id') %}
+    <div class="min-h-[60vh] flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl mb-8 overflow-hidden relative">
+        <div class="absolute inset-0 bg-black opacity-10"></div>
+        <div class="relative text-center text-white px-6 py-12 z-10">
+            <h1 class="text-5xl font-bold mb-6 animate-fadeIn">基本情報技術者試験の学習をより効果的に</h1>
+            <p class="text-xl mb-8 text-blue-100">FE-Masterは、基本情報技術者試験の学習を支援するプラットフォームです。</p>
+            <div class="flex gap-4 justify-center">
+                <a href="{{ url_for('auth.login') }}" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-200 flex items-center">
+                    <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                 </a>
-                <a href="{{ url_for('practice.genre_practice') }}" class="btn btn-secondary w-full justify-center">
-                    <i class="fas fa-tags"></i>
-                    <span>ジャンル別演習</span>
-                </a>
-                <a href="{{ url_for('exam.mock_exam') }}" class="btn btn-secondary w-full justify-center">
-                    <i class="fas fa-clipboard-list"></i>
-                    <span>模擬試験</span>
+                <a href="{{ url_for('auth.register') }}" class="bg-blue-800 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-900 transition-all duration-200 flex items-center border-2 border-white">
+                    <i class="fas fa-user-plus mr-2"></i>新規登録
                 </a>
             </div>
         </div>
     </div>
+
+    <!-- 機能紹介 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-200">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <i class="fas fa-random text-blue-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-2">ランダム練習</h3>
+            <p class="text-gray-600">様々なジャンルから問題をランダムに出題。幅広い知識を身につけます。</p>
+        </div>
+        <div class="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-200">
+            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                <i class="fas fa-layer-group text-purple-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-2">ジャンル別演習</h3>
+            <p class="text-gray-600">苦手分野を集中的に学習。効率的にスキルアップできます。</p>
+        </div>
+        <div class="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-200">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                <i class="fas fa-chart-line text-green-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-2">学習履歴</h3>
+            <p class="text-gray-600">進捗状況を可視化。モチベーション維持をサポートします。</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ダッシュボード（ログイン時） -->
+    {% if session.get('user_id') %}
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">こんにちは、{{ session.get('username') }}さん</h1>
+        <p class="text-gray-600">今日も学習を頑張りましょう！</p>
+    </div>
+
+    <!-- 学習統計 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-blue-100">解答済み問題</span>
+                <i class="fas fa-check-circle text-blue-200"></i>
+            </div>
+            <div class="text-3xl font-bold" id="stat-solved">-</div>
+        </div>
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-green-100">正答率</span>
+                <i class="fas fa-chart-pie text-green-200"></i>
+            </div>
+            <div class="text-3xl font-bold" id="stat-accuracy">-</div>
+        </div>
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-purple-100">連続学習日数</span>
+                <i class="fas fa-fire text-purple-200"></i>
+            </div>
+            <div class="text-3xl font-bold" id="stat-streak">-</div>
+        </div>
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-orange-100">今日の解答数</span>
+                <i class="fas fa-calendar-day text-orange-200"></i>
+            </div>
+            <div class="text-3xl font-bold" id="stat-today">-</div>
+        </div>
+    </div>
+
+    <!-- クイックアクション -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <a href="{{ url_for('practice.random_practice') }}" class="bg-white rounded-xl p-8 border-2 border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-500 transition-colors">
+                    <i class="fas fa-random text-blue-600 text-2xl group-hover:text-white transition-colors"></i>
+                </div>
+                <i class="fas fa-arrow-right text-gray-400 group-hover:text-blue-600 group-hover:translate-x-2 transition-all"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">ランダム練習</h3>
+            <p class="text-gray-600">様々な問題に挑戦して総合力を鍛えましょう</p>
+        </a>
+
+        <a href="{{ url_for('practice.genre_practice') }}" class="bg-white rounded-xl p-8 border-2 border-gray-200 hover:border-purple-500 hover:shadow-lg transition-all duration-200 group">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-500 transition-colors">
+                    <i class="fas fa-layer-group text-purple-600 text-2xl group-hover:text-white transition-colors"></i>
+                </div>
+                <i class="fas fa-arrow-right text-gray-400 group-hover:text-purple-600 group-hover:translate-x-2 transition-all"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">ジャンル別演習</h3>
+            <p class="text-gray-600">苦手分野を集中的に学習して克服しましょう</p>
+        </a>
+    </div>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if session.get('user_id') %}
+<script>
+// 学習統計を動的に読み込み
+async function loadStats() {
+    try {
+        const response = await fetch('/api/stats');
+        if (!response.ok) throw new Error('Failed to load stats');
+        
+        const data = await response.json();
+        
+        document.getElementById('stat-solved').textContent = data.solved_count || 0;
+        document.getElementById('stat-accuracy').textContent = (data.accuracy_rate || 0).toFixed(1) + '%';
+        document.getElementById('stat-streak').textContent = (data.streak_days || 0) + '日';
+        document.getElementById('stat-today').textContent = data.today_solved || 0;
+    } catch (error) {
+        console.error('Error loading stats:', error);
+        // エラー時はデフォルト値を表示
+        document.getElementById('stat-solved').textContent = '0';
+        document.getElementById('stat-accuracy').textContent = '0%';
+        document.getElementById('stat-streak').textContent = '0日';
+        document.getElementById('stat-today').textContent = '0';
+    }
+}
+
+// ページ読み込み時に統計を取得
+document.addEventListener('DOMContentLoaded', loadStats);
+</script>
+{% endif %}
 {% endblock %}

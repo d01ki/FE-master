@@ -46,14 +46,14 @@ def validate_image_url(image_url):
         
     return True, None
 
-# PostgreSQLライブラリのインポート（エラー時はSQLiteのみ使用）
+# MySQLライブラリのインポート（エラー時はSQLiteのみ使用）
 try:
-    import psycopg2
-    import psycopg2.extras
-    PSYCOPG2_AVAILABLE = True
+    import pymysql
+    pymysql.install_as_MySQLdb()
+    MYSQL_AVAILABLE = True
 except ImportError:
-    PSYCOPG2_AVAILABLE = False
-    print("Warning: psycopg2 not available. PostgreSQL support disabled.")
+    MYSQL_AVAILABLE = False
+    print("Warning: pymysql not available. MySQL support disabled.")
 
 logger = logging.getLogger(__name__)
 
@@ -62,22 +62,23 @@ class DatabaseManager:
         self.db_type = config.DATABASE_TYPE
         self.config = config
         
-        # PostgreSQLが利用できない場合はSQLiteにフォールバック
-        if self.db_type == 'postgresql' and not PSYCOPG2_AVAILABLE:
-            print("PostgreSQL requested but psycopg2 not available. Falling back to SQLite.")
+        # MySQLが利用できない場合はSQLiteにフォールバック
+        if self.db_type == 'mysql' and not MYSQL_AVAILABLE:
+            print("MySQL requested but pymysql not available. Falling back to SQLite.")
             self.db_type = 'sqlite'
             config.DATABASE_TYPE = 'sqlite'
         
     def get_connection(self):
-        if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
-            conn = psycopg2.connect(
+        if self.db_type == 'mysql' and MYSQL_AVAILABLE:
+            conn = pymysql.connect(
                 host=self.config.DB_HOST,
                 database=self.config.DB_NAME,
                 user=self.config.DB_USER,
                 password=self.config.DB_PASSWORD,
-                port=self.config.DB_PORT
+                port=self.config.DB_PORT,
+                charset='utf8mb4',
+                cursorclass=pymysql.cursors.DictCursor
             )
-            conn.autocommit = False
             return conn
         else:
             db_path = getattr(self.config, 'DATABASE', 'fe_exam.db')
@@ -87,8 +88,8 @@ class DatabaseManager:
     
     def execute_query(self, query, params=None):
         """
-        クエリを実行する（PostgreSQL/SQLite共通）
-        SQLiteの?プレースホルダーをPostgreSQLの$1形式に自動変換
+        クエリを実行する（MySQL/SQLite共通）
+        SQLiteの?プレースホルダーをMySQLの%s形式に自動変換
         """
         original_query = query
         converted_params = params or ()
@@ -98,26 +99,24 @@ class DatabaseManager:
         logger.debug(f"Params: {converted_params}")
         logger.debug(f"DB Type: {self.db_type}")
         
-        # PostgreSQL用にパラメータプレースホルダーを変換
-        if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
-            # SQLiteの?形式をPostgreSQLの%s形式に変換
+        # MySQL用にパラメータプレースホルダーを変換
+        if self.db_type == 'mysql' and MYSQL_AVAILABLE:
+            # SQLiteの?形式をMySQLの%s形式に変換
             query = query.replace('?', '%s')
             
             logger.debug(f"Converted query: {query}")
-            logger.debug(f"Params for PostgreSQL: {converted_params}")
+            logger.debug(f"Params for MySQL: {converted_params}")
         
         conn = self.get_connection()
         try:
-            if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
-                cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-                cur.execute(query, converted_params)
-                if query.strip().upper().startswith(('SELECT', 'WITH')):
-                    result = cur.fetchall()
-                    result = [dict(row) for row in result]
-                else:
-                    result = cur.rowcount
-                    conn.commit()
-                cur.close()
+            if self.db_type == 'mysql' and MYSQL_AVAILABLE:
+                with conn.cursor() as cur:
+                    cur.execute(query, converted_params)
+                    if query.strip().upper().startswith(('SELECT', 'WITH', 'SHOW', 'DESCRIBE')):
+                        result = cur.fetchall()
+                    else:
+                        result = cur.rowcount
+                        conn.commit()
             else:
                 cur = conn.cursor()
                 cur.execute(original_query, converted_params)
@@ -138,22 +137,25 @@ class DatabaseManager:
             conn.close()
     
     def init_database(self):
-        if self.db_type == 'postgresql' and PSYCOPG2_AVAILABLE:
-            self._init_postgresql()
+        if self.db_type == 'mysql' and MYSQL_AVAILABLE:
+            self._init_mysql()
         else:
             self._init_sqlite()
     
-    def _init_postgresql(self):
+    def _init_mysql(self):
+        """MySQL用のテーブル作成"""
         queries = [
             """CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
+                id INT AUTO_INCREMENT PRIMARY KEY,
                 username VARCHAR(80) UNIQUE NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
                 is_admin BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )""",
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_username (username)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+            
             """CREATE TABLE IF NOT EXISTS questions (
-                id SERIAL PRIMARY KEY,
+                id INT AUTO_INCREMENT PRIMARY KEY,
                 question_id VARCHAR(50) UNIQUE NOT NULL,
                 question_text TEXT NOT NULL,
                 choices JSON NOT NULL,
@@ -162,41 +164,31 @@ class DatabaseManager:
                 genre VARCHAR(100),
                 image_url VARCHAR(500),
                 choice_images JSON,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )""",
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_genre (genre),
+                INDEX idx_question_id (question_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+            
             """CREATE TABLE IF NOT EXISTS user_answers (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id),
-                question_id INTEGER REFERENCES questions(id),
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                question_id INT NOT NULL,
                 user_answer VARCHAR(10) NOT NULL,
                 is_correct BOOLEAN NOT NULL,
-                answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )""",
-            "CREATE INDEX IF NOT EXISTS idx_questions_genre ON questions(genre)",
-            "CREATE INDEX IF NOT EXISTS idx_user_answers_user_id ON user_answers(user_id)",
-            # 既存のテーブルにimage_urlカラムを追加（存在しない場合のみ）
-            """DO $$ 
-            BEGIN
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                              WHERE table_name='questions' AND column_name='image_url') THEN
-                    ALTER TABLE questions ADD COLUMN image_url VARCHAR(500);
-                END IF;
-            END $$;""",
-            # choice_imagesカラムを追加（存在しない場合のみ）
-            """DO $$ 
-            BEGIN
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                              WHERE table_name='questions' AND column_name='choice_images') THEN
-                    ALTER TABLE questions ADD COLUMN choice_images JSON;
-                END IF;
-            END $$;"""
+                answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+                INDEX idx_user_id (user_id),
+                INDEX idx_question_id (question_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
         ]
         
         for query in queries:
             try:
                 self.execute_query(query)
+                logger.info(f"MySQL table created/verified successfully")
             except Exception as e:
-                logger.error(f"PostgreSQL init error: {e}")
+                logger.error(f"Error creating MySQL table: {e}")
     
     def _init_sqlite(self):
         queries = [

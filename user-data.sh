@@ -18,7 +18,7 @@ cd FE-master
 
 # 環境変数設定（RDSエンドポイントは自動取得）
 cat > .env << EOF
-DATABASE_URL=postgresql://postgres:DB_PASSWORD_PLACEHOLDER@DB_ENDPOINT_PLACEHOLDER:5432/postgres
+DATABASE_URL=mysql://admin:DB_PASSWORD_PLACEHOLDER@DB_ENDPOINT_PLACEHOLDER:3306/fe_exam
 FLASK_ENV=production
 SECRET_KEY=$(openssl rand -hex 32)
 EOF

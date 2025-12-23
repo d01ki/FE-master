@@ -21,29 +21,32 @@ class Config:
     DATABASE_URL = os.environ.get('DATABASE_URL')
 
     if DATABASE_URL:
-        # Normalize postgres scheme (Render often gives postgres://)
-        if DATABASE_URL.startswith("postgres://"):
-            DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-        if DATABASE_URL.startswith('postgresql://'):
-            DATABASE_TYPE = 'postgresql'
+        # Detect database type from URL
+        if DATABASE_URL.startswith('mysql://'):
+            DATABASE_TYPE = 'mysql'
+        elif DATABASE_URL.startswith('postgresql://') or DATABASE_URL.startswith('postgres://'):
+            # Normalize postgres scheme (for backwards compatibility)
+            if DATABASE_URL.startswith("postgres://"):
+                DATABASE_URL = DATABASE_URL.replace("postgres://", "mysql://", 1)
+            DATABASE_TYPE = 'mysql'  # RDS uses MySQL now
         else:
             DATABASE_TYPE = 'sqlite'
     else:
         DATABASE_TYPE = 'sqlite'
         DATABASE_URL = 'sqlite:///fe_exam.db'
 
-    # Parse PostgreSQL URL if needed
-    if DATABASE_TYPE == 'postgresql':
-        match = re.match(r'postgresql://([^:]+):([^@]+)@([^:]+):?(\d+)?/(.+)', DATABASE_URL)
+    # Parse MySQL URL if needed
+    if DATABASE_TYPE == 'mysql':
+        # mysql://username:password@host:port/database
+        match = re.match(r'mysql://([^:]+):([^@]+)@([^:/]+):?(\d+)?/(.+)', DATABASE_URL)
         if match:
             DB_USER = match.group(1)
             DB_PASSWORD = match.group(2)
             DB_HOST = match.group(3)
-            DB_PORT = match.group(4) or '5432'
+            DB_PORT = int(match.group(4)) if match.group(4) else 3306
             DB_NAME = match.group(5)
         else:
-            raise ValueError('Invalid PostgreSQL DATABASE_URL format')
+            raise ValueError('Invalid MySQL DATABASE_URL format')
     else:
         DB_USER = None
         DB_PASSWORD = None

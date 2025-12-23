@@ -114,8 +114,8 @@ if [ "$EXISTS_RDS" != "0" ]; then
   aws rds create-db-instance \
     --db-instance-identifier fe-master-db \
     --db-instance-class db.t4g.micro \
-    --engine postgres \
-    --master-username postgres \
+    --engine mysql \
+    --master-username admin \
     --master-user-password "$RDS_MASTER_PASSWORD" \
     --allocated-storage 20 \
     --vpc-security-group-ids $DB_SG_ID \
