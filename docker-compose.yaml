@@ -1,22 +1,52 @@
-version: '3.8'
+# Single unified docker-compose configuration for development and production.
+# Behavior is controlled via environment variables (use a .env file in the project root).
 
 services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fe_exam}
+      POSTGRES_USER: ${POSTGRES_USER:-fe_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fe_password_secure}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Published host port can be changed via DB_PORT environment variable (default 5433)
+      - "${DB_PORT:-5433}:5432"
+    networks:
+      - app-network
+    restart: unless-stopped
+
   app:
     build: .
     ports:
-      # ブラウザでアクセスするために 80:5000 に設定
-      - "80:5000"
+      # Published host port can be changed via APP_PUBLISHED_PORT (default 5000)
+      - "${APP_PUBLISHED_PORT:-5000}:${APP_CONTAINER_PORT:-5000}"
     environment:
-      DEBUG: "false"
-      FLASK_ENV: "production"
-      # .env から読み込まれる変数を指定
-      DATABASE_URL: ${DATABASE_URL}
-      SECRET_KEY: ${SECRET_KEY}
-      ADMIN_USERNAME: ${ADMIN_USERNAME}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      DEBUG: ${DEBUG:-false}
+      SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
+      FLASK_ENV: ${FLASK_ENV:-production}
+      DATABASE_TYPE: ${DATABASE_TYPE:-postgresql}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://fe_user:${POSTGRES_PASSWORD:-fe_password_secure}@db:5432/fe_exam}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-admin-password-in-production}
+      PORT: ${APP_CONTAINER_PORT:-5000}
+      HOST: 0.0.0.0
     volumes:
+      # Mount project for live-editing in development; in production you may want to remove this.
       - .:/app
+      - ./app/static/images:/app/app/static/images
+      # Fallback: mount repository-level static (if images are stored at project root)
+      - ./static:/app/app/static
       - ./uploads:/app/uploads
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${APP_CONTAINER_PORT:-5000}/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: unless-stopped
     networks:
       - app-network
@@ -24,3 +54,19 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  postgres_data:
+
+# Usage notes:
+# - Create a `.env` file in the repository root to override variables for development:
+#
+#   DEBUG=true
+#   FLASK_ENV=development
+#   POSTGRES_PASSWORD=dev_password
+#   DATABASE_URL=postgresql://fe_user:dev_password@db:5432/fe_exam
+#   APP_PUBLISHED_PORT=5001
+#
+# - For production, set REAL `DATABASE_URL`, `SECRET_KEY`, and `ADMIN_PASSWORD` in the
+#   environment or a secure secrets manager and run `docker compose up -d`.
+ 
