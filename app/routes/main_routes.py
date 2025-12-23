@@ -14,16 +14,16 @@ def health():
 @main_bp.route('/')
 @main_bp.route('/index')
 def index():
-    """トップページ - adminなら管理画面へ、一般ユーザーならダッシュボードへ、未ログインはログインページへ"""
-    if 'admin_logged_in' in session or session.get('user_id') == 'admin':
+    """トップページ - ログイン状態に応じてリダイレクトまたはランディングページ表示"""
+    if 'admin_logged_in' in session or session.get('is_admin'):
         # 管理者は管理画面へ
         return redirect(url_for('admin.admin_dashboard'))
     elif 'user_id' in session:
-        # 一般ユーザーはダッシュボードへ
+        # ログインユーザーはダッシュボードへ自動リダイレクト
         return redirect(url_for('main.dashboard'))
     else:
-        # 未ログインはログインページへ
-        return redirect(url_for('login'))
+        # 未ログインユーザーにはランディングページを表示
+        return render_template('index.html')
 
 @main_bp.route('/dashboard')
 @login_required

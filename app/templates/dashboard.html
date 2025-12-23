@@ -8,7 +8,7 @@
         
         <!-- Header Section -->
         <div class="text-center mb-6">
-            {% if session.get('admin_logged_in') or session.user_id == 'admin' %}
+            {% if session.get('admin_logged_in') or session.get('is_admin') %}
             <h1 class="text-3xl font-bold text-white mb-2">
                 管理者ダッシュボード
             </h1>
@@ -17,10 +17,10 @@
             </p>
             {% else %}
             <h1 class="text-3xl font-bold text-white mb-2">
-                基本情報技術者試験ダッシュボード
+                こんにちは、{{ session.get('username', 'ゲスト') }}さん
             </h1>
             <p class="text-base text-gray-300">
-                効率的な学習で合格を目指しましょう
+                今日も学習を頑張りましょう！
             </p>
             {% endif %}
         </div>
@@ -36,7 +36,7 @@
                     </div>
                     <div>
                         <p class="text-xs text-gray-400">総問題数</p>
-                        <p class="text-lg font-bold text-white">{{ stats.total_questions or 0 }}</p>
+                        <p class="text-lg font-bold text-white" id="stat-total-questions">{{ stats.total_questions or 0 }}</p>
                     </div>
                 </div>
             </div>
@@ -50,7 +50,7 @@
                     </div>
                     <div>
                         <p class="text-xs text-gray-400">正解数</p>
-                        <p class="text-lg font-bold text-white">{{ stats.correct_answers or 0 }}</p>
+                        <p class="text-lg font-bold text-white" id="stat-correct-answers">{{ stats.correct_answers or 0 }}</p>
                     </div>
                 </div>
             </div>
@@ -64,7 +64,7 @@
                     </div>
                     <div>
                         <p class="text-xs text-gray-400">正答率</p>
-                        <p class="text-lg font-bold text-white">{{ stats.accuracy_rate or 0 }}%</p>
+                        <p class="text-lg font-bold text-white" id="stat-accuracy-rate">{{ stats.accuracy_rate or 0 }}%</p>
                     </div>
                 </div>
             </div>
@@ -78,14 +78,14 @@
                     </div>
                     <div>
                         <p class="text-xs text-gray-400">解答数</p>
-                        <p class="text-lg font-bold text-white">{{ stats.total_answers or 0 }}</p>
+                        <p class="text-lg font-bold text-white" id="stat-total-answers">{{ stats.total_answers or 0 }}</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Main Actions -->
-        {% if session.get('admin_logged_in') or session.user_id == 'admin' %}
+        {% if session.get('admin_logged_in') or session.get('is_admin') %}
         <!-- Admin Actions -->
         <div class="flex-1 grid grid-cols-2 gap-4 mb-4">
             <!-- User Management -->
@@ -170,7 +170,7 @@
 
         <!-- Secondary Actions -->
         <div class="mt-auto">
-            {% if session.get('admin_logged_in') or session.user_id == 'admin' %}
+            {% if session.get('admin_logged_in') or session.get('is_admin') %}
             <!-- Admin Secondary Actions -->
             <a href="#" 
                class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-3 shadow-sm hover:shadow-lg hover:border-red-400/50 transition-all duration-200 group flex items-center">
@@ -209,4 +209,42 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 統計情報を動的に読み込み（バックグラウンドで最新データを取得）
+async function refreshStats() {
+    try {
+        const response = await fetch('/api/stats');
+        if (!response.ok) return; // エラー時は既存データを保持
+        
+        const data = await response.json();
+        
+        // 統計を更新
+        if (document.getElementById('stat-total-questions')) {
+            document.getElementById('stat-total-questions').textContent = data.total_questions || 0;
+        }
+        if (document.getElementById('stat-correct-answers')) {
+            document.getElementById('stat-correct-answers').textContent = data.correct_answers || 0;
+        }
+        if (document.getElementById('stat-accuracy-rate')) {
+            document.getElementById('stat-accuracy-rate').textContent = (data.accuracy_rate || 0).toFixed(1) + '%';
+        }
+        if (document.getElementById('stat-total-answers')) {
+            document.getElementById('stat-total-answers').textContent = data.total_answers || 0;
+        }
+    } catch (error) {
+        console.error('Stats refresh error:', error);
+        // エラー時はサーバーサイドレンダリングされた値を保持
+    }
+}
+
+// ページ読み込み時とフォーカス時に統計を更新
+document.addEventListener('DOMContentLoaded', refreshStats);
+window.addEventListener('focus', refreshStats);
+
+// 定期的に更新（5分ごと）
+setInterval(refreshStats, 300000);
+</script>
 {% endblock %}
