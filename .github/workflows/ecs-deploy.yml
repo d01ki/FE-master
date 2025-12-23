@@ -1,0 +1,86 @@
+name: Build and Deploy to ECS (Fargate)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'release/**'
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+      ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+      ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build Docker image
+        run: |
+          IMAGE_TAG=${GITHUB_SHA}
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_URI=${ACCOUNT_ID}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
+          docker build -t app:${IMAGE_TAG} .
+          docker tag app:${IMAGE_TAG} ${ECR_URI}:${IMAGE_TAG}
+
+      - name: Push to ECR
+        run: |
+          IMAGE_TAG=${GITHUB_SHA}
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_URI=${ACCOUNT_ID}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
+          docker push ${ECR_URI}:${IMAGE_TAG}
+
+      - name: Register new task definition and update service
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -e
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_URI=${ACCOUNT_ID}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
+
+          # Get current task definition ARN
+          TASK_DEF_ARN=$(aws ecs describe-services --cluster ${{ secrets.ECS_CLUSTER }} --services ${{ secrets.ECS_SERVICE }} --query 'services[0].taskDefinition' --output text)
+
+          # Fetch full task definition JSON
+          aws ecs describe-task-definition --task-definition ${TASK_DEF_ARN} --query 'taskDefinition' --output json > current-taskdef.json
+
+          # Create new task definition JSON changing the image of the first container
+          NEW_TASKDEF=$(cat current-taskdef.json | jq 'del(.status,.requiresAttributes,.taskDefinitionArn,.revision,.compatibilities,.registeredAt,.registeredBy) | .containerDefinitions[0].image="'${ECR_URI}':'${IMAGE_TAG}'"')
+
+          echo "$NEW_TASKDEF" > new-taskdef.json
+
+          # Register new task definition
+          REGISTERED=$(aws ecs register-task-definition --cli-input-json file://new-taskdef.json)
+          NEW_TASKDEF_ARN=$(echo "$REGISTERED" | jq -r '.taskDefinition.taskDefinitionArn')
+
+          echo "New task definition ARN: $NEW_TASKDEF_ARN"
+
+          # Update service to use new task definition
+          aws ecs update-service --cluster ${{ secrets.ECS_CLUSTER }} --service ${{ secrets.ECS_SERVICE }} --task-definition $NEW_TASKDEF_ARN
+
+      - name: Wait for service stability
+        run: |
+          aws ecs wait services-stable --cluster ${{ secrets.ECS_CLUSTER }} --services ${{ secrets.ECS_SERVICE }}
+
+      - name: Notify
+        run: echo "Deployed image to ECS: ${GITHUB_SHA}"
