@@ -90,11 +90,11 @@
                                         <div class="flex items-center">
                                             <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
                                                 <span class="text-white text-sm font-medium">
-                                                    {{ user.username[0].upper() }}
+                                                    {{ user.username[0].upper() | e }}
                                                 </span>
                                             </div>
                                             <div>
-                                                <div class="text-white font-medium">{{ user.username }}</div>
+                                                <div class="text-white font-medium">{{ user.username | e }}</div>
                                                 {% if user.is_admin %}
                                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-600 text-white">
                                                         <i class="fas fa-crown mr-1"></i>管理者
@@ -144,7 +144,7 @@
                                                 <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" style="display: inline;">
                                                     <button type="submit" 
                                                             class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs transition-colors duration-200"
-                                                            onclick="return confirm('本当にユーザー「{{ user.username }}」を完全に削除しますか？\n\nこの操作は取り消せません。解答履歴も全て削除されます。')">
+                                                            onclick="return confirm('本当にユーザー「{{ user.username | e }}」を完全に削除しますか？\n\nこの操作は取り消せません。解答履歴も全て削除されます。')">
                                                         <i class="fas fa-trash mr-1"></i>削除
                                                     </button>
                                                 </form>

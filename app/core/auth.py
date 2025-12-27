@@ -35,6 +35,11 @@ def init_auth_routes(app, db_manager):
             username = request.form.get('username', '').strip()
             password = request.form.get('password', '')
             
+            # XSS対策: 危険な文字を検出
+            if any(char in username for char in ['<', '>', '"', "'", '&', ';']):
+                flash('ユーザー名に使用できない文字が含まれています。', 'error')
+                return render_template('auth/login.html')
+            
             if not username or not password:
                 flash('ユーザー名とパスワードを入力してください。', 'error')
                 return render_template('auth/login.html')
@@ -71,12 +76,21 @@ def init_auth_routes(app, db_manager):
             username = request.form.get('username', '').strip()
             password = request.form.get('password', '')
             
+            # XSS対策: 危険な文字を検出
+            if any(char in username for char in ['<', '>', '"', "'", '&', ';']):
+                flash('ユーザー名に使用できない文字が含まれています。英数字とアンダースコア、ハイフンのみ使用できます。', 'error')
+                return render_template('auth/register.html')
+            
             if not username or not password:
                 flash('ユーザー名とパスワードを入力してください。', 'error')
                 return render_template('auth/register.html')
             
             if len(username) < 3:
                 flash('ユーザー名は3文字以上で入力してください。', 'error')
+                return render_template('auth/register.html')
+            
+            if len(username) > 50:
+                flash('ユーザー名は50文字以内で入力してください。', 'error')
                 return render_template('auth/register.html')
                 
             if len(password) < 6:

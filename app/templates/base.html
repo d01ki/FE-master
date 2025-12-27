@@ -17,6 +17,9 @@
         
         body {
             font-family: 'Inter', sans-serif;
+            font-size: clamp(14px, 1vw + 12px, 17px);
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
         }
         
         .alert {
@@ -42,6 +45,50 @@
         .nav-link:hover::before {
             left: 100%;
         }
+
+        /* Shared surfaces */
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            backdrop-filter: blur(12px);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #06b6d4);
+            color: #fff;
+            box-shadow: 0 12px 30px rgba(59,130,246,0.25);
+        }
+        .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
+        .btn-primary:active { transform: translateY(0); filter: brightness(0.95); }
+
+        .btn-ghost {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e5e7eb;
+        }
+        .btn-ghost:hover { border-color: rgba(255,255,255,0.25); color: #fff; }
+
+        /* Touch target */
+        .touch-target { min-height: 44px; min-width: 44px; }
+
+        /* Skeleton loading */
+        .skeleton { position: relative; overflow: hidden; background: rgba(255,255,255,0.08); border-radius: 0.75rem; }
+        .skeleton::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+            animation: shimmer 1.4s infinite;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        /* Toast animation */
+        .toast-enter { animation: toast-in 0.35s ease forwards; }
+        .toast-leave { animation: toast-out 0.3s ease forwards; }
+        @keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); } }
     </style>
 </head>
 <body class="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -55,7 +102,7 @@
                 
                 <!-- Navigation Links -->
                 <div class="hidden md:flex items-center space-x-1">
-                    <a href="{{ url_for('main.dashboard') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.endpoint == 'main.dashboard' %}bg-blue-500/20 text-blue-400{% else %}text-gray-300 hover:text-blue-400 hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('main.dashboard') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target {% if request.endpoint == 'main.dashboard' %}bg-blue-500/20 text-blue-400{% else %}text-gray-300 hover:text-blue-400 hover:bg-white/5{% endif %}">
                         ダッシュボード
                     </a>
                     <a href="{{ url_for('practice.random_practice') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-colors text-gray-300 hover:text-blue-400 hover:bg-white/5">
@@ -67,7 +114,10 @@
                     <a href="{{ url_for('exam.mock_exam') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.endpoint in ['exam.mock_exam', 'exam.mock_exam_start'] %}bg-orange-500/20 text-orange-400{% else %}text-gray-300 hover:text-orange-400 hover:bg-white/5{% endif %}">
                         模擬試験
                     </a>
-                    <a href="{{ url_for('main.history') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.endpoint == 'main.history' %}bg-indigo-500/20 text-indigo-400{% else %}text-gray-300 hover:text-indigo-400 hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('main.ranking') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.endpoint == 'main.ranking' %}bg-teal-500/20 text-teal-300{% else %}text-gray-300 hover:text-teal-300 hover:bg-white/5{% endif %}">
+                        ランキング
+                    </a>
+                    <a href="{{ url_for('main.history') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target {% if request.endpoint == 'main.history' %}bg-indigo-500/20 text-indigo-400{% else %}text-gray-300 hover:text-indigo-400 hover:bg-white/5{% endif %}">
                         学習履歴
                     </a>
                 </div>
@@ -104,7 +154,7 @@
             <!-- Mobile Navigation -->
             <div id="mobile-menu" class="hidden md:hidden py-4 border-t border-slate-700/50">
                 <div class="space-y-1">
-                    <a href="{{ url_for('main.dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'main.dashboard' %}bg-blue-500/20 text-blue-400{% else %}text-gray-300 hover:text-blue-400 hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('main.dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium touch-target {% if request.endpoint == 'main.dashboard' %}bg-blue-500/20 text-blue-400{% else %}text-gray-300 hover:text-blue-400 hover:bg-white/5{% endif %}">
                         ダッシュボード
                     </a>
                     <a href="{{ url_for('practice.random_practice') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-blue-400 hover:bg-white/5">
@@ -116,7 +166,10 @@
                     <a href="{{ url_for('exam.mock_exam') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint in ['exam.mock_exam', 'exam.mock_exam_start'] %}bg-orange-500/20 text-orange-400{% else %}text-gray-300 hover:text-orange-400 hover:bg-white/5{% endif %}">
                         模擬試験
                     </a>
-                    <a href="{{ url_for('main.history') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'main.history' %}bg-indigo-500/20 text-indigo-400{% else %}text-gray-300 hover:text-indigo-400 hover:bg-white/5{% endif %}">
+                    <a href="{{ url_for('main.ranking') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'main.ranking' %}bg-teal-500/20 text-teal-300{% else %}text-gray-300 hover:text-teal-300 hover:bg-white/5{% endif %}">
+                        ランキング
+                    </a>
+                    <a href="{{ url_for('main.history') }}" class="block px-3 py-2 rounded-md text-base font-medium touch-target {% if request.endpoint == 'main.history' %}bg-indigo-500/20 text-indigo-400{% else %}text-gray-300 hover:text-indigo-400 hover:bg-white/5{% endif %}">
                         学習履歴
                     </a>
                 </div>
@@ -130,7 +183,7 @@
         {% if messages %}
             <div class="fixed top-4 right-4 z-50 space-y-2">
                 {% for category, message in messages %}
-                    <div class="alert max-w-sm bg-white border-l-4 {% if category == 'error' %}border-red-500 bg-red-50{% elif category == 'success' %}border-green-500 bg-green-50{% elif category == 'warning' %}border-yellow-500 bg-yellow-50{% else %}border-blue-500 bg-blue-50{% endif %} p-4 rounded-lg shadow-lg">
+                    <div class="alert toast-enter max-w-sm bg-white border-l-4 {% if category == 'error' %}border-red-500 bg-red-50{% elif category == 'success' %}border-green-500 bg-green-50{% elif category == 'warning' %}border-yellow-500 bg-yellow-50{% else %}border-blue-500 bg-blue-50{% endif %} p-4 rounded-lg shadow-lg">
                         <div class="flex">
                             <div class="flex-shrink-0">
                                 {% if category == 'error' %}
@@ -200,13 +253,10 @@
         setTimeout(function() {
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(function(alert) {
-                alert.style.opacity = '0';
-                alert.style.transform = 'translateY(-20px)';
-                setTimeout(function() {
-                    alert.remove();
-                }, 300);
+                alert.classList.add('toast-leave');
+                setTimeout(function() { alert.remove(); }, 320);
             });
-        }, 5000);
+        }, 4500);
     </script>
     
     {% block scripts %}{% endblock %}

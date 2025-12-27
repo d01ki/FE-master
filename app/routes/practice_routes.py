@@ -4,6 +4,7 @@
 from flask import Blueprint, render_template, request, jsonify, session, current_app
 from app.core.auth import login_required
 import json
+import random
 
 practice_bp = Blueprint('practice', __name__)
 
@@ -54,8 +55,8 @@ def practice_by_genre(genre):
                              message=f'{genre}の問題が見つかりません',
                              detail='このジャンルの問題が登録されていません')
     
-    # 最初の問題を表示
-    question = questions[0] if questions else None
+    # 毎回ランダムに出題（連続で同じ問題にならないようサンプリング）
+    question = random.choice(questions) if questions else None
     
     return render_template('question.html', question=question, mode='genre', genre=genre)
 

@@ -141,6 +141,8 @@ class DatabaseManager:
             self._init_mysql()
         else:
             self._init_sqlite()
+        # 既存データから集計テーブルを同期
+        self.rebuild_user_stats()
     
     def _init_mysql(self):
         """MySQL用のテーブル作成"""
@@ -180,6 +182,18 @@ class DatabaseManager:
                 FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
                 INDEX idx_user_id (user_id),
                 INDEX idx_question_id (question_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+            """CREATE TABLE IF NOT EXISTS user_stats (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL UNIQUE,
+                total_answers INT DEFAULT 0,
+                correct_answers INT DEFAULT 0,
+                accuracy_rate DECIMAL(5,2) DEFAULT 0,
+                last_answered_at DATETIME NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_accuracy_rate (accuracy_rate),
+                INDEX idx_total_answers (total_answers)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
         ]
         
@@ -220,6 +234,15 @@ class DatabaseManager:
                 answered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id),
                 FOREIGN KEY (question_id) REFERENCES questions (id)
+            )""",
+            """CREATE TABLE IF NOT EXISTS user_stats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER UNIQUE NOT NULL,
+                total_answers INTEGER DEFAULT 0,
+                correct_answers INTEGER DEFAULT 0,
+                accuracy_rate REAL DEFAULT 0,
+                last_answered_at DATETIME,
+                FOREIGN KEY (user_id) REFERENCES users (id)
             )"""
         ]
         
@@ -255,6 +278,133 @@ class DatabaseManager:
             # ALTER TABLEエラーをより詳細にログ出力し、継続実行
             logger.warning(f"SQLite alter table warning (non-fatal): {e}")
             print(f"SQLite alter table error: {e}")
+
+    def update_user_stats(self, user_id):
+        """指定ユーザーの集計結果をuser_statsに反映"""
+        try:
+            stats = self.execute_query(
+                """
+                SELECT 
+                    COUNT(*) AS total_answers,
+                    SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) AS correct_answers,
+                    MAX(answered_at) AS last_answered_at
+                FROM user_answers
+                WHERE user_id = ?
+                """,
+                (user_id,)
+            )
+
+            if not stats:
+                return
+
+            total_answers = stats[0].get('total_answers', 0) or 0
+            correct_answers = stats[0].get('correct_answers', 0) or 0
+            accuracy_rate = round((correct_answers / total_answers) * 100, 1) if total_answers else 0
+            last_answered_at = stats[0].get('last_answered_at')
+
+            if self.db_type == 'mysql' and MYSQL_AVAILABLE:
+                upsert_query = """
+                    INSERT INTO user_stats (user_id, total_answers, correct_answers, accuracy_rate, last_answered_at)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                        total_answers = VALUES(total_answers),
+                        correct_answers = VALUES(correct_answers),
+                        accuracy_rate = VALUES(accuracy_rate),
+                        last_answered_at = VALUES(last_answered_at)
+                """
+            else:
+                upsert_query = """
+                    INSERT INTO user_stats (user_id, total_answers, correct_answers, accuracy_rate, last_answered_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        total_answers = excluded.total_answers,
+                        correct_answers = excluded.correct_answers,
+                        accuracy_rate = excluded.accuracy_rate,
+                        last_answered_at = excluded.last_answered_at
+                """
+
+            self.execute_query(
+                upsert_query,
+                (user_id, total_answers, correct_answers, accuracy_rate, last_answered_at)
+            )
+        except Exception as e:
+            logger.error(f"Failed to update user_stats for user {user_id}: {e}")
+
+    def rebuild_user_stats(self):
+        """既存の回答履歴からuser_statsを再構築"""
+        try:
+            users = self.execute_query("SELECT id FROM users") or []
+            for user in users:
+                try:
+                    self.update_user_stats(user['id'])
+                except Exception as inner:
+                    logger.warning(f"Skipping stats rebuild for user {user.get('id')}: {inner}")
+        except Exception as e:
+            logger.warning(f"user_stats rebuild skipped: {e}")
+
+    def get_user_rankings(self, limit=50):
+        """ランキング用のユーザー集計を取得"""
+        limit = int(limit) if limit else 50
+        query = """
+            SELECT 
+                u.id,
+                u.username,
+                COALESCE(us.total_answers, 0) AS total_answers,
+                COALESCE(us.correct_answers, 0) AS correct_answers,
+                COALESCE(us.accuracy_rate, 0) AS accuracy_rate,
+                us.last_answered_at
+            FROM users u
+            LEFT JOIN user_stats us ON us.user_id = u.id
+            WHERE COALESCE(us.total_answers, 0) > 0
+            ORDER BY accuracy_rate DESC, total_answers DESC, last_answered_at DESC
+            LIMIT ?
+        """
+        return self.execute_query(query, (limit,))
+
+    def get_user_stat(self, user_id):
+        """単一ユーザーの集計を取得"""
+        result = self.execute_query(
+            """
+            SELECT 
+                u.id,
+                u.username,
+                COALESCE(us.total_answers, 0) AS total_answers,
+                COALESCE(us.correct_answers, 0) AS correct_answers,
+                COALESCE(us.accuracy_rate, 0) AS accuracy_rate,
+                us.last_answered_at
+            FROM users u
+            LEFT JOIN user_stats us ON us.user_id = u.id
+            WHERE u.id = ?
+            LIMIT 1
+            """,
+            (user_id,)
+        )
+        return result[0] if result else None
+
+    def get_user_rank(self, user_id):
+        """指定ユーザーのランキング順位を取得"""
+        user_stat = self.get_user_stat(user_id)
+        if not user_stat or user_stat.get('total_answers', 0) == 0:
+            return None
+
+        accuracy = user_stat.get('accuracy_rate', 0) or 0
+        total = user_stat.get('total_answers', 0) or 0
+        last_answered = user_stat.get('last_answered_at') or '1970-01-01'
+
+        result = self.execute_query(
+            """
+            SELECT COUNT(*) + 1 AS user_rank
+            FROM user_stats
+            WHERE total_answers > 0 AND (
+                accuracy_rate > ?
+                OR (accuracy_rate = ? AND total_answers > ?)
+                OR (accuracy_rate = ? AND total_answers = ? AND COALESCE(last_answered_at, '1970-01-01') > COALESCE(?, '1970-01-01'))
+            )
+            """,
+            (accuracy, accuracy, total, accuracy, total, last_answered)
+        )
+
+        return result[0].get('user_rank') if result else None
 
 class QuestionManager:
     def __init__(self, db_manager):

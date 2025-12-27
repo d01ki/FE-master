@@ -37,6 +37,75 @@ class QuestionManager:
         print(f"[DEBUG] is_image_url: text='{text}', is_image={is_image}")
         
         return is_image
+
+    def normalize_media_value(self, val):
+        """Normalize image path/URL; return None when empty."""
+        if not val or not isinstance(val, str):
+            return None
+        cleaned = val.strip()
+        if not cleaned:
+            return None
+        cleaned = cleaned.replace('\\', '/')
+
+        if 'protected_images/questions/' in cleaned:
+            fname = cleaned.split('/')[-1]
+            return f'/images/questions/{fname}'
+
+        if cleaned.startswith('/images/questions/'):
+            return cleaned
+        if cleaned.startswith('images/questions/'):
+            return '/' + cleaned
+        if cleaned.startswith('/static/'):
+            return cleaned
+        if cleaned.startswith('static/'):
+            return '/' + cleaned
+
+        # If it looks like just a filename, map to protected route
+        if '/' not in cleaned:
+            return f'/images/questions/{cleaned}'
+
+        return cleaned
+
+    def sanitize_question_text(self, text):
+        """Remove stray image path fragments from question text."""
+        if not text or not isinstance(text, str):
+            return text
+        patterns = [
+            r'/image\\?s?/question[s]?/[^\s]+',
+            r'images?/questions?/[^\s]+',
+            r'protected_images/questions/[^\s]+'
+        ]
+        cleaned = text
+        for p in patterns:
+            cleaned = re.sub(p, '', cleaned, flags=re.IGNORECASE)
+        return cleaned.strip()
+
+    def normalize_choice_value(self, val):
+        """Normalize choice text or image path, dropping noisy JSON blobs."""
+        if val is None:
+            return None
+        if not isinstance(val, str):
+            val = str(val)
+        s = val.strip()
+        if not s:
+            return None
+
+        lower = s.lower()
+        if re.search(r'(\.png|\.jpg|\.jpeg|\.gif|\.svg|\.webp)$', lower) or '/image' in lower or 'protected_images/questions/' in lower:
+            return self.normalize_media_value(s) or s
+
+        if (s.startswith('{') and s.endswith('}')) or (s.startswith('[') and s.endswith(']')):
+            try:
+                decoded = json.loads(s)
+                if isinstance(decoded, str):
+                    s = decoded.strip()
+                else:
+                    return None
+            except Exception:
+                return None
+
+        s = self.sanitize_question_text(s)
+        return s if s else None
     
     def get_question(self, question_id):
         """指定されたIDの問題を取得"""
@@ -53,40 +122,46 @@ class QuestionManager:
             if result:
                 question = dict(result[0])
                 
-                # image_urlの正規化（空やnullを None に統一）
-                if question.get('image_url'):
-                    img_url = question['image_url']
-                    if img_url in ['null', 'None', '', 'undefined']:
-                        question['image_url'] = None
-                else:
-                    question['image_url'] = None
-                
-                print(f"[DEBUG] Question image_url after normalization: {question.get('image_url')}")
-                
+                # question text sanitize
+                question['question_text'] = self.sanitize_question_text(question.get('question_text'))
+
+                # image_urlの正規化
+                question['image_url'] = self.normalize_media_value(question.get('image_url'))
+
                 # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
-                
+
+                # 選択肢の正規化
+                if isinstance(question.get('choices'), dict):
+                    cleaned_choices = {}
+                    for ck, cv in question['choices'].items():
+                        cleaned_val = self.normalize_choice_value(cv)
+                        if cleaned_val:
+                            cleaned_choices[ck] = cleaned_val
+                    question['choices'] = cleaned_choices
+                else:
+                    question['choices'] = {}
+
                 # デバッグログ
                 print(f"[DEBUG] Question choices: {question['choices']}")
-                
+
                 # 選択肢が画像URLかどうかを判定
                 question['has_image_choices'] = False
                 if question['choices']:
-                    # 最初の選択肢をチェック（すべて同じ形式と仮定）
                     first_choice = list(question['choices'].values())[0]
                     question['has_image_choices'] = self.is_image_url(first_choice)
-                    
+
                     print(f"[DEBUG] First choice: '{first_choice}'")
                     print(f"[DEBUG] has_image_choices: {question['has_image_choices']}")
-                
+
                 # 後方互換性: choice_imagesがあれば処理（廃止予定）
                 if question.get('choice_images'):
                     if isinstance(question['choice_images'], str):
                         question['choice_images'] = json.loads(question['choice_images'])
                 else:
                     question['choice_images'] = None
-                
+
                 return question
             return None
         except Exception as e:
@@ -106,24 +181,30 @@ class QuestionManager:
             for row in result:
                 question = dict(row)
                 
-                # image_urlの正規化
-                if question.get('image_url'):
-                    img_url = question['image_url']
-                    if img_url in ['null', 'None', '', 'undefined']:
-                        question['image_url'] = None
-                else:
-                    question['image_url'] = None
-                
+                # question text sanitize & image normalization
+                question['question_text'] = self.sanitize_question_text(question.get('question_text'))
+                question['image_url'] = self.normalize_media_value(question.get('image_url'))
+
                 # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
-                
+
+                if isinstance(question.get('choices'), dict):
+                    cleaned_choices = {}
+                    for ck, cv in question['choices'].items():
+                        cleaned_val = self.normalize_choice_value(cv)
+                        if cleaned_val:
+                            cleaned_choices[ck] = cleaned_val
+                    question['choices'] = cleaned_choices
+                else:
+                    question['choices'] = {}
+
                 # 選択肢が画像URLかどうかを判定
                 question['has_image_choices'] = False
                 if question['choices']:
                     first_choice = list(question['choices'].values())[0]
                     question['has_image_choices'] = self.is_image_url(first_choice)
-                
+
                 # choice_imagesがあれば処理
                 if question.get('choice_images') and isinstance(question['choice_images'], str):
                     question['choice_images'] = json.loads(question['choice_images'])
@@ -186,24 +267,30 @@ class QuestionManager:
             if result:
                 question = dict(result[0])
                 
-                # image_urlの正規化
-                if question.get('image_url'):
-                    img_url = question['image_url']
-                    if img_url in ['null', 'None', '', 'undefined']:
-                        question['image_url'] = None
-                else:
-                    question['image_url'] = None
-                
+                # question text sanitize & image normalization
+                question['question_text'] = self.sanitize_question_text(question.get('question_text'))
+                question['image_url'] = self.normalize_media_value(question.get('image_url'))
+
                 # choicesをJSONパース
                 if isinstance(question['choices'], str):
                     question['choices'] = json.loads(question['choices'])
-                
+
+                if isinstance(question.get('choices'), dict):
+                    cleaned_choices = {}
+                    for ck, cv in question['choices'].items():
+                        cleaned_val = self.normalize_choice_value(cv)
+                        if cleaned_val:
+                            cleaned_choices[ck] = cleaned_val
+                    question['choices'] = cleaned_choices
+                else:
+                    question['choices'] = {}
+
                 # 選択肢が画像URLかどうかを判定
                 question['has_image_choices'] = False
                 if question['choices']:
                     first_choice = list(question['choices'].values())[0]
                     question['has_image_choices'] = self.is_image_url(first_choice)
-                
+
                 # choice_imagesがあれば処理
                 if question.get('choice_images') and isinstance(question['choice_images'], str):
                     question['choice_images'] = json.loads(question['choice_images'])
@@ -262,6 +349,11 @@ class QuestionManager:
                        VALUES (?, ?, ?, ?, ?)''',
                     (user_id, question_id, user_answer, int(is_correct), datetime.now())
                 )
+            # 回答保存後に集計を更新
+            try:
+                self.db_manager.update_user_stats(user_id)
+            except Exception as stats_error:
+                print(f"Failed to update user_stats for user {user_id}: {stats_error}")
             return True
         except Exception as e:
             print(f"解答履歴保存エラー: {e}")
@@ -296,15 +388,19 @@ class QuestionManager:
                         errors.append(f"問題 {i+1}: 必須フィールドが不足しています")
                         continue
                     
-                    choices_json = json.dumps(question['choices'], ensure_ascii=False)
+                    cleaned_choices = {}
+                    if isinstance(question.get('choices'), dict):
+                        for ck, cv in question['choices'].items():
+                            cleaned_val = self.normalize_choice_value(cv)
+                            if cleaned_val:
+                                cleaned_choices[ck] = cleaned_val
+                    choices_json = json.dumps(cleaned_choices, ensure_ascii=False)
                     
                     # question_idの取得
                     question_id = question.get('question_id', f"Q{i+1:03d}_{source_file}")
                     
-                    # image_urlの処理（nullや空文字をNoneに統一）
-                    image_url = question.get('image_url')
-                    if not image_url or image_url in ['null', 'None', 'undefined', '']:
-                        image_url = None
+                    # image_urlの処理（正規化して格納）
+                    image_url = self.normalize_media_value(question.get('image_url'))
                     
                     # choice_images（後方互換性のため保持）
                     choice_images = question.get('choice_images')
@@ -339,7 +435,7 @@ class QuestionManager:
                                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)''',
                                 (
                                     question_id,
-                                    question['question_text'],
+                                    self.sanitize_question_text(question.get('question_text')),
                                     choices_json,
                                     question['correct_answer'],
                                     question.get('explanation', ''),
@@ -355,7 +451,7 @@ class QuestionManager:
                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
                                 (
                                     question_id,
-                                    question['question_text'],
+                                    self.sanitize_question_text(question.get('question_text')),
                                     choices_json,
                                     question['correct_answer'],
                                     question.get('explanation', ''),

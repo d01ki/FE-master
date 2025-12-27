@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}ランキング - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-6 flex items-center justify-between gap-3 flex-wrap">
+            <div>
+                <p class="text-sm text-gray-300">全ユーザーの正答率と解答数で競うリーダーボード</p>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                <a href="{{ url_for('main.dashboard') }}" class="px-4 py-2 rounded-lg bg-white/10 border border-white/10 hover:border-blue-400/50 transition-colors text-sm touch-target">ダッシュボード</a>
+                <a href="{{ url_for('practice.random_practice') }}" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm touch-target">今すぐ解く</a>
+            </div>
+        </div>
+
+        {% if current_user and current_user.total_answers > 0 %}
+        <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                <p class="text-xs text-gray-400 mb-1">あなたの順位</p>
+                <p class="text-3xl font-bold text-white">{{ current_user_rank if current_user_rank else 'ランク外' }}</p>
+                <p class="text-sm text-gray-300">トップ50圏内を目指しましょう</p>
+            </div>
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                <p class="text-xs text-gray-400 mb-1">正答率</p>
+                <p class="text-3xl font-bold text-white">{{ current_user.accuracy_rate|round(1) }}%</p>
+                <p class="text-sm text-gray-300">正解 {{ current_user.correct_answers }}/{{ current_user.total_answers }}</p>
+            </div>
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                <p class="text-xs text-gray-400 mb-1">最終解答</p>
+                <p class="text-xl font-semibold text-white">{{ current_user.last_answered_at if current_user.last_answered_at else 'N/A' }}</p>
+                <p class="text-sm text-gray-300">継続は力なり</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="mb-8 bg-white/5 border border-dashed border-white/20 rounded-xl p-4 text-center">
+            <p class="text-sm text-gray-300">まだランキング計算に必要な解答がありません。問題を解くと自動で反映されます。</p>
+            <a href="{{ url_for('practice.random_practice') }}" class="inline-flex items-center mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-semibold">問題を解く</a>
+        </div>
+        {% endif %}
+
+        <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="px-6 py-4 flex items-center justify-between border-b border-white/10">
+                <div>
+                    <h1 class="text-2xl font-bold">ランキング</h1>
+                    <p class="text-sm text-gray-300">上位50名まで表示</p>
+                </div>
+                <div class="text-xs text-gray-400">正答率 → 解答数 → 最新回答日時 でソート</div>
+            </div>
+
+            {% if ranking %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-800/70 text-gray-300 uppercase text-xs sticky top-0">
+                        <tr>
+                            <th class="px-6 py-3 text-left">順位</th>
+                            <th class="px-6 py-3 text-left">ユーザー</th>
+                            <th class="px-6 py-3 text-left">正答率</th>
+                            <th class="px-6 py-3 text-left">正解/解答</th>
+                            <th class="px-6 py-3 text-left">最終解答</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/10">
+                        {% for row in ranking %}
+                        {% set is_me = current_user and row.id == current_user.id %}
+                        {% set medal = '🥇' if loop.index == 1 else '🥈' if loop.index == 2 else '🥉' if loop.index == 3 else '' %}
+                        <tr class="hover:bg-white/5 {% if is_me %}bg-blue-500/15 border-l-4 border-blue-400{% endif %} {% if medal %}bg-amber-500/10{% endif %}">
+                            <td class="px-6 py-3 font-semibold flex items-center gap-2">
+                                {% if medal %}<span class="text-lg">{{ medal }}</span>{% endif %}
+                                <span>#{{ row.rank }}</span>
+                            </td>
+                            <td class="px-6 py-3">
+                                <div class="font-semibold">{{ row.username | e }}</div>
+                                {% if is_me %}
+                                <span class="text-xs text-blue-300">あなた</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-3 font-bold text-white">{{ row.accuracy_rate|round(1) }}%</td>
+                            <td class="px-6 py-3 text-gray-200">{{ row.correct_answers }}/{{ row.total_answers }}</td>
+                            <td class="px-6 py-3 text-gray-300">{{ row.last_answered_at if row.last_answered_at else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-gray-300">
+                まだランキング対象のデータがありません。最初の解答者になりましょう！
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -132,3 +132,39 @@ def history():
         safe_history.append(safe_item)
     
     return render_template('history.html', history=safe_history)
+
+@main_bp.route('/ranking')
+@login_required
+def ranking():
+    """ユーザーランキングページ"""
+    db_manager = current_app.db_manager
+    user_id = session.get('user_id')
+
+    ranking_rows = db_manager.get_user_rankings(limit=50) or []
+    ranking_data = []
+    for idx, row in enumerate(ranking_rows, start=1):
+        entry = dict(row)
+        entry['rank'] = idx
+        if entry.get('last_answered_at'):
+            if hasattr(entry['last_answered_at'], 'strftime'):
+                entry['last_answered_at'] = entry['last_answered_at'].strftime('%Y-%m-%d %H:%M')
+            elif isinstance(entry['last_answered_at'], str):
+                entry['last_answered_at'] = entry['last_answered_at'][:16]
+        ranking_data.append(entry)
+
+    current_user_stat = db_manager.get_user_stat(user_id) if user_id else None
+    current_user_rank = None
+    if current_user_stat and current_user_stat.get('total_answers', 0) > 0:
+        if current_user_stat.get('last_answered_at'):
+            if hasattr(current_user_stat['last_answered_at'], 'strftime'):
+                current_user_stat['last_answered_at'] = current_user_stat['last_answered_at'].strftime('%Y-%m-%d %H:%M')
+            elif isinstance(current_user_stat['last_answered_at'], str):
+                current_user_stat['last_answered_at'] = current_user_stat['last_answered_at'][:16]
+        current_user_rank = db_manager.get_user_rank(user_id)
+
+    return render_template(
+        'ranking.html',
+        ranking=ranking_data,
+        current_user=current_user_stat,
+        current_user_rank=current_user_rank
+    )
