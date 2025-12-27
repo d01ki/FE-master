@@ -32,7 +32,7 @@ def upload_page():
     genres_count = genres_result[0]['count'] if genres_result else 0
     
     # 画像ファイル数統計
-    images_dir = os.path.join(current_app.root_path, 'static', 'images', 'questions')
+    images_dir = os.path.join(current_app.root_path, '..', 'protected_images', 'questions')
     images_count = 0
     if os.path.exists(images_dir):
         images_count = len([f for f in os.listdir(images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp'))])
