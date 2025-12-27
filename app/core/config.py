@@ -65,9 +65,9 @@ class Config:
     @classmethod
     def get_db_config(cls):
         """Get database configuration dictionary"""
-        if cls.DATABASE_TYPE == 'postgresql':
+        if cls.DATABASE_TYPE == 'mysql':
             return {
-                'DATABASE_TYPE': 'postgresql',
+                'DATABASE_TYPE': 'mysql',
                 'DB_NAME': cls.DB_NAME,
                 'DB_USER': cls.DB_USER,
                 'DB_PASSWORD': cls.DB_PASSWORD,
@@ -79,3 +79,4 @@ class Config:
                 'DATABASE_TYPE': 'sqlite',
                 'DATABASE': cls.DB_NAME
             }
+

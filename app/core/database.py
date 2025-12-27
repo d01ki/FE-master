@@ -484,13 +484,13 @@ class QuestionManager:
                 
                 # Check if exists
                 existing = self.db.execute_query(
-                    'SELECT id FROM questions WHERE question_id = %s' if self.db.db_type == 'postgresql' else 'SELECT id FROM questions WHERE question_id = ?',
+                    'SELECT id FROM questions WHERE question_id = %s' if self.db.db_type == 'mysql' else 'SELECT id FROM questions WHERE question_id = ?',
                     (question_id,)
                 )
                 
                 if not existing:
                     # Insert new
-                    if self.db.db_type == 'postgresql':
+                    if self.db.db_type == 'mysql':
                         self.db.execute_query("""
                             INSERT INTO questions (question_id, question_text, choices, correct_answer, explanation, genre, image_url, choice_images) 
                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -510,7 +510,7 @@ class QuestionManager:
                         ))
                 else:
                     # Update existing question
-                    if self.db.db_type == 'postgresql':
+                    if self.db.db_type == 'mysql':
                         self.db.execute_query("""
                             UPDATE questions 
                             SET question_text = %s, choices = %s, correct_answer = %s, 
