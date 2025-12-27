@@ -71,7 +71,7 @@ def history():
     
     # ユーザーの解答履歴を取得（解説も含む）
     # 問題が削除されている場合も考慮してINNER JOINに変更
-    if db_manager.db_type == 'postgresql':
+    if db_manager.db_type == 'mysql':
         history_data = db_manager.execute_query('''
             SELECT 
                 ua.id,
@@ -124,7 +124,7 @@ def history():
             if hasattr(safe_item['answered_at'], 'strftime'):
                 safe_item['answered_at'] = safe_item['answered_at'].strftime('%Y-%m-%d %H:%M')
             elif isinstance(safe_item['answered_at'], str):
-                # PostgreSQLから文字列として返される場合は最初の16文字を取得
+                # MySQLから文字列として返される場合は最初の16文字を取得
                 safe_item['answered_at'] = safe_item['answered_at'][:16]
         else:
             safe_item['answered_at'] = None

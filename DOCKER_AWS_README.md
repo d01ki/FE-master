@@ -16,7 +16,7 @@ graph TB
         end
         
         subgraph "🔒 Private Subnet (10.0.2.0/24)"
-            RDS[(🗄️ RDS PostgreSQL<br/>Security Group: sg-db)]
+            RDS[(🗜️ RDS MySQL<br/>Security Group: sg-db)]
         end
     end
     
@@ -79,7 +79,7 @@ graph LR
         end
         
         subgraph "sg-db (RDS)"
-            PostgreSQL[PostgreSQL: 5432<br/>Source: sg-api]
+            MySQL[MySQL: 3306<br/>Source: sg-api]
         end
     end
 ```
@@ -248,8 +248,8 @@ chmod 400 fe-master-key.pem
 ## 🐳 Docker環境について
 
 このプロジェクトはDocker化されており、以下の環境で動作可能です：
-- ローカル開発環境（SQLite + Redis）
-- AWS本番環境（PostgreSQL + ElastiCache）
+- ローカル開発環境（SQLite）
+- AWS本番環境（MySQL + RDS）
 
 ### 🚀 クイックスタート
 
@@ -363,7 +363,7 @@ graph TB
     subgraph "🔐 Security"
         VPC[🏠 VPC<br/>10.0.0.0/16]
         PrivateSubnet[🔒 Private Subnets<br/>10.0.1.0/24, 10.0.2.0/24]
-        SecurityGroup[🛡️ DB Security Group<br/>Port 5432 from ECS only]
+        SecurityGroup[🛡️ DB Security Group<br/>Port 3306 from ECS only]
     end
     
     Primary --> Replica

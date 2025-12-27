@@ -25,10 +25,15 @@ class Config:
         if DATABASE_URL.startswith('mysql://'):
             DATABASE_TYPE = 'mysql'
         elif DATABASE_URL.startswith('postgresql://') or DATABASE_URL.startswith('postgres://'):
-            # Normalize postgres scheme (for backwards compatibility)
-            if DATABASE_URL.startswith("postgres://"):
-                DATABASE_URL = DATABASE_URL.replace("postgres://", "mysql://", 1)
-            DATABASE_TYPE = 'mysql'  # RDS uses MySQL now
+            # 後方互換性: 古いPostgreSQL URLをMySQLとして扱う
+            # 注意: 実際にはMySQLを使用するため、DATABASE_URLも修正が必要
+            import warnings
+            warnings.warn(
+                "PostgreSQL URL detected but this app uses MySQL. "
+                "Please update DATABASE_URL to use mysql:// scheme.",
+                DeprecationWarning
+            )
+            DATABASE_TYPE = 'mysql'
         else:
             DATABASE_TYPE = 'sqlite'
     else:

@@ -12,8 +12,8 @@ ADMIN_PASSWORD=your-secure-admin-password
 
 ### データベース設定
 ```bash
-DATABASE_TYPE=postgresql
-DATABASE_URL=postgresql://username:password@host:5432/database_name
+DATABASE_TYPE=mysql
+DATABASE_URL=mysql://username:password@host:3306/database_name
 ```
 
 ### サーバー設定
@@ -29,9 +29,9 @@ HOST=0.0.0.0
 ⚠️ **重要**: 本番環境では以下を必ず変更してください：
 - `SECRET_KEY`: 暗号化強度の高いランダムな文字列
 - `ADMIN_PASSWORD`: 強固なパスワード
-- PostgreSQLの認証情報
+- MySQLの認証情報
 
 ## 開発環境
 
-開発時は `docker-compose.override.yml` で自動設定されるため、
+開発時は `docker-compose.yml` で自動設定されるため、
 環境変数の設定は不要です。

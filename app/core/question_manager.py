@@ -1,5 +1,5 @@
 """
-問題管理クラス（PostgreSQL/SQLite対応）
+問題管理クラス（MySQL/SQLite対応）
 問題の取得、保存、解答処理などを管理
 """
 
@@ -8,7 +8,7 @@ from datetime import datetime
 import re
 
 class QuestionManager:
-    """問題管理クラス（PostgreSQL/SQLite対応）"""
+    """問題管理クラス（MySQL/SQLite対応）"""
     
     def __init__(self, db_manager):
         self.db_manager = db_manager
@@ -110,7 +110,7 @@ class QuestionManager:
     def get_question(self, question_id):
         """指定されたIDの問題を取得"""
         try:
-            if self.db_manager.db_type == 'postgresql':
+            if self.db_manager.db_type == 'mysql':
                 result = self.db_manager.execute_query(
                     'SELECT * FROM questions WHERE id = %s', (question_id,)
                 )
@@ -335,7 +335,7 @@ class QuestionManager:
     def save_answer_history(self, question_id, user_answer, is_correct, user_id):
         """解答履歴を保存（user_idを引数で受け取る）"""
         try:
-            if self.db_manager.db_type == 'postgresql':
+            if self.db_manager.db_type == 'mysql':
                 self.db_manager.execute_query(
                     '''INSERT INTO user_answers 
                        (user_id, question_id, user_answer, is_correct, answered_at) 
@@ -415,7 +415,7 @@ class QuestionManager:
                             choice_images_json = json.dumps(valid_choice_images, ensure_ascii=False)
                     
                     # 重複チェック（question_idで）
-                    if self.db_manager.db_type == 'postgresql':
+                    if self.db_manager.db_type == 'mysql':
                         existing = self.db_manager.execute_query(
                             'SELECT id FROM questions WHERE question_id = %s',
                             (question_id,)
@@ -428,7 +428,7 @@ class QuestionManager:
                     
                     if not existing:
                         # 新しい問題を挿入
-                        if self.db_manager.db_type == 'postgresql':
+                        if self.db_manager.db_type == 'mysql':
                             self.db_manager.execute_query(
                                 '''INSERT INTO questions 
                                    (question_id, question_text, choices, correct_answer, explanation, genre, image_url, choice_images) 
@@ -486,7 +486,7 @@ class QuestionManager:
     def check_year_exists(self, year):
         """指定された年度の問題が既に登録されているかチェック"""
         try:
-            if self.db_manager.db_type == 'postgresql':
+            if self.db_manager.db_type == 'mysql':
                 result = self.db_manager.execute_query(
                     'SELECT COUNT(*) as count FROM questions WHERE question_id LIKE %s',
                     (f'{year}_%',)

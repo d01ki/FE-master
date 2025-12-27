@@ -1,6 +1,6 @@
 """
 基本情報技術者試験 学習アプリ - メインアプリケーション
-Flask + PostgreSQL/SQLite + ユーザー認証を使用した学習プラットフォーム
+Flask + MySQL/SQLite + ユーザー認証を使用した学習プラットフォーム
 """
 
 import os
