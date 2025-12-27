@@ -30,7 +30,7 @@ def serve_question_image(filename):
         abort(403)
     
     # 画像ディレクトリのパス
-    images_dir = os.path.join(current_app.root_path, '..', 'protected_images', 'questions')
+    images_dir = os.path.join(current_app.config['PROTECTED_IMAGES_DIR'], 'questions')
     
     # ファイルの存在確認
     filepath = os.path.join(images_dir, filename)
@@ -63,7 +63,7 @@ def serve_answer_image(filename):
         abort(403)
     
     # 画像ディレクトリのパス
-    images_dir = os.path.join(current_app.root_path, '..', 'protected_images', 'answers')
+    images_dir = os.path.join(current_app.config['PROTECTED_IMAGES_DIR'], 'answers')
     
     # ファイルの存在確認
     filepath = os.path.join(images_dir, filename)

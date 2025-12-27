@@ -11,6 +11,10 @@ load_dotenv()
 
 class Config:
     """Application configuration"""
+    # Project Paths
+    PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    PROTECTED_IMAGES_DIR = os.path.join(PROJECT_ROOT, 'protected_images')
+
 
     # Flask settings
     SECRET_KEY = os.environ.get('SECRET_KEY')
