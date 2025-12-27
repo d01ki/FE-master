@@ -3,7 +3,7 @@
 {% block title %}ジャンル別演習 - {{ super() }}{% endblock %}
 
 {% block content %}
-<div class="h-screen overflow-auto bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+<div class="text-white">
     <div class="container mx-auto px-6 py-6">
         <!-- Header -->
         <div class="text-center mb-6">
@@ -15,89 +15,99 @@
 
         <!-- Genre Grid -->
         {% if genres %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {% for genre in genres %}
-                    <a href="{{ url_for('practice.practice_by_genre', genre=genre.name) }}" 
-                       class="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for genre in genres %}
+            <a href="{{ url_for('practice.practice_by_genre', genre=genre.name) }}" class="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 
                               hover:bg-white/10 hover:border-blue-400/50 transition-all duration-200 group">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 
+                <div class="flex items-center justify-between mb-3">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 
                                        rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                                {% if '基礎' in genre.name %}
-                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
-                                    </svg>
-                                {% elif 'アルゴリズム' in genre.name or 'プログラミング' in genre.name %}
-                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-                                    </svg>
-                                {% elif 'データベース' in genre.name %}
-                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
-                                    </svg>
-                                {% elif 'ネットワーク' in genre.name %}
-                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
-                                    </svg>
-                                {% elif 'セキュリティ' in genre.name %}
-                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                    </svg>
-                                {% else %}
-                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                    </svg>
-                                {% endif %}
-                            </div>
-                            <div class="text-right">
-                                <div class="text-xl font-bold text-white">{{ genre.count }}</div>
-                                <div class="text-xs text-gray-400">問題</div>
-                            </div>
-                        </div>
-                        
-                        <h3 class="text-base font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">
-                            {{ genre.name }}
-                        </h3>
-                        
-                        <div class="flex items-center justify-between">
-                            <div class="text-xs text-gray-400">
-                                {% if genre.count > 0 %}
-                                    学習開始
-                                {% else %}
-                                    問題準備中
-                                {% endif %}
-                            </div>
-                            <svg class="w-4 h-4 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                            </svg>
-                        </div>
-                    </a>
-                {% endfor %}
-            </div>
-        {% else %}
-            <!-- No Genres Available -->
-            <div class="text-center py-16">
-                <div class="w-20 h-20 bg-gray-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <i class="fas fa-folder-open text-gray-400 text-2xl"></i>
+                        {% if '基礎' in genre.name %}
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z">
+                            </path>
+                        </svg>
+                        {% elif 'アルゴリズム' in genre.name or 'プログラミング' in genre.name %}
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                        </svg>
+                        {% elif 'データベース' in genre.name %}
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4">
+                            </path>
+                        </svg>
+                        {% elif 'ネットワーク' in genre.name %}
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9">
+                            </path>
+                        </svg>
+                        {% elif 'セキュリティ' in genre.name %}
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                            </path>
+                        </svg>
+                        {% else %}
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                            </path>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-bold text-white">{{ genre.count }}</div>
+                        <div class="text-xs text-gray-400">問題</div>
+                    </div>
                 </div>
-                <h3 class="text-2xl font-bold text-white mb-4">ジャンルが見つかりません</h3>
-                <p class="text-gray-400 mb-8 max-w-md mx-auto">
-                    現在利用可能な学習ジャンルがありません。管理者による問題データの登録をお待ちください。
-                </p>
-                <a href="{{ url_for('main.dashboard') }}" 
-                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 
+
+                <h3 class="text-base font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">
+                    {{ genre.name }}
+                </h3>
+
+                <div class="flex items-center justify-between">
+                    <div class="text-xs text-gray-400">
+                        {% if genre.count > 0 %}
+                        学習開始
+                        {% else %}
+                        問題準備中
+                        {% endif %}
+                    </div>
+                    <svg class="w-4 h-4 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- No Genres Available -->
+        <div class="text-center py-16">
+            <div class="w-20 h-20 bg-gray-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-folder-open text-gray-400 text-2xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-4">ジャンルが見つかりません</h3>
+            <p class="text-gray-400 mb-8 max-w-md mx-auto">
+                現在利用可能な学習ジャンルがありません。管理者による問題データの登録をお待ちください。
+            </p>
+            <a href="{{ url_for('main.dashboard') }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 
                           text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-700 
                           transition-all duration-200">
-                    <i class="fas fa-home mr-2"></i>
-                    ダッシュボードに戻る
-                </a>
-            </div>
+                <i class="fas fa-home mr-2"></i>
+                ダッシュボードに戻る
+            </a>
+        </div>
         {% endif %}
 
         <!-- Back Button -->
         <div class="mt-12 text-center">
-            <a href="{{ url_for('main.dashboard') }}" 
-               class="inline-flex items-center px-6 py-3 bg-white/10 backdrop-blur-sm 
+            <a href="{{ url_for('main.dashboard') }}" class="inline-flex items-center px-6 py-3 bg-white/10 backdrop-blur-sm 
                       text-white font-medium rounded-xl border border-white/20 
                       hover:bg-white/20 transition-all duration-200">
                 <i class="fas fa-arrow-left mr-2"></i>

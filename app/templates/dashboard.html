@@ -3,9 +3,9 @@
 {% block title %}ダッシュボード - {{ super() }}{% endblock %}
 
 {% block content %}
-<div class="h-screen overflow-auto bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+<div class="text-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        
+
         <!-- Header Section -->
         <div class="text-center mb-4">
             {% if session.get('admin_logged_in') or session.get('is_admin') %}
@@ -30,13 +30,17 @@
             <div class="glass-card rounded-xl p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl">
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mr-3">
-                        <svg class="w-6 h-6 text-blue-300 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        <svg class="w-6 h-6 text-blue-300 animate-pulse" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                            </path>
                         </svg>
                     </div>
                     <div>
                         <p class="text-xs text-gray-400">総問題数</p>
-                        <p class="text-xl font-bold text-white" id="stat-total-questions">{{ stats.total_questions or 0 }}</p>
+                        <p class="text-xl font-bold text-white" id="stat-total-questions">{{ stats.total_questions or 0
+                            }}</p>
                     </div>
                 </div>
             </div>
@@ -45,15 +49,19 @@
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mr-3">
                         <svg class="w-6 h-6 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
+                            </path>
                         </svg>
                     </div>
                     <div>
                         <p class="text-xs text-gray-400">正解数</p>
-                        <p class="text-xl font-bold text-white" id="stat-correct-answers">{{ stats.correct_answers or 0 }}</p>
+                        <p class="text-xl font-bold text-white" id="stat-correct-answers">{{ stats.correct_answers or 0
+                            }}</p>
                         <div class="mt-2 h-2 w-36 bg-white/10 rounded-full overflow-hidden">
-                            {% set correctness = (stats.correct_answers or 0) / (stats.total_answers or 1) * 100 if (stats.total_answers or 0) > 0 else 0 %}
-                            <div class="h-full bg-gradient-to-r from-green-400 to-emerald-500" style="width: {{ correctness|round(0) }}%"></div>
+                            {% set correctness = (stats.correct_answers or 0) / (stats.total_answers or 1) * 100 if
+                            (stats.total_answers or 0) > 0 else 0 %}
+                            <div class="h-full bg-gradient-to-r from-green-400 to-emerald-500"
+                                style="width: {{ correctness|round(0) }}%"></div>
                         </div>
                     </div>
                 </div>
@@ -63,14 +71,18 @@
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mr-3">
                         <svg class="w-6 h-6 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                            </path>
                         </svg>
                     </div>
                     <div>
                         <p class="text-xs text-gray-400">正答率</p>
-                        <p class="text-xl font-bold text-white" id="stat-accuracy-rate">{{ stats.accuracy_rate or 0 }}%</p>
+                        <p class="text-xl font-bold text-white" id="stat-accuracy-rate">{{ stats.accuracy_rate or 0 }}%
+                        </p>
                         <div class="mt-2 h-2 w-36 bg-white/10 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-purple-400 to-fuchsia-500" style="width: {{ stats.accuracy_rate or 0 }}%"></div>
+                            <div class="h-full bg-gradient-to-r from-purple-400 to-fuchsia-500"
+                                style="width: {{ stats.accuracy_rate or 0 }}%"></div>
                         </div>
                     </div>
                 </div>
@@ -80,12 +92,14 @@
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center mr-3">
                         <svg class="w-6 h-6 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
                     </div>
                     <div>
                         <p class="text-xs text-gray-400">解答数</p>
-                        <p class="text-xl font-bold text-white" id="stat-total-answers">{{ stats.total_answers or 0 }}</p>
+                        <p class="text-xl font-bold text-white" id="stat-total-answers">{{ stats.total_answers or 0 }}
+                        </p>
                         <p class="text-[11px] text-gray-400 mt-1">今日は学習しましたか？</p>
                     </div>
                 </div>
@@ -97,11 +111,14 @@
         <!-- Admin Actions -->
         <div class="flex-1 mb-4">
             <!-- User Management -->
-            <a href="{{ url_for('admin.admin_dashboard') }}" 
-               class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-purple-400/50 transition-all duration-200 group text-center block">
-                <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:bg-purple-500/30 transition-colors">
+            <a href="{{ url_for('admin.admin_dashboard') }}"
+                class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-purple-400/50 transition-all duration-200 group text-center block">
+                <div
+                    class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:bg-purple-500/30 transition-colors">
                     <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z">
+                        </path>
                     </svg>
                 </div>
                 <h3 class="text-lg font-semibold text-white mb-2">ユーザー管理</h3>
@@ -115,11 +132,14 @@
         <!-- User Actions -->
         <div class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <!-- Random Practice -->
-                <a href="{{ url_for('practice.random_practice') }}" 
-                    class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-blue-400/50 transition-all duration-200 group text-center touch-target">
-                <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:bg-blue-500/30 transition-colors">
+            <a href="{{ url_for('practice.random_practice') }}"
+                class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-blue-400/50 transition-all duration-200 group text-center touch-target">
+                <div
+                    class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:bg-blue-500/30 transition-colors">
                     <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
                     </svg>
                 </div>
                 <h3 class="text-lg font-semibold text-white mb-2">ランダム練習</h3>
@@ -130,11 +150,14 @@
             </a>
 
             <!-- Genre Practice -->
-                <a href="{{ url_for('practice.genre_practice') }}" 
-                    class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-green-400/50 transition-all duration-200 group text-center touch-target">
-                <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:bg-green-500/30 transition-colors">
+            <a href="{{ url_for('practice.genre_practice') }}"
+                class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-green-400/50 transition-all duration-200 group text-center touch-target">
+                <div
+                    class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:bg-green-500/30 transition-colors">
                     <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                        </path>
                     </svg>
                 </div>
                 <h3 class="text-lg font-semibold text-white mb-2">分野別練習</h3>
@@ -145,11 +168,14 @@
             </a>
 
             <!-- Mock Exam -->
-                <a href="{{ url_for('exam.mock_exam') }}" 
-                    class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-orange-400/50 transition-all duration-200 group text-center touch-target">
-                <div class="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:bg-orange-500/30 transition-colors">
+            <a href="{{ url_for('exam.mock_exam') }}"
+                class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-orange-400/50 transition-all duration-200 group text-center touch-target">
+                <div
+                    class="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:bg-orange-500/30 transition-colors">
                     <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                        </path>
                     </svg>
                 </div>
                 <h3 class="text-lg font-semibold text-white mb-2">模擬試験</h3>
@@ -160,9 +186,10 @@
             </a>
 
             <!-- Ranking -->
-                <a href="{{ url_for('main.ranking') }}" 
-                    class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-teal-400/50 transition-all duration-200 group text-center touch-target">
-                <div class="w-12 h-12 bg-teal-500/20 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:bg-teal-500/30 transition-colors">
+            <a href="{{ url_for('main.ranking') }}"
+                class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-teal-400/50 transition-all duration-200 group text-center touch-target">
+                <div
+                    class="w-12 h-12 bg-teal-500/20 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:bg-teal-500/30 transition-colors">
                     <svg class="w-6 h-6 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 17l6-6 4 4 8-8" />
                     </svg>
@@ -180,18 +207,22 @@
         <div class="mt-auto">
             {% if not (session.get('admin_logged_in') or session.get('is_admin')) %}
             <!-- User Secondary Actions -->
-            <a href="{{ url_for('main.history') }}" 
-               class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-3 shadow-sm hover:shadow-lg hover:border-indigo-400/50 transition-all duration-200 group flex items-center">
+            <a href="{{ url_for('main.history') }}"
+                class="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-3 shadow-sm hover:shadow-lg hover:border-indigo-400/50 transition-all duration-200 group flex items-center">
                 <div class="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center mr-3">
                     <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                        </path>
                     </svg>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-base font-semibold text-white group-hover:text-indigo-400 transition-colors">学習履歴</h3>
+                    <h3 class="text-base font-semibold text-white group-hover:text-indigo-400 transition-colors">学習履歴
+                    </h3>
                     <p class="text-xs text-gray-400">これまでの解答履歴と成績を確認</p>
                 </div>
-                <svg class="w-4 h-4 text-gray-400 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-gray-400 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
             </a>
@@ -203,38 +234,38 @@
 
 {% block scripts %}
 <script>
-// 統計情報を動的に読み込み（バックグラウンドで最新データを取得）
-async function refreshStats() {
-    try {
-        const response = await fetch('/api/stats');
-        if (!response.ok) return; // エラー時は既存データを保持
-        
-        const data = await response.json();
-        
-        // 統計を更新
-        if (document.getElementById('stat-total-questions')) {
-            document.getElementById('stat-total-questions').textContent = data.total_questions || 0;
+    // 統計情報を動的に読み込み（バックグラウンドで最新データを取得）
+    async function refreshStats() {
+        try {
+            const response = await fetch('/api/stats');
+            if (!response.ok) return; // エラー時は既存データを保持
+
+            const data = await response.json();
+
+            // 統計を更新
+            if (document.getElementById('stat-total-questions')) {
+                document.getElementById('stat-total-questions').textContent = data.total_questions || 0;
+            }
+            if (document.getElementById('stat-correct-answers')) {
+                document.getElementById('stat-correct-answers').textContent = data.correct_answers || 0;
+            }
+            if (document.getElementById('stat-accuracy-rate')) {
+                document.getElementById('stat-accuracy-rate').textContent = (data.accuracy_rate || 0).toFixed(1) + '%';
+            }
+            if (document.getElementById('stat-total-answers')) {
+                document.getElementById('stat-total-answers').textContent = data.total_answers || 0;
+            }
+        } catch (error) {
+            console.error('Stats refresh error:', error);
+            // エラー時はサーバーサイドレンダリングされた値を保持
         }
-        if (document.getElementById('stat-correct-answers')) {
-            document.getElementById('stat-correct-answers').textContent = data.correct_answers || 0;
-        }
-        if (document.getElementById('stat-accuracy-rate')) {
-            document.getElementById('stat-accuracy-rate').textContent = (data.accuracy_rate || 0).toFixed(1) + '%';
-        }
-        if (document.getElementById('stat-total-answers')) {
-            document.getElementById('stat-total-answers').textContent = data.total_answers || 0;
-        }
-    } catch (error) {
-        console.error('Stats refresh error:', error);
-        // エラー時はサーバーサイドレンダリングされた値を保持
     }
-}
 
-// ページ読み込み時とフォーカス時に統計を更新
-document.addEventListener('DOMContentLoaded', refreshStats);
-window.addEventListener('focus', refreshStats);
+    // ページ読み込み時とフォーカス時に統計を更新
+    document.addEventListener('DOMContentLoaded', refreshStats);
+    window.addEventListener('focus', refreshStats);
 
-// 定期的に更新（5分ごと）
-setInterval(refreshStats, 300000);
+    // 定期的に更新（5分ごと）
+    setInterval(refreshStats, 300000);
 </script>
 {% endblock %}
