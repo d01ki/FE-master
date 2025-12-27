@@ -10,8 +10,11 @@
             <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                 <h1 class="text-3xl font-bold text-white mb-2 flex items-center">
                     <span
-                        class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
-                        <i class="fas fa-history text-white text-xl"></i>
+                        class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mr-4 shadow-lg shadow-indigo-500/20">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                     </span>
                     学習履歴
                 </h1>
@@ -26,38 +29,55 @@
             {% set correct_answers = history|selectattr('is_correct')|list|length %}
             {% set accuracy_rate = (correct_answers / total_answers * 100)|round(1) if total_answers > 0 else 0 %}
 
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <div
+                class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-blue-500/30 transition-colors">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-300 text-sm">総解答数</p>
-                        <p class="text-2xl font-bold text-white">{{ total_answers }}</p>
+                        <p class="text-gray-400 text-sm font-medium">総解答数</p>
+                        <p class="text-3xl font-bold text-white mt-1">{{ total_answers }}</p>
                     </div>
-                    <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-pen text-white"></i>
+                    <div
+                        class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20">
+                        <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                            </path>
+                        </svg>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <div
+                class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-emerald-500/30 transition-colors">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-300 text-sm">正解数</p>
-                        <p class="text-2xl font-bold text-white">{{ correct_answers }}</p>
+                        <p class="text-gray-400 text-sm font-medium">正解数</p>
+                        <p class="text-3xl font-bold text-white mt-1">{{ correct_answers }}</p>
                     </div>
-                    <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-check text-white"></i>
+                    <div
+                        class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
+                        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <div
+                class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-indigo-500/30 transition-colors">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-300 text-sm">正答率</p>
-                        <p class="text-2xl font-bold text-white">{{ accuracy_rate }}%</p>
+                        <p class="text-gray-400 text-sm font-medium">正答率</p>
+                        <p class="text-3xl font-bold text-white mt-1">{{ accuracy_rate }}%</p>
                     </div>
-                    <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-chart-line text-white"></i>
+                    <div
+                        class="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20">
+                        <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                            </path>
+                        </svg>
                     </div>
                 </div>
             </div>
@@ -67,7 +87,10 @@
         <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
             <div class="p-6 border-b border-white/10">
                 <h2 class="text-xl font-bold text-white flex items-center">
-                    <i class="fas fa-list mr-3 text-indigo-400"></i>
+                    <svg class="w-6 h-6 mr-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                    </svg>
                     解答履歴
                 </h2>
             </div>
@@ -117,28 +140,43 @@
                             <td class="px-6 py-4">
                                 {% if item.genre %}
                                 <span
-                                    class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-600/20 text-blue-300 border border-blue-500/30">
-                                    <i class="fas fa-tag mr-1"></i>{{ item.genre }}
+                                    class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
+                                        </path>
+                                    </svg>
+                                    {{ item.genre }}
                                 </span>
                                 {% else %}
-                                <span class="text-gray-400">-</span>
+                                <span class="text-gray-500 text-xs">-</span>
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4">
                                 {% if item.is_correct %}
                                 <span
-                                    class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-600 text-white">
-                                    <i class="fas fa-check mr-1"></i>正解: {{ item.user_answer }}
+                                    class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    正解: {{ item.user_answer }}
                                 </span>
                                 {% else %}
-                                <span class="text-gray-400 text-sm">{{ item.user_answer }}</span>
-                                <span
-                                    class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-600 text-white ml-2">
-                                    不正解（正解: {{ item.correct_answer }}）
-                                </span>
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-gray-400 text-sm">{{ item.user_answer }}</span>
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20 w-fit">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                        不正解（正解: {{ item.correct_answer }}）
+                                    </span>
+                                </div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 text-gray-300">
+                            <td class="px-6 py-4 text-gray-400 text-sm">
                                 {{ item.answered_at if item.answered_at else '-' }}
                             </td>
                         </tr>
@@ -151,14 +189,25 @@
         {% else %}
         <!-- 履歴がない場合 -->
         <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 text-center">
-            <div class="w-16 h-16 bg-indigo-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-history text-indigo-400 text-2xl"></i>
+            <div
+                class="w-16 h-16 bg-indigo-600/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500/20">
+                <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
             </div>
             <h3 class="text-xl font-bold text-white mb-2">まだ学習履歴がありません</h3>
             <p class="text-gray-300 mb-6">問題に解答すると、ここに履歴が表示されます。</p>
             <a href="{{ url_for('practice.random_practice') }}"
-                class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-200 inline-flex items-center">
-                <i class="fas fa-play mr-2"></i>
+                class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl transition-all duration-200 inline-flex items-center shadow-lg shadow-indigo-500/20 group">
+                <svg class="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                    </path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
                 問題を解いてみる
             </a>
         </div>
@@ -167,20 +216,34 @@
         <!-- ナビゲーション -->
         <div class="mt-8 flex flex-wrap gap-4">
             <a href="{{ url_for('main.dashboard') }}"
-                class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
-                <i class="fas fa-arrow-left mr-2"></i>
+                class="bg-white/5 hover:bg-white/10 text-white px-6 py-3 rounded-xl border border-white/10 transition-all duration-200 flex items-center group">
+                <svg class="w-5 h-5 mr-2 text-gray-400 group-hover:text-white group-hover:-translate-x-1 transition-all"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
                 ダッシュボードに戻る
             </a>
 
             <a href="{{ url_for('practice.random_practice') }}"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
-                <i class="fas fa-random mr-2"></i>
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl shadow-lg shadow-indigo-600/20 transition-all duration-200 flex items-center group">
+                <svg class="w-5 h-5 mr-2 text-white group-hover:rotate-12 transition-transform" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                    </path>
+                </svg>
                 ランダム練習
             </a>
 
             <a href="{{ url_for('practice.genre_practice') }}"
-                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
-                <i class="fas fa-tags mr-2"></i>
+                class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 rounded-xl shadow-lg shadow-violet-600/20 transition-all duration-200 flex items-center group">
+                <svg class="w-5 h-5 mr-2 text-white group-hover:scale-110 transition-transform" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                    </path>
+                </svg>
                 ジャンル別練習
             </a>
         </div>

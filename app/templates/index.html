@@ -14,17 +14,30 @@
 
     <!-- ヒーローセクション（未ログイン時） -->
     {% if not session.get('user_id') %}
-    <div class="min-h-[60vh] flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl mb-8 overflow-hidden relative">
+    <div
+        class="min-h-[60vh] flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl mb-8 overflow-hidden relative">
         <div class="absolute inset-0 bg-black opacity-10"></div>
         <div class="relative text-center text-white px-6 py-12 z-10">
             <h1 class="text-5xl font-bold mb-6 animate-fadeIn">基本情報技術者試験の学習をより効果的に</h1>
             <p class="text-xl mb-8 text-blue-100">FE-Masterは、基本情報技術者試験の学習を支援するプラットフォームです。</p>
             <div class="flex gap-4 justify-center">
-                <a href="{{ url_for('auth.login') }}" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-200 flex items-center">
-                    <i class="fas fa-sign-in-alt mr-2"></i>ログイン
+                <a href="{{ url_for('auth.login') }}"
+                    class="bg-white text-blue-600 px-8 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all duration-200 flex items-center shadow-lg transform hover:-translate-y-1">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                        </path>
+                    </svg>
+                    ログイン
                 </a>
-                <a href="{{ url_for('auth.register') }}" class="bg-blue-800 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-900 transition-all duration-200 flex items-center border-2 border-white">
-                    <i class="fas fa-user-plus mr-2"></i>新規登録
+                <a href="{{ url_for('auth.register') }}"
+                    class="bg-blue-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-900 transition-all duration-200 flex items-center border-2 border-white/20 shadow-lg transform hover:-translate-y-1">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z">
+                        </path>
+                    </svg>
+                    新規登録
                 </a>
             </div>
         </div>
@@ -32,23 +45,38 @@
 
     <!-- 機能紹介 -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-200">
-            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <i class="fas fa-random text-blue-600 text-xl"></i>
+        <div class="group bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-xl transition-all duration-300">
+            <div
+                class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                    </path>
+                </svg>
             </div>
             <h3 class="text-lg font-bold mb-2">ランダム練習</h3>
             <p class="text-gray-600">様々なジャンルから問題をランダムに出題。幅広い知識を身につけます。</p>
         </div>
-        <div class="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-200">
-            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <i class="fas fa-layer-group text-purple-600 text-xl"></i>
+        <div class="group bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-xl transition-all duration-300">
+            <div
+                class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                    </path>
+                </svg>
             </div>
             <h3 class="text-lg font-bold mb-2">ジャンル別演習</h3>
             <p class="text-gray-600">苦手分野を集中的に学習。効率的にスキルアップできます。</p>
         </div>
         <div class="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-200">
-            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                <i class="fas fa-chart-line text-green-600 text-xl"></i>
+            <div
+                class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                    </path>
+                </svg>
             </div>
             <h3 class="text-lg font-bold mb-2">学習履歴</h3>
             <p class="text-gray-600">進捗状況を可視化。モチベーション維持をサポートします。</p>

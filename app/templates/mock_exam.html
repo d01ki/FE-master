@@ -7,11 +7,23 @@
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <!-- Header -->
         <div class="mb-8">
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <div
+                class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <svg class="w-24 h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                        </path>
+                    </svg>
+                </div>
                 <h1 class="text-3xl font-bold text-white mb-2 flex items-center">
                     <span
-                        class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center mr-4">
-                        <i class="fas fa-clipboard-list text-white text-xl"></i>
+                        class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center mr-4 shadow-lg shadow-orange-600/20">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                            </path>
+                        </svg>
                     </span>
                     過去問演習
                 </h1>
@@ -23,7 +35,14 @@
         <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
             <div class="flex items-center justify-between gap-3 flex-wrap">
                 <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-calendar-alt text-orange-400"></i>
+                    <div
+                        class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
+                        <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                            </path>
+                        </svg>
+                    </div>
                     年度別 過去問ファイル
                 </h3>
                 <p class="text-xs text-gray-400">DBに登録済みの問題IDから年度・期（spring/fall）を判定して一覧化しています</p>
@@ -64,8 +83,12 @@
 
         <div class="mt-8 flex flex-wrap gap-4">
             <a href="{{ url_for('main.dashboard') }}"
-                class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center min-h-[44px]">
-                <i class="fas fa-arrow-left mr-2"></i>
+                class="bg-white/5 hover:bg-white/10 text-white px-6 py-3 rounded-xl border border-white/10 transition-all duration-200 flex items-center min-h-[44px] group">
+                <svg class="w-5 h-5 mr-2 text-gray-400 group-hover:text-white transition-colors" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
                 ダッシュボードに戻る
             </a>
         </div>

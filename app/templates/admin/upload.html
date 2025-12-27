@@ -9,8 +9,12 @@
         <div class="mb-8">
             <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                 <h1 class="text-3xl font-bold text-white mb-2 flex items-center">
-                    <span class="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-xl flex items-center justify-center mr-4">
-                        <i class="fas fa-upload text-white text-xl"></i>
+                    <span
+                        class="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-xl flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
                     </span>
                     データアップロード
                 </h1>
@@ -20,55 +24,71 @@
 
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="mb-6">
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} mb-3">
-                            <div class="flex items-center">
-                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' if category == 'warning' else 'check-circle' }} mr-2"></i>
-                                {{ message }}
-                            </div>
-                        </div>
-                    {% endfor %}
+        {% if messages %}
+        <div class="mb-6">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} mb-3">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-{% if category == 'error' %}red{% elif category == 'warning' %}yellow{% else %}green{% endif %}-400"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {% if category == 'error' %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        {% elif category == 'warning' %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                        </path>
+                        {% else %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        {% endif %}
+                    </svg>
+                    {{ message }}
                 </div>
-            {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% endwith %}
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- 問題データアップロード -->
             <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center">
-                    <i class="fas fa-file-code text-blue-400 mr-3"></i>
+                    <svg class="w-6 h-6 text-blue-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2-2z">
+                        </path>
+                    </svg>
                     問題データ (JSON/ZIP)
                 </h2>
-                
+
                 <form action="{{ url_for('upload.upload_questions') }}" method="POST" enctype="multipart/form-data">
                     <div class="mb-4">
                         <label class="block text-gray-300 text-sm font-medium mb-2">
                             JSONファイルまたはZIPファイルを選択:
                         </label>
                         <div class="relative">
-                            <input type="file" 
-                                   name="file" 
-                                   accept=".json,.zip"
-                                   class="block w-full text-sm text-gray-300
+                            <input type="file" name="file" accept=".json,.zip" class="block w-full text-sm text-gray-300
                                           file:mr-4 file:py-2 file:px-4
                                           file:rounded-lg file:border-0
                                           file:text-sm file:font-medium
                                           file:bg-blue-600 file:text-white
                                           hover:file:bg-blue-700
                                           file:cursor-pointer
-                                          bg-slate-700/50 border border-slate-600 rounded-lg p-3"
-                                   required>
+                                          bg-slate-700/50 border border-slate-600 rounded-lg p-3" required>
                         </div>
                         <p class="text-gray-400 text-xs mt-2">
                             対応形式: .json, .zip (複数のJSONファイルを含む)
                         </p>
                     </div>
-                    
-                    <button type="submit" 
-                            class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center">
-                        <i class="fas fa-upload mr-2"></i>
+
+                    <button type="submit"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center shadow-lg shadow-blue-600/20 transform hover:-translate-y-1">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
                         問題データをアップロード
                     </button>
                 </form>
@@ -102,29 +122,28 @@
             <!-- 画像アップロード -->
             <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center">
-                    <i class="fas fa-images text-green-400 mr-3"></i>
+                    <svg class="w-6 h-6 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                        </path>
+                    </svg>
                     画像ファイル
                 </h2>
-                
+
                 <form action="{{ url_for('upload.upload_images') }}" method="POST" enctype="multipart/form-data">
                     <div class="mb-4">
                         <label class="block text-gray-300 text-sm font-medium mb-2">
                             画像ファイルを選択 (複数選択可):
                         </label>
                         <div class="relative">
-                            <input type="file" 
-                                   name="files" 
-                                   accept=".png,.jpg,.jpeg,.gif,.webp"
-                                   multiple
-                                   class="block w-full text-sm text-gray-300
+                            <input type="file" name="files" accept=".png,.jpg,.jpeg,.gif,.webp" multiple class="block w-full text-sm text-gray-300
                                           file:mr-4 file:py-2 file:px-4
                                           file:rounded-lg file:border-0
                                           file:text-sm file:font-medium
                                           file:bg-green-600 file:text-white
                                           hover:file:bg-green-700
                                           file:cursor-pointer
-                                          bg-slate-700/50 border border-slate-600 rounded-lg p-3"
-                                   required>
+                                          bg-slate-700/50 border border-slate-600 rounded-lg p-3" required>
                         </div>
                         <p class="text-gray-400 text-xs mt-2">
                             対応形式: PNG, JPG, JPEG, GIF, WebP
@@ -133,17 +152,19 @@
 
                     <div class="mb-4">
                         <label class="flex items-center text-gray-300">
-                            <input type="checkbox" 
-                                   name="overwrite" 
-                                   value="1"
-                                   class="rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-500 mr-2">
+                            <input type="checkbox" name="overwrite" value="1"
+                                class="rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-500 mr-2">
                             既存ファイルを上書きする
                         </label>
                     </div>
-                    
-                    <button type="submit" 
-                            class="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-medium py-3 px-4 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center justify-center">
-                        <i class="fas fa-images mr-2"></i>
+
+                    <button type="submit"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center shadow-lg shadow-green-600/20 transform hover:-translate-y-1">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                            </path>
+                        </svg>
                         画像ファイルをアップロード
                     </button>
                 </form>
@@ -164,10 +185,14 @@
         <div class="mt-8">
             <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center">
-                    <i class="fas fa-chart-bar text-purple-400 mr-3"></i>
+                    <svg class="w-6 h-6 text-purple-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                        </path>
+                    </svg>
                     現在のデータ状況
                 </h2>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- 問題数統計 -->
                     <div class="bg-slate-800/50 rounded-lg p-4">
@@ -177,7 +202,11 @@
                                 <p class="text-2xl font-bold text-white">{{ stats.total_questions or 0 }}</p>
                             </div>
                             <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-question-circle text-white"></i>
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                                    </path>
+                                </svg>
                             </div>
                         </div>
                     </div>
@@ -190,7 +219,11 @@
                                 <p class="text-2xl font-bold text-white">{{ stats.genres_count or 0 }}</p>
                             </div>
                             <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-tags text-white"></i>
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
+                                    </path>
+                                </svg>
                             </div>
                         </div>
                     </div>
@@ -203,7 +236,11 @@
                                 <p class="text-2xl font-bold text-white">{{ stats.images_count or 0 }}</p>
                             </div>
                             <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-image text-white"></i>
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                    </path>
+                                </svg>
                             </div>
                         </div>
                     </div>
@@ -213,10 +250,13 @@
 
         <!-- 操作リンク -->
         <div class="mt-8 flex flex-wrap gap-4">
-            <a href="{{ url_for('main.dashboard') }}" 
-               class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center">
-                <i class="fas fa-arrow-left mr-2"></i>
-                ダッシュボードに戻る
+            <a href="{{ url_for('admin.admin_dashboard') }}"
+                class="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-6 py-3 rounded-xl transition-all duration-200 flex items-center font-bold">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                管理画面に戻る
             </a>
         </div>
     </div>
